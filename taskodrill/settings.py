@@ -55,6 +55,9 @@ AUTH_USER_MODEL = 'myauth.MyUser'
 
 ROOT_URLCONF = 'taskodrill.urls'
 
+LOGIN_REDIRECT_URL = 'task_list'
+LOGOUT_REDIRECT_URL = 'login'
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -72,7 +75,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'taskodrill.wsgi.application'
-
 
 DATABASES = {
     'default': {
