@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block title %}
+     {{ object.title }} - {{ block.super }}
+{% endblock %}
+
+{% block content %}
+    <h1>{{ task.name }}</h1>
+<p><a href="{% url 'task_update' task.pk %}">Edit</a>
+{% endblock %}

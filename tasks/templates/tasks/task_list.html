@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Task</h1>
+    <a href="{% url 'task_add' %}">New</a>
+    {% if task_list %}
+    <table border="1">
+      <tr>
+        <th>Task</th>
+        <th>Priority</th>
+        <th>Start date</th>
+        <th>End date</th>
+        <th>Length</th>
+        <th>Repeat</th>
+        <th></th>
+      </tr>
+      {% for task in task_list %}
+      <tr>
+        <td><a href="{{ task.get_absolute_url }}">{{ task.name }}</a></td>
+        <td>{{ task.get_priority_display }}</td>
+        <td>{{ task.start_date | default_if_none:"No date"}}</td>
+        <td>{{ task.end_date | default_if_none:"No date"}}</td>
+        <td>{{ task.length | default_if_none:"None" }}</td>
+        <td>{{ task.get_repeat_display | default_if_none:"None" }}</td>
+        <td><a href="{% url 'task_delete' task.pk %}">Delete</a></td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+      <p>There are no tasks.</p>
+    {% endif %}       
+{% endblock %}
