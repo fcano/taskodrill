@@ -4,10 +4,13 @@ from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from .models import Task
+from .forms import TaskForm
 
 class TaskCreate(LoginRequiredMixin, CreateView):
-    model = Task
-    fields = ['name', 'start_date', 'start_time', 'due_date', 'due_time', 'repeat', 'repeat_from', 'length', 'priority', 'note', 'tasklist']
+    form_class = TaskForm
+    template_name = 'tasks/task_form.html'
+    #fields = [  'name', 'start_date', 'start_time', 'due_date', 'due_time', 'repeat',
+    #            'repeat_from', 'length', 'priority', 'note', 'tasklist']
 
     success_url = reverse_lazy('task_list')
     

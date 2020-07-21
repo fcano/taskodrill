@@ -45,6 +45,21 @@ class TaskListViewTests(TestCase):
             ['<Task: Paint the bedroom>']
         )
 
+class TaskNewFormTests(TestCase):
+    def setUp(self): 
+        MyUser.objects.create_user(
+            username='testuser', 
+            password='testpassword',
+        )
+
+    def test_no_tasks(self):
+        self.client.login(username='testuser', password='testpassword')
+        response = self.client.get(reverse('task_add'))
+        self.assertContains(response, '<input type="date" name="start_date"')
+        self.assertContains(response, '<input type="time" name="start_time"')
+        self.assertContains(response, '<input type="date" name="due_date"')
+        self.assertContains(response, '<input type="time" name="due_time"')
+
 class TaskDetailViewTests(TestCase):
     def setUp(self): 
         MyUser.objects.create_user(
