@@ -48,13 +48,13 @@ class Task(models.Model):
         (NEGATIVE, '-1 Negative'),
     )
 
-    NEXTACTION = 0
-    SOMEDAYMAYBE = 1
+    NEXT_ACTION = 0
+    SOMEDAY_MAYBE = 1
     SUPPORT_MATERIAL = 2
 
-    TASKLIST = (
-        (NEXTACTION, 'Next Action'),
-        (SOMEDAYMAYBE, 'Someday/Maybe'),
+    TASK_LIST = (
+        (NEXT_ACTION, 'Next Action'),
+        (SOMEDAY_MAYBE, 'Someday / Maybe'),
         (SUPPORT_MATERIAL, 'Support Material'),
     )
 
@@ -67,10 +67,11 @@ class Task(models.Model):
     repeat_from = models.IntegerField(choices=REPEAT_FROM, default=DUE_DATE)
     length = models.IntegerField(blank=True, null=True)
     priority = models.IntegerField(choices=PRIORITY, default=TOP)
-    tasklist = models.IntegerField(choices=TASKLIST, default=NEXTACTION)
+    tasklist = models.IntegerField(choices=TASK_LIST, default=NEXT_ACTION)
     note = models.TextField(blank=True, null=True)
     creation_datetime = models.DateTimeField(auto_now_add=True)
     modification_datetime = models.DateTimeField(auto_now=True)
+    project = models.ForeignKey('Project', on_delete=models.CASCADE, blank=True, null=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -81,3 +82,19 @@ class Task(models.Model):
 
     class Meta:
         ordering = ['-modification_datetime']
+
+class Project(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    creation_datetime = models.DateTimeField(auto_now_add=True)
+    modification_datetime = models.DateTimeField(auto_now=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
+
+    def get_absolute_url(self):
+        return reverse('project_detail', kwargs={'pk': self.pk})
+
+    class Meta:
+        ordering = ['name']

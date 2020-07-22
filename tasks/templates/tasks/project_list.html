@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Project</h1>
+    <a href="{% url 'project_add' %}">New</a>
+    {% if project_list %}
+    <table border="1">
+      <tr>
+        <th>Name</th>
+        <th></th>
+      </tr>
+      {% for project in project_list %}
+      <tr>
+        <td><a href="{{ project.get_absolute_url }}">{{ project.name }}</a></td>
+        <td><a href="{% url 'project_delete' project.pk %}">Delete</a></td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+      <p>There are no projects.</p>
+    {% endif %}       
+{% endblock %}

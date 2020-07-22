@@ -4,9 +4,11 @@ from django.test import TestCase
 from django.urls import reverse
 from myauth.models import MyUser
 from django.contrib.auth import authenticate, login
-from .models import Task
+from .models import Task, Project
 
 def create_task():
+    user = MyUser.objects.get(username="testuser")
+
     return Task.objects.create(
         name="Paint the bedroom",
         start_date=datetime.date.today(),
@@ -18,7 +20,15 @@ def create_task():
         length=15,
         priority=Task.TOP,
         note="This is a test task",
-        tasklist=Task.NEXTACTION,
+        tasklist=Task.NEXT_ACTION,
+        project=Project.objects.create(name="Test Project", user=user),
+        user=user,
+    )
+
+def create_project():
+    return Project.objects.create(
+        name="Run a marathon",
+        description="Run a marathon once in live",
         user=MyUser.objects.get(username="testuser"),
     )
 
@@ -52,13 +62,14 @@ class TaskNewFormTests(TestCase):
             password='testpassword',
         )
 
-    def test_no_tasks(self):
+    def test_task_form(self):
         self.client.login(username='testuser', password='testpassword')
         response = self.client.get(reverse('task_add'))
         self.assertContains(response, '<input type="date" name="start_date"')
         self.assertContains(response, '<input type="time" name="start_time"')
         self.assertContains(response, '<input type="date" name="due_date"')
         self.assertContains(response, '<input type="time" name="due_time"')
+        self.assertContains(response, '<select name="project" id="id_project"')
 
 class TaskDetailViewTests(TestCase):
     def setUp(self): 
@@ -103,7 +114,7 @@ class TaskCreateViewTests(TestCase):
             'length':15,
             'priority':Task.TOP,
             'note':"This is a test task",
-            'tasklist':Task.NEXTACTION,
+            'tasklist':Task.NEXT_ACTION,
             #'user':MyUser.objects.get(username="testuser"),
         })
         self.assertEqual(Task.objects.last().name, "Paint the bedroom")
@@ -122,10 +133,11 @@ class TaskCreateViewTests(TestCase):
             'length':15,
             'priority':Task.TOP,
             'note':"This is a test task",
-            'tasklist':Task.NEXTACTION,
+            'tasklist':Task.NEXT_ACTION,
             'user':66,
         })
-        self.assertEqual(Task.objects.last().user.id, 3)
+        self.assertEqual(Task.objects.last().name, "Paint the bedroom")
+        self.assertNotEqual(Task.objects.last().user.id, 66)
 
     def test_task_create_nothing_if_unauthenticated(self):
         self.client.post('/task/add/', {
@@ -139,6 +151,151 @@ class TaskCreateViewTests(TestCase):
             'length':15,
             'priority':Task.TOP,
             'note':"This is a test task",
-            'tasklist':Task.NEXTACTION,
+            'tasklist':Task.NEXT_ACTION,
         })
         self.assertEqual(Task.objects.last(), None)
+
+class TaskTests(TestCase):
+    def setUp(self): 
+        MyUser.objects.create_user(
+            username='testuser', 
+            password='testpassword',
+        )
+
+    def test_task_repeat_enum_display_values(self):
+        user = MyUser.objects.get(username="testuser")
+
+        task = Task.objects.create(
+            name="Paint the bedroom",
+            repeat=Task.NO,
+            project=Project.objects.create(name="Test Project", user=user),
+            user=user,
+        )
+
+        self.assertEqual(task.get_repeat_display(), "No")
+        task.repeat = Task.DAILY
+        self.assertEqual(task.get_repeat_display(), "Daily")        
+        task.repeat = Task.WEEKLY
+        self.assertEqual(task.get_repeat_display(), "Weekly") 
+        task.repeat = Task.BIWEEKLY
+        self.assertEqual(task.get_repeat_display(), "Biweekly") 
+        task.repeat = Task.MONTHLY
+        self.assertEqual(task.get_repeat_display(), "Monthly") 
+        task.repeat = Task.BIMONTHLY
+        self.assertEqual(task.get_repeat_display(), "Bimonthly")
+        task.repeat = Task.QUATERLY
+        self.assertEqual(task.get_repeat_display(), "Quaterly")
+        task.repeat = Task.SEMIANNUALLY
+        self.assertEqual(task.get_repeat_display(), "Semiannually")
+        task.repeat = Task.YEARLY
+        self.assertEqual(task.get_repeat_display(), "Yearly")   
+
+    def test_task_repeat_from_enum_display_values(self):
+        user = MyUser.objects.get(username="testuser")
+
+        task = Task.objects.create(
+            name="Paint the bedroom",
+            repeat=Task.WEEKLY,
+            repeat_from=Task.DUE_DATE,
+            project=Project.objects.create(name="Test Project", user=user),
+            user=user,
+        )
+
+        self.assertEqual(task.get_repeat_from_display(), "Due Date")
+        task.repeat_from = Task.COMPLETION_DATE
+        self.assertEqual(task.get_repeat_from_display(), "Completion Date")        
+
+    def test_task_priority_enum_display_values(self):
+        user = MyUser.objects.get(username="testuser")
+
+        task = Task.objects.create(
+            name="Paint the bedroom",
+            priority=Task.TOP,
+            user=user,
+        )
+
+        self.assertEqual(task.get_priority_display(), "3 Top")
+        task.priority = Task.HIGH
+        self.assertEqual(task.get_priority_display(), "2 High")
+        task.priority = Task.MEDIUM
+        self.assertEqual(task.get_priority_display(), "1 Medium")
+        task.priority = Task.LOW
+        self.assertEqual(task.get_priority_display(), "0 Low")
+        task.priority = Task.NEGATIVE
+        self.assertEqual(task.get_priority_display(), "-1 Negative")
+
+    def test_task_priority_enum_values_order(self):
+        user = MyUser.objects.get(username="testuser")
+
+        task1 = Task.objects.create(
+            name="Paint the bedroom",
+            priority=Task.TOP,
+            user=user,
+        )
+
+        task2 = Task.objects.create(
+            name="Paint the bedroom",
+            priority=Task.HIGH,
+            user=user,
+        )
+
+        task3 = Task.objects.create(
+            name="Paint the bedroom",
+            priority=Task.MEDIUM,
+            user=user,
+        )
+
+        task4 = Task.objects.create(
+            name="Paint the bedroom",
+            priority=Task.LOW,
+            user=user,
+        )
+
+        task5 = Task.objects.create(
+            name="Paint the bedroom",
+            priority=Task.NEGATIVE,
+            user=user,
+        )
+
+        self.assertEqual(task1.priority > task2.priority, True)
+        self.assertEqual(task2.priority > task3.priority, True)
+        self.assertEqual(task3.priority > task4.priority, True)
+        self.assertEqual(task4.priority > task5.priority, True)                
+
+    def test_task_tasklist_enum_display_values(self):
+        user = MyUser.objects.get(username="testuser")
+
+        task = Task.objects.create(
+            name="Paint the bedroom",
+            tasklist=Task.NEXT_ACTION,
+            user=user,
+        )
+
+        self.assertEqual(task.get_tasklist_display(), "Next Action")
+        task.tasklist = Task.SOMEDAY_MAYBE
+        self.assertEqual(task.get_tasklist_display(), "Someday / Maybe")
+        task.tasklist = Task.SUPPORT_MATERIAL
+        self.assertEqual(task.get_tasklist_display(), "Support Material")
+
+class ProjectListViewTests(TestCase):
+    def setUp(self): 
+        MyUser.objects.create_user(
+            username='testuser', 
+            password='testpassword',
+        )
+
+    def test_no_projects(self):
+        self.client.login(username='testuser', password='testpassword')
+        response = self.client.get(reverse('project_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "There are no projects.")
+
+    def test_list_with_one_project(self):
+        self.client.login(username='testuser', password='testpassword')
+        create_project()
+        response = self.client.get(reverse('project_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(
+            response.context['project_list'],
+            ['<Project: Run a marathon>']
+        )

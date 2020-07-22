@@ -11,7 +11,7 @@ class TaskForm(forms.ModelForm):
     class Meta:
         model = Task
         fields = [  'name', 'start_date', 'start_time', 'due_date', 'due_time', 'repeat',
-                    'repeat_from', 'length', 'priority', 'note', 'tasklist']
+                    'repeat_from', 'length', 'priority', 'note', 'project', 'tasklist']
         widgets = {
             'start_date': DateInput(),
             'due_date': DateInput(),
