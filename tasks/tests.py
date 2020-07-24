@@ -43,7 +43,49 @@ class TaskListViewTests(TestCase):
         self.client.login(username='testuser', password='testpassword')
         response = self.client.get(reverse('task_list'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "There are no tasks.")
+        self.assertContains(response, "There are no tasks in this list.")
+
+    def test_tasks_no_nextactions(self):
+        self.client.login(username='testuser', password='testpassword')
+        response = self.client.get('/task/nextactions/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "There are no tasks in this list.")
+
+    def test_tasks_one_nextaction(self):
+        self.client.login(username='testuser', password='testpassword')
+        Task.objects.create(name="Example of next action", tasklist=Task.NEXT_ACTION, user=MyUser.objects.first())
+        Task.objects.create(name="Example of someday / maybe", tasklist=Task.SOMEDAY_MAYBE, user=MyUser.objects.first())
+        response = self.client.get('/task/nextactions/')
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(
+            response.context['task_list'],
+            ['<Task: Example of next action>']
+        )
+
+    def test_tasks_no_somedaymaybe(self):
+        self.client.login(username='testuser', password='testpassword')
+        response = self.client.get('/task/somedaymaybe/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "There are no tasks in this list.")
+
+    def test_tasks_one_somedaymaybe(self):
+        self.client.login(username='testuser', password='testpassword')
+        Task.objects.create(name="Example of next action", tasklist=Task.NEXT_ACTION, user=MyUser.objects.first())
+        Task.objects.create(name="Example of someday/maybe", tasklist=Task.SOMEDAY_MAYBE, user=MyUser.objects.first())
+        response = self.client.get('/task/somedaymaybe/')
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(
+            response.context['task_list'],
+            ['<Task: Example of someday/maybe>']
+        )
+
+    def test_tasks_no_auth_nextaction(self):
+        response = self.client.get('/task/nextaction/')
+        self.assertEqual(response.status_code, 302)
+
+    def test_tasks_no_auth_nonexistant(self):
+        response = self.client.get('/task/nonexistant/')
+        self.assertEqual(response.status_code, 302)
 
     def test_list_with_one_task(self):
         self.client.login(username='testuser', password='testpassword')

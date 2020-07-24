@@ -31,7 +31,20 @@ class TaskList(LoginRequiredMixin, ListView):
     model = Task
 
     def get_queryset(self):
-        return Task.objects.filter(user=self.request.user)
+        if 'tasklist_slug' in self.kwargs:
+            tasklist_slug = self.kwargs['tasklist_slug']
+        else:
+            tasklist_slug = None
+
+        if (tasklist_slug == None) or (tasklist_slug not in ['nextactions', 'somedaymaybe']):
+            return Task.objects.filter(user=self.request.user)
+        else:
+            if tasklist_slug == 'nextactions':
+                tasklist = Task.NEXT_ACTION
+            else:
+                tasklist = Task.SOMEDAY_MAYBE
+            return Task.objects.filter(user=self.request.user, tasklist=tasklist)
+        
 
 class TaskUpdate(LoginRequiredMixin,UpdateView):
     model = Task
