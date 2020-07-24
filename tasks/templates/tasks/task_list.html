@@ -5,26 +5,34 @@
     <a href="{% url 'task_add' %}">New</a>
     {% if task_list %}
     <table border="1">
-      <tr>
-        <th>Task</th>
-        <th>Priority</th>
-        <th>Start date</th>
-        <th>End date</th>
-        <th>Length</th>
-        <th>Repeat</th>
-        <th></th>
-      </tr>
-      {% for task in task_list %}
-      <tr>
-        <td><a href="{{ task.get_absolute_url }}">{{ task.name }}</a></td>
-        <td>{{ task.get_priority_display }}</td>
-        <td>{{ task.start_date | default_if_none:"No date"}}</td>
-        <td>{{ task.end_date | default_if_none:"No date"}}</td>
-        <td>{{ task.length | default_if_none:"None" }}</td>
-        <td>{{ task.get_repeat_display | default_if_none:"None" }}</td>
-        <td><a href="{% url 'task_delete' task.pk %}">Delete</a></td>
-      </tr>
-      {% endfor %}
+      <thead>
+        <tr>
+          <th></th>
+          <th>Task</th>
+          <th>Priority</th>
+          <th>Start date</th>
+          <th>Start time</th>
+          <th>End date</th>
+          <th>Length</th>
+          <th>Repeat</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tasks_body">
+        {% for task in task_list %}
+        <tr id="task_row_{{ task.id }}">
+          <td><input class="checkbox" type="checkbox" id="checkbox_{{ task.id }}" value="{{ task.id }}"></td>
+          <td><a href="{{ task.get_absolute_url }}">{{ task.name }}</a></td>
+          <td>{{ task.get_priority_display }}</td>
+          <td>{{ task.start_date | default_if_none:"No date"}}</td>
+          <td>{{ task.start_time | default_if_none:"No time"}}</td>
+          <td>{{ task.end_date | default_if_none:"No date"}}</td>
+          <td>{{ task.length | default_if_none:"None" }}</td>
+          <td>{{ task.get_repeat_display | default_if_none:"None" }}</td>
+          <td><a href="{% url 'task_delete' task.pk %}">Delete</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
     </table>
     {% else %}
       <p>There are no tasks in this list.</p>

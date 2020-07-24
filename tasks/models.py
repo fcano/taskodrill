@@ -58,6 +58,14 @@ class Task(models.Model):
         (SUPPORT_MATERIAL, 'Support Material'),
     )
 
+    PENDING = 0
+    DONE = 1
+
+    STATUS = (
+        (PENDING, 'Pending'),
+        (DONE, 'Done'),
+    )
+
     name = models.CharField(max_length=100)
     start_date = models.DateField(blank=True, null=True)
     start_time = models.TimeField(blank=True, null=True)
@@ -68,6 +76,7 @@ class Task(models.Model):
     length = models.IntegerField(blank=True, null=True)
     priority = models.IntegerField(choices=PRIORITY, default=TOP)
     tasklist = models.IntegerField(choices=TASK_LIST, default=NEXT_ACTION)
+    status = models.IntegerField(choices=STATUS, default=PENDING)
     note = models.TextField(blank=True, null=True)
     creation_datetime = models.DateTimeField(auto_now_add=True)
     modification_datetime = models.DateTimeField(auto_now=True)

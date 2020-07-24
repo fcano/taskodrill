@@ -97,6 +97,90 @@ class TaskListViewTests(TestCase):
             ['<Task: Paint the bedroom>']
         )
 
+    def test_task_mark_done_not_repeat(self):
+        self.client.login(username='testuser', password='testpassword')
+        task = Task.objects.create(
+            name="Testing AJAX task",
+            tasklist=Task.NEXT_ACTION,
+            user=MyUser.objects.first(),
+        )
+        r = self.client.post(   
+            '/task/mark_as_done/',
+            {'id': task.id, 'value': '1'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        response = self.client.get(reverse('task_list_tasklist', args=('nextactions',)))
+        self.assertEqual(response.status_code, 200)        
+        self.assertQuerysetEqual(
+            response.context['task_list'],
+            []
+        )
+        task = Task.objects.get(id=task.id)
+        self.assertEqual(task.status, Task.DONE)        
+
+    def test_task_start_date_past_appear(self):
+        self.client.login(username='testuser', password='testpassword')
+        Task.objects.create(
+            name="Testing tasks in the past",
+            start_date = datetime.date.today() - datetime.timedelta(1),
+            tasklist=Task.NEXT_ACTION,
+            user=MyUser.objects.first(),
+        )
+        response = self.client.get(reverse('task_list_tasklist', args=('nextactions',)))
+        self.assertEqual(response.status_code, 200)        
+        self.assertQuerysetEqual(
+            response.context['task_list'],
+            ['<Task: Testing tasks in the past>']
+        )
+
+    def test_task_start_date_future_does_not_appear(self):
+        self.client.login(username='testuser', password='testpassword')
+        Task.objects.create(
+            name="Testing tasks in the future",
+            start_date = datetime.date.today() + datetime.timedelta(1),
+            tasklist=Task.NEXT_ACTION,
+            user=MyUser.objects.first(),
+        )
+        response = self.client.get(reverse('task_list_tasklist', args=('nextactions',)))
+        self.assertEqual(response.status_code, 200)        
+        self.assertQuerysetEqual(
+            response.context['task_list'],
+            []
+        )
+
+    def test_task_start_date_today_time_future_does_not_appear(self):
+        self.client.login(username='testuser', password='testpassword')
+        Task.objects.create(
+            name="Testing tasks in the future",
+            start_date = datetime.date.today(),
+            start_time = datetime.datetime.now() + datetime.timedelta(minutes=10),
+            tasklist=Task.NEXT_ACTION,
+            user=MyUser.objects.first(),
+        )
+        response = self.client.get(reverse('task_list_tasklist', args=('nextactions',)))
+        self.assertEqual(response.status_code, 200)        
+        self.assertQuerysetEqual(
+            response.context['task_list'],
+            []
+        )
+
+    def test_task_start_date_today_time_past_does_appear(self):
+        self.client.login(username='testuser', password='testpassword')
+        Task.objects.create(
+            name="Testing tasks in the past",
+            start_date = datetime.date.today(),
+            start_time = datetime.datetime.now() - datetime.timedelta(hours=1),
+            tasklist=Task.NEXT_ACTION,
+            user=MyUser.objects.first(),
+        )
+        response = self.client.get(reverse('task_list_tasklist', args=('nextactions',)))
+        self.assertEqual(response.status_code, 200)        
+        self.assertQuerysetEqual(
+            response.context['task_list'],
+            ['<Task: Testing tasks in the past>']
+        )
+
+
 class TaskNewFormTests(TestCase):
     def setUp(self): 
         MyUser.objects.create_user(

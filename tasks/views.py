@@ -1,8 +1,13 @@
-from django.views.generic import ListView
+import datetime
+
+from django.views.generic import ListView, View
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Q
 from django.urls import reverse_lazy
+from django.http import JsonResponse
+
 from .models import Task, Project
 from .forms import TaskForm
 
@@ -36,14 +41,23 @@ class TaskList(LoginRequiredMixin, ListView):
         else:
             tasklist_slug = None
 
+        query = Q(start_date = datetime.date.today())
+        query.add(Q(start_time__lte = datetime.datetime.now()), Q.AND)
+        query.add(Q(start_date__lt = datetime.date.today()), Q.OR)
+        query.add(Q(start_date__isnull=True), Q.OR)
         if (tasklist_slug == None) or (tasklist_slug not in ['nextactions', 'somedaymaybe']):
-            return Task.objects.filter(user=self.request.user)
+            return Task.objects.filter(
+                        user=self.request.user,
+                        status=Task.PENDING).filter(query)
         else:
             if tasklist_slug == 'nextactions':
                 tasklist = Task.NEXT_ACTION
             else:
                 tasklist = Task.SOMEDAY_MAYBE
-            return Task.objects.filter(user=self.request.user, tasklist=tasklist)
+            return Task.objects.filter(
+                            user=self.request.user,
+                            tasklist=tasklist,
+                            status=Task.PENDING).filter(query)
         
 
 class TaskUpdate(LoginRequiredMixin,UpdateView):
@@ -53,6 +67,26 @@ class TaskUpdate(LoginRequiredMixin,UpdateView):
 class TaskDelete(LoginRequiredMixin,DeleteView):
     model = Task
     success_url = reverse_lazy('task_list')
+
+
+class TaskMarkAsDone(LoginRequiredMixin, View):
+
+    def post(self, request, *args, **kwargs):
+        if self.request.user.is_authenticated:
+            task = Task.objects.get(user=self.request.user, id=self.request.POST['id'])
+            if task.repeat == Task.NO:
+                task.status = Task.DONE
+            elif task.repeat == Task.DAILY:
+                task.start_date = date.today() + timedelta(1)
+            elif task.repeat == Task.WEEKLY:
+                task.start_date = date.today() + timedelta(7)
+            elif task.repeat == Task.MONTHLY:
+                task.start_date = date.today() + timedelta(30)
+
+            task.save()
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'error': 'Error'})
 
 class ProjectCreate(LoginRequiredMixin, CreateView):
     model = Project
