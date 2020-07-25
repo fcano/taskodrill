@@ -226,10 +226,16 @@ class TaskCreateViewTests(TestCase):
             password='testpassword',
         )
 
-    def test_task_create(self):
+    def test_task_create_view_get(self):
+        self.client.login(username='testuser', password='testpassword')
+        response = self.client.get(reverse('task_add'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '<select name="tasklist" id="id_tasklist"')
+
+    def test_task_create_view_post(self):
         self.client.login(username='testuser', password='testpassword')
 
-        self.client.post('/task/add/', {
+        response = self.client.post('/task/add/', {
             'name':"Paint the bedroom",
             'start_date':datetime.date.today(),
             'start_time':datetime.datetime.now().time(),
@@ -243,6 +249,8 @@ class TaskCreateViewTests(TestCase):
             'tasklist':Task.NEXT_ACTION,
             #'user':MyUser.objects.get(username="testuser"),
         })
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('task_list'), target_status_code=200)
         self.assertEqual(Task.objects.last().name, "Paint the bedroom")
 
     def test_task_create_username_cannot_come_from_user(self):

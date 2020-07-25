@@ -6,6 +6,12 @@
 
 {% block content %}
     <h1>{{ project.name }}</h1>
-<p><a href="{% url 'project_update' project.pk %}">Edit</a>
+    <p><a href="{% url 'project_update' project.pk %}">Edit</a>
     <p>{{ project.description }}</p>
+    <h2>Tasks in project</h2>
+    {% if project.task_set.count == 0 %}
+    <p>This project does not have tasks.</p>
+    {% else %}
+        {% include 'tasks/tasks_table.html' with task_list=project.task_set.all %}
+    {% endif %}
 {% endblock %}
