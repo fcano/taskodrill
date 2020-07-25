@@ -32,6 +32,29 @@ def create_project():
         user=MyUser.objects.get(username="testuser"),
     )
 
+class ProjectTests(TestCase):
+    def setUp(self): 
+        MyUser.objects.create_user(
+            username='testuser', 
+            password='testpassword',
+        )
+
+    def test_project_pending_tasks(self):
+        project = Project.objects.create(
+            name="Test Project 1",
+            user=MyUser.objects.last(),
+        )
+
+        task = Task.objects.create(
+            name="Test Task 1",
+            tasklist=Task.NEXT_ACTION,
+            status=Task.PENDING,
+            project=project,
+            user=MyUser.objects.last(),
+        )
+
+        self.assertEqual(project.pending_tasks().count(), 1)
+
 class TaskListViewTests(TestCase):
     def setUp(self): 
         MyUser.objects.create_user(
@@ -433,3 +456,39 @@ class ProjectListViewTests(TestCase):
             response.context['project_list'],
             ['<Project: Run a marathon>']
         )
+
+class ProjectDetailViewTests(TestCase):
+    def setUp(self): 
+        MyUser.objects.create_user(
+            username='testuser', 
+            password='testpassword',
+        )
+
+    def test_when_project_task_done_does_not_appear(self):
+        self.client.login(username='testuser', password='testpassword')
+
+        project = Project.objects.create(
+            name="Test project 1",
+            user=MyUser.objects.last(),
+        )
+
+        task = Task.objects.create(
+            name="Paint the bedroom",
+            tasklist=Task.NEXT_ACTION,
+            project=project,
+            user=MyUser.objects.last(),
+        )
+
+        response = self.client.get(reverse('project_detail', args=(project.id,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Paint the bedroom")
+
+        self.client.post(   
+            '/task/mark_as_done/',
+            {'id': task.id, 'value': '1'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+
+        response = self.client.get(reverse('project_detail', args=(project.id,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Paint the bedroom")

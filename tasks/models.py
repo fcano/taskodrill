@@ -102,6 +102,9 @@ class Project(models.Model):
     def __str__(self):
         return self.name
 
+    def pending_tasks(self):
+        return self.task_set.filter(status=Task.PENDING)
+        
     def get_absolute_url(self):
         return reverse('project_detail', kwargs={'pk': self.pk})
 
