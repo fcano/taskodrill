@@ -43,9 +43,13 @@ $('#tasks_body').on('click', 'input[type="checkbox"]', function () {
         type: "POST",
         url: "/task/mark_as_done/",
         data: data,
-        success: function (json) {
+        success: function (response) {
             task_row_str = '#task_row_' + data.id;
             $(task_row_str).remove();
+            next_task_tr_html = response.next_task_tr;
+            if (next_task_tr_html != "") {
+                $('#tasks_table tr:last').after(next_task_tr_html);
+            }
         }
     }).done(function (data) {
         console.log(data);

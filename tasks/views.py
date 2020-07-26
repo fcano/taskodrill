@@ -7,6 +7,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.urls import reverse_lazy
 from django.http import JsonResponse
+from django.core import serializers
+from django.template.loader import render_to_string
 
 from .models import Task, Project, Context
 from .forms import TaskForm
@@ -71,7 +73,7 @@ class TaskList(LoginRequiredMixin, ListView):
                 status=Task.PENDING,
                 project__isnull=False,
             ).order_by('project_id', 'creation_datetime').distinct('project_id')
-            return tasks_wo_project.union(last_task_from_each_project)
+            return tasks_wo_project.union(last_task_from_each_project).order_by('due_date', 'creation_datetime')
         
 
 class TaskUpdate(LoginRequiredMixin, UpdateView):
@@ -111,7 +113,18 @@ class TaskMarkAsDone(LoginRequiredMixin, View):
                 task.start_date = date.today() + timedelta(30)
 
             task.save()
-            return JsonResponse({'success': True})
+            # Here I'm returning JsonResponse with serialized task. The html has to be
+            # built in the myscripts.js or {% block javascript %}
+            # Other option is returning HttpResponse with template or tr populated with task
+            # info
+            next_task_tr = ""
+            if task.project:
+                next_tasks_list = task.project.pending_tasks().order_by('creation_datetime')
+                if next_tasks_list:
+                    next_task = next_tasks_list[0]
+                    next_task_tr = render_to_string('tasks/task_row.html', {'task': next_task})
+            #next_task_json = serializers.serialize("json", [next_task_tr])
+            return JsonResponse({'success': True, 'next_task_tr': next_task_tr})
         else:
             return JsonResponse({'error': 'Error'})
 

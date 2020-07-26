@@ -4,7 +4,7 @@
     <h1>Task</h1>
     <a href="{% url 'task_add' %}">New</a>
     {% if task_list %}
-    <table border="1">
+    <table id="tasks_table" border="1">
       <thead>
         <tr>
           <th></th>
@@ -12,8 +12,8 @@
           <th>Priority</th>
           <th>Start date</th>
           <th>Start time</th>
-          <th>End date</th>
-          <th>Length</th>
+          <th>Due date</th>
+          <th>Project</th>
           <th>Repeat</th>
           <th></th>
         </tr>
@@ -26,8 +26,8 @@
           <td>{{ task.get_priority_display }}</td>
           <td>{{ task.start_date | default_if_none:"No date"}}</td>
           <td>{{ task.start_time | default_if_none:"No time"}}</td>
-          <td>{{ task.end_date | default_if_none:"No date"}}</td>
-          <td>{{ task.length | default_if_none:"None" }}</td>
+          <td>{{ task.due_date | default_if_none:"No date"}}</td>
+          <td>{{ task.project | default_if_none:"None" }}</td>
           <td>{{ task.get_repeat_display | default_if_none:"None" }}</td>
           <td><a href="{% url 'task_delete' task.pk %}" class="confirm-delete">Delete</span></td>
         </tr>
