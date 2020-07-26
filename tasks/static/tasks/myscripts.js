@@ -51,3 +51,24 @@ $('#tasks_body').on('click', 'input[type="checkbox"]', function () {
         console.log(data);
     });
 });
+
+$(document).on('click', 'a.confirm-delete', function (event) {
+    event.preventDefault();
+    confirm('Are you sure you want to delete this?');
+
+    var data = {};
+    href = $(this).attr('href');
+    data.id = href.split('/')[2]
+
+    $.ajax({
+        type: "POST",
+        url: "/task/"+data.id+"/delete/",
+        data: data,
+        success: function (json) {
+            task_row_str = '#task_row_' + data.id;
+            $(task_row_str).remove();
+        }
+    }).done(function (data) {
+        console.log(data);
+    });
+});

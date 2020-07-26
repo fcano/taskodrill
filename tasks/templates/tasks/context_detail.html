@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}
+     {{ object.title }} - {{ block.super }}
+{% endblock %}
+
+{% block content %}
+    <h1>{{ context.name }}</h1>
+    <p><a href="{% url 'context_update' context.pk %}">Edit</a>
+    <h2>Tasks in context</h2>
+    {% if context.task_set.count == 0 %}
+    <p>This context does not have tasks.</p>
+    {% else %}
+        {% include 'tasks/tasks_table.html' with task_list=context.pending_tasks.all %}
+    {% endif %}
+{% endblock %}

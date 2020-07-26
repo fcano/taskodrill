@@ -8,7 +8,7 @@ from django.db.models import Q
 from django.urls import reverse_lazy
 from django.http import JsonResponse
 
-from .models import Task, Project
+from .models import Task, Project, Context
 from .forms import TaskForm
 
 class TaskCreate(LoginRequiredMixin, CreateView):
@@ -18,7 +18,12 @@ class TaskCreate(LoginRequiredMixin, CreateView):
     #            'repeat_from', 'length', 'priority', 'note', 'tasklist']
 
     success_url = reverse_lazy('task_list')
-    
+
+    def get_form_kwargs(self):
+        kwargs = super(TaskCreate, self).get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
     def form_valid(self, form):
         form.instance.user = self.request.user
         return super().form_valid(form)
@@ -45,29 +50,51 @@ class TaskList(LoginRequiredMixin, ListView):
         query.add(Q(start_time__lte = datetime.datetime.now()), Q.AND)
         query.add(Q(start_date__lt = datetime.date.today()), Q.OR)
         query.add(Q(start_date__isnull=True), Q.OR)
+        
+
         if (tasklist_slug == None) or (tasklist_slug not in ['nextactions', 'somedaymaybe']):
-            return Task.objects.filter(
-                        user=self.request.user,
-                        status=Task.PENDING).filter(query)
+            return Task.objects.filter(user=self.request.user,
+                            status=Task.PENDING).filter(query)
         else:
             if tasklist_slug == 'nextactions':
                 tasklist = Task.NEXT_ACTION
             else:
                 tasklist = Task.SOMEDAY_MAYBE
-            return Task.objects.filter(
+            tasks_wo_project = Task.objects.filter(
                             user=self.request.user,
                             tasklist=tasklist,
-                            status=Task.PENDING).filter(query)
+                            status=Task.PENDING,
+                            project__isnull=True).filter(query)
+            last_task_from_each_project = Task.objects.filter(
+                user=self.request.user,
+                tasklist=tasklist,
+                status=Task.PENDING,
+                project__isnull=False,
+            ).order_by('project_id', 'creation_datetime').distinct('project_id')
+            return tasks_wo_project.union(last_task_from_each_project)
         
 
-class TaskUpdate(LoginRequiredMixin,UpdateView):
+class TaskUpdate(LoginRequiredMixin, UpdateView):
     model = Task
-    fields = ['name', 'start_date', 'start_time', 'due_date', 'due_time', 'repeat', 'repeat_from', 'length', 'priority', 'note', 'tasklist']
+    form_class = TaskForm
+    template_name = 'tasks/task_form.html'
 
-class TaskDelete(LoginRequiredMixin,DeleteView):
+    def get_form_kwargs(self):
+        kwargs = super(TaskUpdate, self).get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+#    def get_queryset(self):
+#        return Task.objects.filter(user=self.request.user, id=self.request.POST['id'])
+
+class TaskDelete(LoginRequiredMixin, DeleteView):
     model = Task
-    success_url = reverse_lazy('task_list')
-
+    #success_url = reverse_lazy('task_list')
+    def post(self, *args, **kwargs):
+        self.object = self.get_object()
+        self.object.delete()
+        data = {'success': 'OK'}
+        return JsonResponse(data)
 
 class TaskMarkAsDone(LoginRequiredMixin, View):
 
@@ -120,3 +147,37 @@ class ProjectUpdate(LoginRequiredMixin,UpdateView):
 class ProjectDelete(LoginRequiredMixin,DeleteView):
     model = Project
     success_url = reverse_lazy('project_list')
+
+
+class ContextCreate(LoginRequiredMixin, CreateView):
+    model = Context
+    fields = ['name']
+
+    success_url = reverse_lazy('context_list')
+    
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        return super().form_valid(form)
+
+class ContextDetail(LoginRequiredMixin, DetailView):
+    model = Context
+
+    def get_queryset(self):
+        if self.request.user.is_authenticated:
+            return Context.objects.filter(user=self.request.user)
+        else:
+            return Context.objects.none()
+
+class ContextList(LoginRequiredMixin, ListView):
+    model = Context
+
+    def get_queryset(self):
+        return Context.objects.filter(user=self.request.user)
+
+class ContextUpdate(LoginRequiredMixin,UpdateView):
+    model = Context
+    fields = ['name']
+
+class ContextDelete(LoginRequiredMixin,DeleteView):
+    model = Context
+    success_url = reverse_lazy('context_list')

@@ -4,7 +4,7 @@ from django.test import TestCase
 from django.urls import reverse
 from myauth.models import MyUser
 from django.contrib.auth import authenticate, login
-from .models import Task, Project
+from .models import Task, Project, Context
 
 def create_task():
     user = MyUser.objects.get(username="testuser")
@@ -457,6 +457,31 @@ class ProjectListViewTests(TestCase):
             ['<Project: Run a marathon>']
         )
 
+    def test_project_task_flow_nextactions(self):
+        self.client.login(username='testuser', password='testpassword')
+        user = MyUser.objects.get(username='testuser')
+        project = Project.objects.create(
+            name="Test Project 1",
+            user=user,
+        )
+        task1 = Task.objects.create(
+            name="Task 1 within Project 1",
+            project=project,
+            user=user,
+        )
+        task2 = Task.objects.create(
+            name="Task 2 within Project 1",
+            project=project,
+            user=user,
+        )
+        response = self.client.get(reverse('project_detail', args=(project.id,)))
+        self.assertContains(response, 'Task 1 within Project 1')
+        self.assertContains(response, 'Task 2 within Project 1')
+        
+        response = self.client.get('/task/nextactions/')
+        self.assertContains(response, 'Task 1 within Project 1')
+        self.assertNotContains(response, 'Task 2 within Project 1')
+
 class ProjectDetailViewTests(TestCase):
     def setUp(self): 
         MyUser.objects.create_user(
@@ -492,3 +517,48 @@ class ProjectDetailViewTests(TestCase):
         response = self.client.get(reverse('project_detail', args=(project.id,)))
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Paint the bedroom")
+
+class TestContextViews(TestCase):
+    def setUp(self):
+        MyUser.objects.create_user(
+            username='testuser', 
+            password='testpassword',
+        )
+    
+    def test_context_create_view(self):
+        self.client.login(username='testuser', password='testpassword')
+        response = self.client.get(reverse('context_add'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'tasks/context_form.html')
+
+    def test_context_list_view(self):
+        self.client.login(username='testuser', password='testpassword')
+        response = self.client.get(reverse('context_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'tasks/context_list.html')
+
+    def test_context_detail_view(self):
+        self.client.login(username='testuser', password='testpassword')
+        context = Context.objects.create(
+            name="home",
+            user=MyUser.objects.last(),
+        )
+        response = self.client.get(reverse('context_detail', args=(context.id, )))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'tasks/context_detail.html')
+        self.assertContains(response, 'home')
+    
+    def test_context_detail_view_one_task(self):
+        self.client.login(username='testuser', password='testpassword')
+        context = Context.objects.create(
+            name="home",
+            user=MyUser.objects.last(),
+        )
+        task = Task.objects.create(
+            name="Test Task 1",
+             user=MyUser.objects.last(),
+        )
+        task.contexts.add(context)
+        response = self.client.get(reverse('context_detail', args=(context.id, )))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Test Task 1')

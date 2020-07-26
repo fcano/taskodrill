@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Context</h1>
+    <a href="{% url 'context_add' %}">New</a>
+    {% if context_list %}
+    <table border="1">
+      <tr>
+        <th>Name</th>
+        <th></th>
+      </tr>
+      {% for context in context_list %}
+      <tr>
+        <td><a href="{{ context.get_absolute_url }}">{{ context.name }}</a></td>
+        <td><a href="{% url 'context_delete' context.pk %}">Delete</a></td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+      <p>There are no contexts.</p>
+    {% endif %}       
+{% endblock %}

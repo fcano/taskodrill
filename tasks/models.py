@@ -81,6 +81,7 @@ class Task(models.Model):
     creation_datetime = models.DateTimeField(auto_now_add=True)
     modification_datetime = models.DateTimeField(auto_now=True)
     project = models.ForeignKey('Project', on_delete=models.CASCADE, blank=True, null=True)
+    contexts = models.ManyToManyField('Context', related_name="tasks", blank=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -90,7 +91,7 @@ class Task(models.Model):
         return reverse('task_detail', kwargs={'pk': self.pk})
 
     class Meta:
-        ordering = ['-modification_datetime']
+        ordering = ['creation_datetime']
 
 class Project(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -104,9 +105,26 @@ class Project(models.Model):
 
     def pending_tasks(self):
         return self.task_set.filter(status=Task.PENDING)
-        
+
     def get_absolute_url(self):
         return reverse('project_detail', kwargs={'pk': self.pk})
 
     class Meta:
         ordering = ['name']
+
+class Context(models.Model):
+    name = models.CharField(max_length=100)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
+
+    def get_absolute_url(self):
+        return reverse('context_detail', kwargs={'pk': self.pk})
+
+    def pending_tasks(self):
+        return self.tasks.filter(status=Task.PENDING)
+
+    class Meta:
+        ordering = ['name']
+        unique_together = (('name', 'user'),)

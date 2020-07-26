@@ -29,7 +29,7 @@
           <td>{{ task.end_date | default_if_none:"No date"}}</td>
           <td>{{ task.length | default_if_none:"None" }}</td>
           <td>{{ task.get_repeat_display | default_if_none:"None" }}</td>
-          <td><a href="{% url 'task_delete' task.pk %}">Delete</a></td>
+          <td><a href="{% url 'task_delete' task.pk %}" class="confirm-delete">Delete</span></td>
         </tr>
         {% endfor %}
       </tbody>
