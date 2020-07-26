@@ -1,0 +1,1 @@
+web: gunicorn taskodrill.wsgi --log-file -
