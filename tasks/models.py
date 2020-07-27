@@ -66,7 +66,7 @@ class Task(models.Model):
         (DONE, 'Done'),
     )
 
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=500)
     start_date = models.DateField(blank=True, null=True)
     start_time = models.TimeField(blank=True, null=True)
     due_date = models.DateField(blank=True, null=True)
