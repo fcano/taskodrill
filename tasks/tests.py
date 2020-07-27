@@ -411,7 +411,7 @@ class TaskCreateViewTests(TestCase):
             #'user':MyUser.objects.get(username="testuser"),
         })
         self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, reverse('task_list'), target_status_code=200)
+        self.assertRedirects(response, reverse('task_list_tasklist', kwargs={'tasklist_slug' : 'nextactions', }), target_status_code=200)
         self.assertEqual(Task.objects.last().name, "Paint the bedroom")
 
     def test_task_create_username_cannot_come_from_user(self):

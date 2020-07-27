@@ -5,7 +5,7 @@ from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.http import JsonResponse
 from django.core import serializers
 from django.template.loader import render_to_string
@@ -19,7 +19,7 @@ class TaskCreate(LoginRequiredMixin, CreateView):
     #fields = [  'name', 'start_date', 'start_time', 'due_date', 'due_time', 'repeat',
     #            'repeat_from', 'length', 'priority', 'note', 'tasklist']
 
-    success_url = reverse_lazy('task_list')
+    success_url = reverse_lazy('task_list_tasklist', kwargs = {'tasklist_slug' : 'nextactions', })
 
     def get_form_kwargs(self):
         kwargs = super(TaskCreate, self).get_form_kwargs()
