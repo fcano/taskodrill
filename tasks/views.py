@@ -48,13 +48,13 @@ class TaskList(LoginRequiredMixin, ListView):
         else:
             tasklist_slug = None
 
-        query = Q(start_date = datetime.date.today())
-        query.add(Q(start_time__lte = datetime.datetime.now()), Q.AND)
-        query.add(Q(start_date__lt = datetime.date.today()), Q.OR)
+        query = Q(start_date=datetime.date.today())
+        query.add(Q(start_time__lte=datetime.datetime.now()), Q.AND)
+        query.add(Q(start_date__lt=datetime.date.today()), Q.OR)
         query.add(Q(start_date__isnull=True), Q.OR)
         
 
-        if (tasklist_slug == None) or (tasklist_slug not in ['nextactions', 'somedaymaybe']):
+        if (tasklist_slug is None) or (tasklist_slug not in ['nextactions', 'somedaymaybe']):
             return Task.objects.filter(user=self.request.user,
                             status=Task.PENDING).filter(query)
         else:
@@ -102,17 +102,44 @@ class TaskMarkAsDone(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         if self.request.user.is_authenticated:
+            new_task = Task.objects.get(user=self.request.user, id=self.request.POST['id'])
+            new_task.pk = None
             task = Task.objects.get(user=self.request.user, id=self.request.POST['id'])
-            if task.repeat == Task.NO:
-                task.status = Task.DONE
-            elif task.repeat == Task.DAILY:
-                task.start_date = date.today() + timedelta(1)
-            elif task.repeat == Task.WEEKLY:
-                task.start_date = date.today() + timedelta(7)
-            elif task.repeat == Task.MONTHLY:
-                task.start_date = date.today() + timedelta(30)
-
+            task.status = Task.DONE
             task.save()
+            
+            if new_task.repeat:
+                if new_task.repeat_from == Task.COMPLETION_DATE:
+                    start_date_reference = datetime.date.today()
+                    due_date_reference = datetime.date.today()
+                elif new_task.repeat_from == Task.DUE_DATE:
+                    if new_task.start_date is not None:
+                        start_date_reference = new_task.start_date
+                    else:
+                        start_date_reference = datetime.date.today()
+                    if new_task.due_date is not None:
+                        due_date_reference = new_task.due_date
+                    else:
+                        due_date_reference = datetime.date.today()    
+
+                if new_task.repeat == Task.DAILY:
+                    new_start_date = start_date_reference + datetime.timedelta(1)
+                    new_due_date = due_date_reference + datetime.timedelta(1)
+                elif new_task.repeat == Task.WEEKLY:
+                    new_start_date = start_date_reference + datetime.timedelta(7)
+                    new_due_date = due_date_reference + datetime.timedelta(7)
+                elif new_task.repeat == Task.MONTHLY:
+                    new_start_date = start_date_reference + datetime.timedelta(30)
+                    new_due_date = due_date_reference + datetime.timedelta(30)
+
+                if (new_task.due_date is None) and (new_task.start_date is None):
+                    new_task.start_date = new_start_date
+                if new_task.due_date is not None:
+                    new_task.due_date = new_due_date
+                if new_task.start_date is not None:
+                    new_task.start_date = new_start_date
+
+                new_task.save()
             # Here I'm returning JsonResponse with serialized task. The html has to be
             # built in the myscripts.js or {% block javascript %}
             # Other option is returning HttpResponse with template or tr populated with task

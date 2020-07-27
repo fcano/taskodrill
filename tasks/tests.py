@@ -56,7 +56,7 @@ class ProjectTests(TestCase):
         self.assertEqual(project.pending_tasks().count(), 1)
 
 class TaskListViewTests(TestCase):
-    def setUp(self): 
+    def setUp(self):
         MyUser.objects.create_user(
             username='testuser', 
             password='testpassword',
@@ -140,6 +140,144 @@ class TaskListViewTests(TestCase):
         )
         task = Task.objects.get(id=task.id)
         self.assertEqual(task.status, Task.DONE)        
+
+    def test_task_mark_as_done_repeat_daily_wo_due_date_wo_start_date(self):
+        self.client.login(username='testuser', password='testpassword')
+        user = MyUser.objects.get(username='testuser')
+        
+        task = Task.objects.create(
+            name="Testing AJAX task",
+            repeat=Task.DAILY,
+            repeat_from=Task.COMPLETION_DATE,
+            tasklist=Task.NEXT_ACTION,
+            user=user,
+        )                
+        
+        self.client.post(   
+            '/task/mark_as_done/',
+            {'id': task.id, 'value': '1'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+
+        response = self.client.get(reverse('task_list_tasklist', args=('nextactions',)))
+        self.assertEqual(response.status_code, 200)        
+        self.assertQuerysetEqual(
+            response.context['task_list'],
+            []
+        )
+        tasks_list = Task.objects.filter(name="Testing AJAX task", user=user, status=Task.PENDING)
+        self.assertEqual(len(tasks_list), 1)
+        task = tasks_list[0]
+        self.assertEqual(task.status, Task.PENDING)
+        self.assertEqual(task.start_date, datetime.date.today() + datetime.timedelta(1))       
+
+    def test_task_mark_as_done_repeat_daily_wo_due_date_w_start_date_future(self):
+        self.client.login(username='testuser', password='testpassword')
+        user = MyUser.objects.first()
+
+        task = Task.objects.create(
+            name="Testing AJAX task",
+            repeat=Task.DAILY,
+            repeat_from=Task.COMPLETION_DATE,
+            start_date=datetime.date.today() + datetime.timedelta(5),
+            tasklist=Task.NEXT_ACTION,
+            user=user,
+        )                
+        
+        self.client.post(   
+            '/task/mark_as_done/',
+            {'id': task.id, 'value': '1'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+
+        response = self.client.get(reverse('task_list_tasklist', args=('nextactions',)))
+        self.assertEqual(response.status_code, 200)        
+        self.assertQuerysetEqual(
+            response.context['task_list'],
+            []
+        )
+
+        tasks_list = Task.objects.filter(name="Testing AJAX task", user=user, status=Task.PENDING)
+        self.assertEqual(len(tasks_list), 1)
+        task = tasks_list[0]
+        self.assertEqual(task.status, Task.PENDING)
+        self.assertEqual(task.start_date, datetime.date.today() + datetime.timedelta(1))
+
+    def test_task_mark_as_done_repeat_daily_wo_due_date_w_start_date_today(self):
+        self.client.login(username='testuser', password='testpassword')
+        user = MyUser.objects.first()
+
+        task = Task.objects.create(
+            name="Testing AJAX task",
+            repeat=Task.DAILY,
+            repeat_from=Task.COMPLETION_DATE,
+            start_date=datetime.date.today(),
+            tasklist=Task.NEXT_ACTION,
+            user=user,
+        )                
+        
+        self.client.post(   
+            '/task/mark_as_done/',
+            {'id': task.id, 'value': '1'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+
+        response = self.client.get(reverse('task_list_tasklist', args=('nextactions',)))
+        self.assertEqual(response.status_code, 200)        
+        self.assertQuerysetEqual(
+            response.context['task_list'],
+            []
+        )
+        
+        tasks_list = Task.objects.filter(name="Testing AJAX task", user=user, status=Task.PENDING)
+        self.assertEqual(len(tasks_list), 1)
+        task = tasks_list[0]
+        self.assertEqual(task.status, Task.PENDING)
+        self.assertEqual(task.start_date, datetime.date.today() + datetime.timedelta(1)) 
+
+    def test_task_mark_as_done_repeat_daily_wo_due_date_w_start_date_past(self):
+        self.client.login(username='testuser', password='testpassword')
+        user = MyUser.objects.first()
+
+        task = Task.objects.create(
+            name="Testing AJAX task",
+            repeat=Task.DAILY,
+            repeat_from=Task.COMPLETION_DATE,
+            start_date=datetime.date.today() - datetime.timedelta(5),
+            tasklist=Task.NEXT_ACTION,
+            user=user,
+        )                
+        
+        self.client.post(   
+            '/task/mark_as_done/',
+            {'id': task.id, 'value': '1'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+
+        response = self.client.get(reverse('task_list_tasklist', args=('nextactions',)))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(
+            response.context['task_list'],
+            []
+        )
+
+        tasks_list = Task.objects.filter(name="Testing AJAX task", user=user, status=Task.PENDING)
+        self.assertEqual(len(tasks_list), 1)
+        task = tasks_list[0]
+        self.assertEqual(task.status, Task.PENDING)
+        self.assertEqual(task.start_date, datetime.date.today() + datetime.timedelta(1))
+
+    def test_task_mark_as_done_repeat_daily_w_due_date_wo_start_date(self):
+        pass
+
+    def test_task_mark_as_done_repeat_daily_w_due_date_w_start_date(self):
+        pass
+
+    def test_task_mark_as_done_repeat_daily_w_due_date_wo_start_date_from_due_date(self):
+        pass
+
+    def test_task_mark_as_done_repeat_daily_w_due_date_wo_start_date_from_completion_date(self):
+        pass
 
     def test_task_start_date_past_appear(self):
         self.client.login(username='testuser', password='testpassword')
