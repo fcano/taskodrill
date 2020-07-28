@@ -48,11 +48,18 @@ class TaskList(LoginRequiredMixin, ListView):
         else:
             tasklist_slug = None
 
-        query = Q(start_date=datetime.date.today())
-        query.add(Q(start_time__lte=datetime.datetime.now()), Q.AND)
-        query.add(Q(start_date__lt=datetime.date.today()), Q.OR)
-        query.add(Q(start_date__isnull=True), Q.OR)
-        
+#        (start_date=today AND start_time=noworpast) OR (start_time_today AND start_time=null) OR (start_date=past) OR (start_date=null)
+
+        q1 = Q(start_date=datetime.date.today()) & Q(start_time__lte=datetime.datetime.now())
+        q2 = Q(start_date=datetime.date.today()) & Q(start_time__isnull=True)
+        q3 = Q(start_date__lt=datetime.date.today())
+        q4 = Q(start_date__isnull=True)
+        query = q1 | q2 | q3 | q4
+
+        # query = Q(start_date=datetime.date.today())
+        # query.add(Q(start_time__lte=datetime.datetime.now()), Q.AND)
+        # query.add(Q(start_date__lt=datetime.date.today()), Q.OR)
+        # query.add(Q(start_date__isnull=True), Q.OR)
 
         if (tasklist_slug is None) or (tasklist_slug not in ['nextactions', 'somedaymaybe']):
             return Task.objects.filter(user=self.request.user,

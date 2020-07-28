@@ -334,6 +334,21 @@ class TaskListViewTests(TestCase):
             ['<Task: Testing tasks in the past>']
         )
 
+    def test_task_start_date_today_appear(self):
+        self.client.login(username='testuser', password='testpassword')
+        Task.objects.create(
+            name="Testing task with start_date today",
+            start_date = datetime.date.today(),
+            tasklist=Task.NEXT_ACTION,
+            user=MyUser.objects.first(),
+        )
+        response = self.client.get(reverse('task_list_tasklist', args=('nextactions',)))
+        self.assertEqual(response.status_code, 200)        
+        self.assertQuerysetEqual(
+            response.context['task_list'],
+            ['<Task: Testing task with start_date today>']
+        )
+
     def test_task_start_date_future_does_not_appear(self):
         self.client.login(username='testuser', password='testpassword')
         Task.objects.create(
