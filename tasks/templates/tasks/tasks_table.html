@@ -1,25 +1,25 @@
-<table id="tasks_table" border="1">
-    <thead>
+<table id="tasks_table" class="table table-hover table-sm">
+    <thead class="thead-light">
       <tr>
-        <th></th>
-        <th>Task</th>
-        <th>Start date</th>
-        <th>Start time</th>
-        <th>Due date</th>
-        <th>Repeat</th>
-        <th></th>
-        <th></th>
+        <th scope="col"></th>
+        <th scope="col">Task</th>
+        <th scope="col">Start date</th>
+        <th scope="col">Start time</th>
+        <th scope="col">Due date</th>
+        <th scope="col">Repeat</th>
+        <th scope="col"></th>
+        <th scope="col"></th>
       </tr>
     </thead>
     <tbody id="tasks_body">
       {% for task in task_list %}
       <tr id="task_row_{{ task.id }}">
-        <td><input class="checkbox" type="checkbox" id="checkbox_{{ task.id }}" value="{{ task.id }}"></td>
+        <td><input class="checkbox align-middle" type="checkbox" id="checkbox_{{ task.id }}" value="{{ task.id }}"></td>
         <td><a href="{{ task.get_absolute_url }}">{{ task.name }}</a></td>
-        <td>{{ task.start_date | default_if_none:"No date"}}</td>
-        <td>{{ task.start_time | default_if_none:"No time"}}</td>
-        <td>{{ task.due_date | default_if_none:"No date"}}</td>
-        <td>{{ task.get_repeat_display | default_if_none:"None" }}</td>
+        <td>{{ task.start_date | default_if_none:"no date"}}</td>
+        <td>{{ task.start_time | default_if_none:"no time"}}</td>
+        <td>{{ task.due_date | default_if_none:"no date"}}</td>
+        <td>{{ task.get_repeat_display | default_if_none:"none" }}</td>
         <td><a href="{% url 'task_update' task.pk %}">Edit</a></td>
         <td><a href="{% url 'task_delete' task.pk %}">Delete</a></td>
       </tr>
