@@ -1,4 +1,5 @@
 import datetime
+import time
 
 from django.test import TestCase
 from django.urls import reverse
@@ -58,7 +59,7 @@ class ProjectTests(TestCase):
 class TaskListViewTests(TestCase):
     def setUp(self):
         MyUser.objects.create_user(
-            username='testuser', 
+            username='testuser',
             password='testpassword',
         )
 
@@ -140,6 +141,45 @@ class TaskListViewTests(TestCase):
         )
         task = Task.objects.get(id=task.id)
         self.assertEqual(task.status, Task.DONE)        
+
+    def test_project_task_mark_done_next_updates_ready_datetime(self):
+        self.client.login(username='testuser', password='testpassword')
+        user = MyUser.objects.get(username='testuser')
+        
+        project = Project.objects.create(
+            name="Test Project 1",
+            user=user,
+        )
+        
+        task1 = Task.objects.create(
+            name="Project Task 1",
+            tasklist=Task.NEXT_ACTION,
+            project=project,
+            user=user,
+        )
+
+        task2 = Task.objects.create(
+            name="Project Task 2",
+            tasklist=Task.NEXT_ACTION,
+            project=project,
+            user=user,
+        )
+
+        difference = (task2.ready_datetime - task1.ready_datetime).total_seconds()
+        self.assertLess(difference, 1)
+
+        time.sleep(1)
+
+        self.client.post(   
+            '/task/mark_as_done/',
+            {'id': task1.id, 'value': '1'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+
+        task1 = Task.objects.get(name="Project Task 1")
+        task2 = Task.objects.get(name="Project Task 2")
+        difference = (task2.ready_datetime - task1.ready_datetime).total_seconds()
+        self.assertGreater(difference, 1)
 
     def test_task_mark_as_done_repeat_daily_wo_due_date_wo_start_date(self):
         self.client.login(username='testuser', password='testpassword')
@@ -381,9 +421,9 @@ class TaskDetailViewTests(TestCase):
         self.assertEqual(response.status_code, 404)
 
 class TaskCreateViewTests(TestCase):
-    def setUp(self): 
+    def setUp(self):
         MyUser.objects.create_user(
-            username='testuser', 
+            username='testuser',
             password='testpassword',
         )
 
@@ -450,10 +490,31 @@ class TaskCreateViewTests(TestCase):
         })
         self.assertEqual(Task.objects.last(), None)
 
+    def test_task_create_ready_datetime_equal_creation_datetime(self):
+        self.client.login(username='testuser', password='testpassword')
+        user = MyUser.objects.get(username='testuser')
+        
+        project = Project.objects.create(
+            name="Test Project 1",
+            user=user,
+        )
+        
+        task = Task.objects.create(
+            name="Project Task 1",
+            tasklist=Task.NEXT_ACTION,
+            project=project,
+            user=user,
+        )
+        
+        task = Task.objects.get(name="Project Task 1")
+
+        difference = (task.ready_datetime - task.creation_datetime).total_seconds()
+        self.assertLess(difference, 1)
+
 class TaskTests(TestCase):
-    def setUp(self): 
+    def setUp(self):
         MyUser.objects.create_user(
-            username='testuser', 
+            username='testuser',
             password='testpassword',
         )
 

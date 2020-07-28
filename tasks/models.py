@@ -1,3 +1,5 @@
+from django.utils import timezone
+
 from django.db import models
 from django.urls import reverse    
 from django.conf import settings
@@ -80,6 +82,7 @@ class Task(models.Model):
     note = models.TextField(blank=True, null=True)
     creation_datetime = models.DateTimeField(auto_now_add=True)
     modification_datetime = models.DateTimeField(auto_now=True)
+    ready_datetime = models.DateTimeField(blank=True, null=True)
     project = models.ForeignKey('Project', on_delete=models.CASCADE, blank=True, null=True)
     contexts = models.ManyToManyField('Context', related_name="tasks", blank=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -90,8 +93,18 @@ class Task(models.Model):
     def get_absolute_url(self):
         return reverse('task_detail', kwargs={'pk': self.pk})
 
+    def save(self, *args, **kwargs):
+        ''' On creation, set ready_time '''
+        if self._state.adding:
+            self.ready_datetime = timezone.now()
+        super().save(*args, **kwargs)
+
+    def update_ready_datetime(self):
+        self.ready_datetime = timezone.now()
+        self.save()
+
     class Meta:
-        ordering = ['creation_datetime']
+        ordering = ['ready_datetime']
 
 class Project(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -104,7 +117,7 @@ class Project(models.Model):
         return self.name
 
     def pending_tasks(self):
-        return self.task_set.filter(status=Task.PENDING)
+        return self.task_set.filter(status=Task.PENDING).order_by('creation_datetime')
 
     def get_absolute_url(self):
         return reverse('project_detail', kwargs={'pk': self.pk})

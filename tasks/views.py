@@ -19,7 +19,7 @@ class TaskCreate(LoginRequiredMixin, CreateView):
     #fields = [  'name', 'start_date', 'start_time', 'due_date', 'due_time', 'repeat',
     #            'repeat_from', 'length', 'priority', 'note', 'tasklist']
 
-    success_url = reverse_lazy('task_list_tasklist', kwargs = {'tasklist_slug' : 'nextactions', })
+    success_url = reverse_lazy('task_list_tasklist', kwargs={'tasklist_slug' : 'nextactions', })
 
     def get_form_kwargs(self):
         kwargs = super(TaskCreate, self).get_form_kwargs()
@@ -73,7 +73,7 @@ class TaskList(LoginRequiredMixin, ListView):
                 status=Task.PENDING,
                 project__isnull=False,
             ).order_by('project_id', 'creation_datetime').distinct('project_id')
-            return tasks_wo_project.union(last_task_from_each_project).order_by('due_date', 'creation_datetime')
+            return tasks_wo_project.union(last_task_from_each_project).order_by('due_date', 'ready_datetime')
         
 
 class TaskUpdate(LoginRequiredMixin, UpdateView):
@@ -149,6 +149,7 @@ class TaskMarkAsDone(LoginRequiredMixin, View):
                 next_tasks_list = task.project.pending_tasks().order_by('creation_datetime')
                 if next_tasks_list:
                     next_task = next_tasks_list[0]
+                    next_task.update_ready_datetime()
                     next_task_tr = render_to_string('tasks/task_row.html', {'task': next_task})
             #next_task_json = serializers.serialize("json", [next_task_tr])
             return JsonResponse({'success': True, 'next_task_tr': next_task_tr})
