@@ -1,0 +1,4 @@
+.jumbotron {
+  background-image: url("/static/tasks/seashore.jpg");
+  background-size: cover;
+}
