@@ -7,11 +7,23 @@ TaskODrill
 {% block content %}
 <div class="jumbotron jumbotron-fluid">
     <div class="container">
-        <h1 class="display-4 text-white">TaskODrill</h1>
-        <p class="lead text-white">The new web platform to help you with your productivity.</p>
-        <p class="lead">
-            <a class="btn btn-primary btn-lg" href="{% url 'signup' %}" role="button">Register. It's free!</a>
-          </p>
+        <div class="row">
+            <div class="col">
+                <p>
+                    <a class="btn btn-primary btn-lg" href="{% url 'login' %}" role="button">Sign In</a>
+                </p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <h1 class="display-4 text-white">TaskODrill</h1>
+                <p class="lead text-white">The new web platform to help you with your productivity.</p>
+                <p class="lead">
+                    <a class="btn btn-primary btn-lg" href="{% url 'signup' %}" role="button">Register. It's free!</a>
+                </p>
+            </div>
+        </div>
+
     </div>
 </div>
 {% endblock %}
