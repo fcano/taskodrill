@@ -2,7 +2,7 @@
   <td><input class="checkbox align-middle" type="checkbox" id="checkbox_{{ task.id }}" value="{{ task.id }}"></td>
   <td><a href="{{ task.get_absolute_url }}">{{ task.name }}</a></td>
   {% if task.project %}
-  <td>{{ task.project.name }}</td>
+  <td><a href="{{ task.project.get_absolute_url }}">{{ task.project.name }}</a></td>
   {% else %}
     <td>no project</td>
   {% endif %}
