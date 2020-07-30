@@ -1,5 +1,6 @@
 import datetime
 import time
+import uuid
 
 from django.test import TestCase
 from django.urls import reverse
@@ -7,11 +8,27 @@ from myauth.models import MyUser
 from django.contrib.auth import authenticate, login
 from .models import Task, Project, Context
 
-def create_task():
-    user = MyUser.objects.get(username="testuser")
+def mylogin(the_test):
+    """Logins with default 'testuser' and returns MyUser object"""
+
+    the_test.client.login(username='testuser', password='testpassword')
+    return MyUser.objects.get(username="testuser")
+
+def create_task(user, *args, **kwargs):
+    """Create task with random data except for user and specified data and returns the task"""
+
+    if 'name' in kwargs.keys():
+        name = kwargs['name']
+    else:
+        name = "Paint the bedroom #{0}".format(uuid.uuid4())
+
+    if 'project' in kwargs.keys():
+        project = kwargs['project']
+    else:
+        project = create_project(user)
 
     return Task.objects.create(
-        name="Paint the bedroom",
+        name=name,
         start_date=datetime.date.today(),
         start_time=datetime.datetime.now().time(),
         due_date=datetime.date.today() + datetime.timedelta(days=1),
@@ -22,21 +39,26 @@ def create_task():
         priority=Task.TOP,
         note="This is a test task",
         tasklist=Task.NEXT_ACTION,
-        project=Project.objects.create(name="Test Project", user=user),
+        project=project,
         user=user,
     )
 
-def create_project():
+def create_project(user, *args, **kwargs):
+    if 'name' in kwargs.keys():
+        name = kwargs['name']
+    else:
+        name = "Run a marathon #{0}".format(uuid.uuid4())
+
     return Project.objects.create(
-        name="Run a marathon",
+        name=name,
         description="Run a marathon once in live",
-        user=MyUser.objects.get(username="testuser"),
+        user=user,
     )
 
 class ProjectTests(TestCase):
-    def setUp(self): 
+    def setUp(self):
         MyUser.objects.create_user(
-            username='testuser', 
+            username='testuser',
             password='testpassword',
         )
 
@@ -46,7 +68,7 @@ class ProjectTests(TestCase):
             user=MyUser.objects.last(),
         )
 
-        task = Task.objects.create(
+        Task.objects.create(
             name="Test Task 1",
             tasklist=Task.NEXT_ACTION,
             status=Task.PENDING,
@@ -112,8 +134,8 @@ class TaskListViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
 
     def test_list_with_one_task(self):
-        self.client.login(username='testuser', password='testpassword')
-        create_task()
+        user = mylogin(self)
+        create_task(user, name="Paint the bedroom")
         response = self.client.get(reverse('task_list'))
         self.assertEqual(response.status_code, 200)
         self.assertQuerysetEqual(
@@ -396,6 +418,71 @@ class TaskListViewTests(TestCase):
             ['<Task: Testing tasks in the past>']
         )
 
+    def test_task_reorder_handle_exists(self):
+        user = mylogin(self)
+        project = create_project(user)
+        task1 = create_task(user=user, project=project)
+        task2 = create_task(user=user, project=project)
+        task3 = create_task(user=user, project=project)
+        task4 = create_task(user=user, project=project)
+        task5 = create_task(user=user, project=project)
+
+    def test_task_reorder_handle_exists_and_can_be_moved(self):
+        pass
+
+    def test_task_reorder_handle_exists_and_can_be_moved(self):
+        pass
+
+    def test_task_reorder(self):
+        pass
+
+    def test_project_task_start_date_future_not_shown_wo_end_date(self):
+        user = mylogin(self)
+        project = create_project(user)
+        task1 = Task.objects.create(
+            name="Testing task 1",
+            start_date = datetime.date.today() + datetime.timedelta(5),
+            tasklist=Task.NEXT_ACTION,
+            project=project,
+            user=user,
+        )
+        task2 = Task.objects.create(
+            name="Testing task 2",
+            tasklist=Task.NEXT_ACTION,
+            project=project,
+            user=user,
+        )
+        response = self.client.get(reverse('task_list_tasklist', args=('nextactions',)))
+        self.assertEqual(response.status_code, 200)        
+        self.assertQuerysetEqual(
+            response.context['task_list'],
+            []
+        )        
+
+    def test_project_task_start_date_future_not_shown_w_due_date(self):
+        user = mylogin(self)
+        project = create_project(user)
+        task1 = Task.objects.create(
+            name="Testing task 1",
+            start_date = datetime.date.today() + datetime.timedelta(5),
+            due_date = datetime.date.today() + datetime.timedelta(15),
+            tasklist=Task.NEXT_ACTION,
+            project=project,
+            user=user,
+        )
+        task2 = Task.objects.create(
+            name="Testing task 2",
+            tasklist=Task.NEXT_ACTION,
+            due_date = datetime.date.today() + datetime.timedelta(15),
+            project=project,
+            user=user,
+        )
+        response = self.client.get(reverse('task_list_tasklist', args=('nextactions',)))
+        self.assertEqual(response.status_code, 200)        
+        self.assertQuerysetEqual(
+            response.context['task_list'],
+            []
+        )
 
 class TaskNewFormTests(TestCase):
     def setUp(self): 
@@ -421,16 +508,16 @@ class TaskDetailViewTests(TestCase):
         )
 
     def test_task_detail(self):
-        self.client.login(username='testuser', password='testpassword')
-        task = create_task()
+        user = mylogin(self)
+        task = create_task(user)
         url = reverse('task_detail', args=(task.id,))
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, task.name)
 
     def test_task_detail_404(self):
-        self.client.login(username='testuser', password='testpassword')
-        task = create_task()
+        user = mylogin(self)
+        task = create_task(user)
         url = reverse('task_detail', args=(777,))
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
@@ -662,8 +749,8 @@ class ProjectListViewTests(TestCase):
         self.assertContains(response, "There are no projects.")
 
     def test_list_with_one_project(self):
-        self.client.login(username='testuser', password='testpassword')
-        create_project()
+        user = mylogin(self)
+        create_project(user, name="Run a marathon")
         response = self.client.get(reverse('project_list'))
         self.assertEqual(response.status_code, 200)
         self.assertQuerysetEqual(
