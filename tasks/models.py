@@ -1,4 +1,5 @@
 from django.utils import timezone
+import datetime
 
 from django.db import models
 from django.urls import reverse    
@@ -90,6 +91,50 @@ class Task(models.Model):
     def __str__(self):
         return self.name
 
+    def get_next_start_date(self):
+        if self.start_date == None:
+            return None
+        
+        # Set reference dates
+        if self.repeat_from == Task.COMPLETION_DATE:
+            start_date_reference = datetime.date.today()
+        elif self.repeat_from == Task.DUE_DATE:
+            start_date_reference = self.start_date
+
+        # Calcule new dates
+        if self.repeat == Task.DAILY:
+            next_start_date = start_date_reference + datetime.timedelta(1)
+        elif self.repeat == Task.WEEKLY:
+            next_start_date = start_date_reference + datetime.timedelta(7)
+        elif self.repeat == Task.MONTHLY:
+            next_start_date = start_date_reference + datetime.timedelta(30)
+
+        return next_start_date
+
+    def get_next_due_date(self):
+        if self.due_date == None:
+            return None
+
+        if self.repeat_from == Task.COMPLETION_DATE:
+            due_date_reference = datetime.date.today()
+        elif self.repeat_from == Task.DUE_DATE:
+            due_date_reference = self.due_date
+
+        # Calcule new dates
+        if self.repeat == Task.DAILY:
+            next_due_date = due_date_reference + datetime.timedelta(1)
+        elif self.repeat == Task.WEEKLY:
+            next_due_date = due_date_reference + datetime.timedelta(7)
+        elif self.repeat == Task.MONTHLY:
+            next_due_date = due_date_reference + datetime.timedelta(30)
+
+        return next_due_date
+
+
+    next_start_date = property(get_next_start_date)
+    next_due_date = property(get_next_due_date)
+
+
     def get_absolute_url(self):
         return reverse('task_detail', kwargs={'pk': self.pk})
 
@@ -101,6 +146,11 @@ class Task(models.Model):
 
     def update_ready_datetime(self):
         self.ready_datetime = timezone.now()
+        self.save()
+
+    def update_next_dates(self):
+        self.start_date = self.next_start_date
+        self.due_date = self.next_due_date
         self.save()
 
     class Meta:

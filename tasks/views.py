@@ -34,10 +34,7 @@ class TaskDetail(LoginRequiredMixin, DetailView):
     model = Task
 
     def get_queryset(self):
-        if self.request.user.is_authenticated:
-            return Task.objects.filter(user=self.request.user)
-        else:
-            return Task.objects.none()
+        return Task.objects.filter(user=self.request.user)
 
 class TaskList(LoginRequiredMixin, ListView):
     model = Task
@@ -118,37 +115,8 @@ class TaskMarkAsDone(LoginRequiredMixin, View):
             task.save()
             
             if new_task.repeat:
-                if new_task.repeat_from == Task.COMPLETION_DATE:
-                    start_date_reference = datetime.date.today()
-                    due_date_reference = datetime.date.today()
-                elif new_task.repeat_from == Task.DUE_DATE:
-                    if new_task.start_date is not None:
-                        start_date_reference = new_task.start_date
-                    else:
-                        start_date_reference = datetime.date.today()
-                    if new_task.due_date is not None:
-                        due_date_reference = new_task.due_date
-                    else:
-                        due_date_reference = datetime.date.today()    
+                new_task.update_next_dates()
 
-                if new_task.repeat == Task.DAILY:
-                    new_start_date = start_date_reference + datetime.timedelta(1)
-                    new_due_date = due_date_reference + datetime.timedelta(1)
-                elif new_task.repeat == Task.WEEKLY:
-                    new_start_date = start_date_reference + datetime.timedelta(7)
-                    new_due_date = due_date_reference + datetime.timedelta(7)
-                elif new_task.repeat == Task.MONTHLY:
-                    new_start_date = start_date_reference + datetime.timedelta(30)
-                    new_due_date = due_date_reference + datetime.timedelta(30)
-
-                if (new_task.due_date is None) and (new_task.start_date is None):
-                    new_task.start_date = new_start_date
-                if new_task.due_date is not None:
-                    new_task.due_date = new_due_date
-                if new_task.start_date is not None:
-                    new_task.start_date = new_start_date
-
-                new_task.save()
             # Here I'm returning JsonResponse with serialized task. The html has to be
             # built in the myscripts.js or {% block javascript %}
             # Other option is returning HttpResponse with template or tr populated with task

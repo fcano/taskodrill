@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 from myauth.models import MyUser
 from django.contrib.auth import authenticate, login
-from .models import Task, Project, Context
+from tasks.models import Task, Project, Context
 
 def mylogin(the_test):
     """Logins with default 'testuser' and returns MyUser object"""
@@ -43,6 +43,17 @@ def create_task(user, *args, **kwargs):
         user=user,
     )
 
+def create_context(user, *args, **kwargs):
+    if 'name' in kwargs.keys():
+        name = kwargs['name']
+    else:
+        name = "Context #{0}".format(uuid.uuid4())
+
+    return Context.objects.create(
+        name=name,
+        user=user,
+    )
+
 def create_project(user, *args, **kwargs):
     if 'name' in kwargs.keys():
         name = kwargs['name']
@@ -54,29 +65,6 @@ def create_project(user, *args, **kwargs):
         description="Run a marathon once in live",
         user=user,
     )
-
-class ProjectTests(TestCase):
-    def setUp(self):
-        MyUser.objects.create_user(
-            username='testuser',
-            password='testpassword',
-        )
-
-    def test_project_pending_tasks(self):
-        project = Project.objects.create(
-            name="Test Project 1",
-            user=MyUser.objects.last(),
-        )
-
-        Task.objects.create(
-            name="Test Task 1",
-            tasklist=Task.NEXT_ACTION,
-            status=Task.PENDING,
-            project=project,
-            user=MyUser.objects.last(),
-        )
-
-        self.assertEqual(project.pending_tasks().count(), 1)
 
 class TaskListViewTests(TestCase):
     def setUp(self):
@@ -203,7 +191,7 @@ class TaskListViewTests(TestCase):
         difference = (task2.ready_datetime - task1.ready_datetime).total_seconds()
         self.assertGreater(difference, 1)
 
-    def test_task_mark_as_done_repeat_daily_wo_due_date_wo_start_date(self):
+    def test_task_mark_as_done_repeat_daily_wo_due_date_w_start_date(self):
         self.client.login(username='testuser', password='testpassword')
         user = MyUser.objects.get(username='testuser')
         
@@ -211,6 +199,7 @@ class TaskListViewTests(TestCase):
             name="Testing AJAX task",
             repeat=Task.DAILY,
             repeat_from=Task.COMPLETION_DATE,
+            start_date=datetime.date.today(),
             tasklist=Task.NEXT_ACTION,
             user=user,
         )                
@@ -360,7 +349,7 @@ class TaskListViewTests(TestCase):
         self.client.login(username='testuser', password='testpassword')
         Task.objects.create(
             name="Testing task with start_date today",
-            start_date = datetime.date.today(),
+            start_date=datetime.date.today(),
             tasklist=Task.NEXT_ACTION,
             user=MyUser.objects.first(),
         )
@@ -473,7 +462,7 @@ class TaskListViewTests(TestCase):
         task2 = Task.objects.create(
             name="Testing task 2",
             tasklist=Task.NEXT_ACTION,
-            due_date = datetime.date.today() + datetime.timedelta(15),
+            due_date=datetime.date.today() + datetime.timedelta(15),
             project=project,
             user=user,
         )
@@ -483,6 +472,91 @@ class TaskListViewTests(TestCase):
             response.context['task_list'],
             []
         )
+
+    def test_tasks_in_context(self):
+        user = mylogin(self)
+        context = create_context(user)
+        task1 = Task.objects.create(
+            name="Pending Task",
+            tasklist=Task.NEXT_ACTION,
+            status=Task.PENDING,
+            user=user,
+        )
+        task1.contexts.add(context)
+        task2 = Task.objects.create(
+            name="Done Task",
+            tasklist=Task.NEXT_ACTION,
+            status=Task.DONE,
+            user=user,
+        )
+        task2.contexts.add(context)
+        response = self.client.get(reverse('context_detail', args=(context.id,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Pending Task")
+        self.assertNotContains(response, "Done Task")
+
+class TaskUpdateTests(TestCase):
+    def setUp(self): 
+        MyUser.objects.create_user(
+            username='testuser', 
+            password='testpassword',
+        )
+
+    def test_task_update_success(self):
+        """Test successful task update"""
+        user = mylogin(self)
+        
+        task = Task.objects.create(
+            name="Some Task",
+            repeat=Task.NO,
+            repeat_from=Task.COMPLETION_DATE,
+            priority=Task.HIGH,
+            status=Task.PENDING,
+            tasklist=Task.NEXT_ACTION,
+            user=user,
+        )
+
+        response = self.client.post(
+            reverse('task_update', kwargs={'pk': task.id}), 
+                {
+                    'name': 'Pending Task',
+                    'repeat':'0',
+                    'repeat_from':'0',
+                    'priority':'0',
+                    'tasklist':Task.NEXT_ACTION,
+                })
+
+        #self.assertEqual(response.context['form'].errors, [])
+        self.assertEqual(response.status_code, 302)
+
+        task.refresh_from_db()
+        self.assertEqual(task.name, 'Pending Task')
+
+class TaskDeleteTests(TestCase):
+    def setUp(self):
+        MyUser.objects.create_user(
+            username='testuser', 
+            password='testpassword',
+        )
+
+    def test_task_delete_success(self):
+        user = mylogin(self)
+        task = create_task(user, name="Task to Update")
+        url = reverse('task_detail', args=(task.id,))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, task.name)
+
+        url = reverse('task_delete', args=(task.id,))
+        response = self.client.post(url)
+
+        self.assertEqual(response.status_code, 200)
+        response = self.client.get(reverse('task_list_tasklist', args=('nextactions',)))
+        self.assertEqual(response.status_code, 200)        
+        self.assertQuerysetEqual(
+            response.context['task_list'],
+            []
+        )               
 
 class TaskNewFormTests(TestCase):
     def setUp(self): 
@@ -612,128 +686,6 @@ class TaskCreateViewTests(TestCase):
 
         difference = (task.ready_datetime - task.creation_datetime).total_seconds()
         self.assertLess(difference, 1)
-
-class TaskTests(TestCase):
-    def setUp(self):
-        MyUser.objects.create_user(
-            username='testuser',
-            password='testpassword',
-        )
-
-    def test_task_repeat_enum_display_values(self):
-        user = MyUser.objects.get(username="testuser")
-
-        task = Task.objects.create(
-            name="Paint the bedroom",
-            repeat=Task.NO,
-            project=Project.objects.create(name="Test Project", user=user),
-            user=user,
-        )
-
-        self.assertEqual(task.get_repeat_display(), "No")
-        task.repeat = Task.DAILY
-        self.assertEqual(task.get_repeat_display(), "Daily")        
-        task.repeat = Task.WEEKLY
-        self.assertEqual(task.get_repeat_display(), "Weekly") 
-        task.repeat = Task.BIWEEKLY
-        self.assertEqual(task.get_repeat_display(), "Biweekly") 
-        task.repeat = Task.MONTHLY
-        self.assertEqual(task.get_repeat_display(), "Monthly") 
-        task.repeat = Task.BIMONTHLY
-        self.assertEqual(task.get_repeat_display(), "Bimonthly")
-        task.repeat = Task.QUATERLY
-        self.assertEqual(task.get_repeat_display(), "Quaterly")
-        task.repeat = Task.SEMIANNUALLY
-        self.assertEqual(task.get_repeat_display(), "Semiannually")
-        task.repeat = Task.YEARLY
-        self.assertEqual(task.get_repeat_display(), "Yearly")   
-
-    def test_task_repeat_from_enum_display_values(self):
-        user = MyUser.objects.get(username="testuser")
-
-        task = Task.objects.create(
-            name="Paint the bedroom",
-            repeat=Task.WEEKLY,
-            repeat_from=Task.DUE_DATE,
-            project=Project.objects.create(name="Test Project", user=user),
-            user=user,
-        )
-
-        self.assertEqual(task.get_repeat_from_display(), "Due Date")
-        task.repeat_from = Task.COMPLETION_DATE
-        self.assertEqual(task.get_repeat_from_display(), "Completion Date")        
-
-    def test_task_priority_enum_display_values(self):
-        user = MyUser.objects.get(username="testuser")
-
-        task = Task.objects.create(
-            name="Paint the bedroom",
-            priority=Task.TOP,
-            user=user,
-        )
-
-        self.assertEqual(task.get_priority_display(), "3 Top")
-        task.priority = Task.HIGH
-        self.assertEqual(task.get_priority_display(), "2 High")
-        task.priority = Task.MEDIUM
-        self.assertEqual(task.get_priority_display(), "1 Medium")
-        task.priority = Task.LOW
-        self.assertEqual(task.get_priority_display(), "0 Low")
-        task.priority = Task.NEGATIVE
-        self.assertEqual(task.get_priority_display(), "-1 Negative")
-
-    def test_task_priority_enum_values_order(self):
-        user = MyUser.objects.get(username="testuser")
-
-        task1 = Task.objects.create(
-            name="Paint the bedroom",
-            priority=Task.TOP,
-            user=user,
-        )
-
-        task2 = Task.objects.create(
-            name="Paint the bedroom",
-            priority=Task.HIGH,
-            user=user,
-        )
-
-        task3 = Task.objects.create(
-            name="Paint the bedroom",
-            priority=Task.MEDIUM,
-            user=user,
-        )
-
-        task4 = Task.objects.create(
-            name="Paint the bedroom",
-            priority=Task.LOW,
-            user=user,
-        )
-
-        task5 = Task.objects.create(
-            name="Paint the bedroom",
-            priority=Task.NEGATIVE,
-            user=user,
-        )
-
-        self.assertEqual(task1.priority > task2.priority, True)
-        self.assertEqual(task2.priority > task3.priority, True)
-        self.assertEqual(task3.priority > task4.priority, True)
-        self.assertEqual(task4.priority > task5.priority, True)                
-
-    def test_task_tasklist_enum_display_values(self):
-        user = MyUser.objects.get(username="testuser")
-
-        task = Task.objects.create(
-            name="Paint the bedroom",
-            tasklist=Task.NEXT_ACTION,
-            user=user,
-        )
-
-        self.assertEqual(task.get_tasklist_display(), "Next Action")
-        task.tasklist = Task.SOMEDAY_MAYBE
-        self.assertEqual(task.get_tasklist_display(), "Someday / Maybe")
-        task.tasklist = Task.SUPPORT_MATERIAL
-        self.assertEqual(task.get_tasklist_display(), "Support Material")
 
 class ProjectListViewTests(TestCase):
     def setUp(self): 
