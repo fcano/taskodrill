@@ -8,6 +8,7 @@ urlpatterns = [
     path('task/<int:pk>/edit/', tasks_views.TaskUpdate.as_view(), name='task_update'),
     path('task/<int:pk>/delete/', tasks_views.TaskDelete.as_view(), name='task_delete'),
     path('task/mark_as_done/', tasks_views.TaskMarkAsDone.as_view(), name = 'task_mark_as_done'),
+    path('task/save-task-ordering/', tasks_views.SaveNewOrdering.as_view(), name='save-task-oldering'),
     path('task/<slug:tasklist_slug>/', tasks_views.TaskList.as_view(), name='task_list_tasklist'),
     path('project/', tasks_views.ProjectList.as_view(), name='project_list'),
     path('project/<int:pk>/', tasks_views.ProjectDetail.as_view(), name='project_detail'),

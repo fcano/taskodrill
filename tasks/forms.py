@@ -24,3 +24,6 @@ class TaskForm(forms.ModelForm):
             'start_time': TimeInput(),
             'due_time': TimeInput(),
         }
+
+class OrderingForm(forms.Form):
+    ordering = forms.CharField()

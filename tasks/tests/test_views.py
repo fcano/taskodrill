@@ -202,9 +202,9 @@ class TaskListViewTests(TestCase):
             start_date=datetime.date.today(),
             tasklist=Task.NEXT_ACTION,
             user=user,
-        )                
+        )
         
-        self.client.post(   
+        self.client.post(
             '/task/mark_as_done/',
             {'id': task.id, 'value': '1'},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest',
@@ -494,6 +494,59 @@ class TaskListViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Pending Task")
         self.assertNotContains(response, "Done Task")
+
+class TestSaveNewOrdering(TestCase):
+    def setUp(self): 
+        MyUser.objects.create_user(
+            username='testuser', 
+            password='testpassword',
+        )
+
+    def test_nextactions_show_first_task_from_by_order_from_project(self):
+        user = mylogin(self)
+
+        project = Project.objects.create(
+            name="Test Project",
+            user=user,
+        )
+
+        task1 = Task.objects.create(
+            name="First Task",
+            repeat=Task.NO,
+            repeat_from=Task.COMPLETION_DATE,
+            priority=Task.HIGH,
+            status=Task.PENDING,
+            tasklist=Task.NEXT_ACTION,
+            project=project,
+            project_order=2,
+            user=user,
+        )
+
+        task2 = Task.objects.create(
+            name="Second Task",
+            repeat=Task.NO,
+            repeat_from=Task.COMPLETION_DATE,
+            priority=Task.HIGH,
+            status=Task.PENDING,
+            tasklist=Task.NEXT_ACTION,
+            project=project,
+            project_order=1,
+            user=user,
+        )
+
+        task1.project_order = 2
+        task1.save()
+        task2.project_order = 1
+        task2.save()
+        
+        self.assertEqual(task1.project_order, 2)
+        self.assertEqual(task2.project_order, 1)
+        response = self.client.get(reverse('task_list_tasklist', args=('nextactions',)))
+        self.assertEqual(response.status_code, 200)        
+        self.assertQuerysetEqual(
+            response.context['task_list'],
+            ['<Task: Second Task>']
+        )
 
 class TaskUpdateTests(TestCase):
     def setUp(self): 

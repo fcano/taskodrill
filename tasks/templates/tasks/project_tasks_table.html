@@ -1,0 +1,26 @@
+<table id="tasks_table" class="table table-hover table-sm">
+  <thead class="thead-light">
+    <tr>
+      <th scope="col"></th>
+      <th scope="col"></th>
+      <th scope="col">Task</th>
+      <th scope="col">Project</th>
+      <th scope="col">Start date</th>
+      <th scope="col">Start time</th>
+      <th scope="col">Due date</th>
+      <th scope="col">Repeat</th>
+      <th scope="col"></th>
+      <th scope="col"></th>
+    </tr>
+  </thead>
+  <tbody id="project_tasks_body">
+    {% for task in task_list|dictsort:"project_order" %}
+    {% include 'tasks/project_task_row.html' with task=task %}
+    {% endfor %}
+  </tbody>
+</table>
+<form id="orderingForm" method="post" action="{% url 'save-task-oldering' %}">
+  {% csrf_token %}
+  <input type="hidden" id="orderingInput" name="ordering">
+</form>
+<button id="saveOrdering" class="btn btn-outline-primary btn-lg float-right mr-2">Save ordering</button>

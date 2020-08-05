@@ -12,6 +12,6 @@
     {% if project.task_set.count == 0 %}
     <p>This project does not have tasks.</p>
     {% else %}
-        {% include 'tasks/tasks_table.html' with task_list=project.pending_tasks.all %}
+        {% include 'tasks/project_tasks_table.html' with task_list=project.pending_tasks.all %}
     {% endif %}
 {% endblock %}

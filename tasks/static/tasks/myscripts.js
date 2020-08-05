@@ -66,7 +66,7 @@ $(document).on('click', 'a.confirm-delete', function (event) {
 
     $.ajax({
         type: "POST",
-        url: "/task/"+data.id+"/delete/",
+        url: "/task/" + data.id + "/delete/",
         data: data,
         success: function (json) {
             task_row_str = '#task_row_' + data.id;

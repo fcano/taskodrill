@@ -5,13 +5,14 @@ from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
+from django.db import transaction
 from django.urls import reverse_lazy, reverse
 from django.http import JsonResponse
-from django.core import serializers
 from django.template.loader import render_to_string
+from django.http import HttpResponseRedirect
 
 from .models import Task, Project, Context
-from .forms import TaskForm
+from .forms import TaskForm, OrderingForm
 
 class TaskCreate(LoginRequiredMixin, CreateView):
     form_class = TaskForm
@@ -76,7 +77,7 @@ class TaskList(LoginRequiredMixin, ListView):
                 tasklist=tasklist,
                 status=Task.PENDING,
                 project__isnull=False,
-            ).order_by('project_id', 'creation_datetime').distinct('project_id')
+            ).order_by('project_id', 'project_order').distinct('project_id')
             last_task_from_each_project = Task.objects.filter(pk__in=last_task_from_each_project).filter(query)
             #last_task_from_each_project = last_task_from_each_project.filter(query)
             return tasks_wo_project.union(last_task_from_each_project).order_by('due_date', 'ready_datetime')
@@ -132,6 +133,24 @@ class TaskMarkAsDone(LoginRequiredMixin, View):
             return JsonResponse({'success': True, 'next_task_tr': next_task_tr})
         else:
             return JsonResponse({'error': 'Error'})
+
+class SaveNewOrdering(LoginRequiredMixin, View):
+
+    def post(self, request, *args, **kwargs):
+        form = OrderingForm(request.POST)
+
+        if form.is_valid():
+            ordered_ids = form.cleaned_data["ordering"].split(',')
+
+            with transaction.atomic():
+                current_order = 1
+                for cur_id in ordered_ids:
+                    task = Task.objects.get(id__exact=cur_id)
+                    task.project_order = current_order
+                    task.save()
+                    current_order += 1
+
+        return HttpResponseRedirect(reverse('project_list'))
 
 class ProjectCreate(LoginRequiredMixin, CreateView):
     model = Project

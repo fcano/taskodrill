@@ -1,4 +1,32 @@
 .jumbotron {
-  background-image: url("/static/tasks/seashore.jpg");
-  background-size: cover;
+    background-image: url("/static/tasks/seashore.jpg");
+    background-size : cover;
+}
+
+.handle {
+    display    : inline-block;
+    border-top : 3px solid var(--dark);
+    width      : 30px;
+    padding-top: 5px;
+    cursor     : grab;
+}
+
+.handle:after,
+.handle:before {
+    display    : block;
+    content    : "";
+    padding-top: 5px;
+    border-top : 3px solid var(--dark);
+}
+
+.handle:hover,
+.handle:hover:before,
+.handle:hover:after {
+    border-color: var(--primary);
+}
+
+.handle:active,
+.handle:active:before,
+.handle:active:after {
+    cursor: grabbing;
 }

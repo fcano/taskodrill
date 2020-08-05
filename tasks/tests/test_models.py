@@ -235,7 +235,7 @@ class TaskTests(TestCase):
         self.assertEqual(task.next_start_date, None)
         self.assertEqual(task.next_due_date, datetime.date.today() + datetime.timedelta(days=1))
         
-    def test_task_repeat_daily_no_start_yes_due_completion(self):
+    def test_task_repeat_daily_yes_start_yes_due_completion(self):
         task = Task()
         task.name = "Test Task"
         task.repeat = Task.DAILY
@@ -261,3 +261,24 @@ class TaskTests(TestCase):
         task.repeat_from = Task.DUE_DATE
         self.assertEqual(task.next_start_date, None)
         self.assertEqual(task.next_due_date, task.due_date + datetime.timedelta(days=7))
+
+    def test_task_project_order(self):
+        """Checks that new project task sets project_order correctly"""
+        user = MyUser.objects.get(username="testuser")
+
+        project = Project.objects.create(
+            name="Test Project",
+            user=user,
+        )
+        task1 = Task.objects.create(
+            name="Test Task 1",
+            project=project,
+            user=user,
+        )
+        task2 = Task.objects.create(
+            name="Test Task 1",
+            project=project,
+            user=user,
+        )        
+        self.assertEqual(task1.project_order, 1)
+        self.assertEqual(task2.project_order, 2)

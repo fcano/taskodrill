@@ -69,6 +69,8 @@ class Task(models.Model):
         (DONE, 'Done'),
     )
 
+    DEFAULT_PROJECT_ORDER = 1
+
     name = models.CharField(max_length=500)
     start_date = models.DateField(blank=True, null=True)
     start_time = models.TimeField(blank=True, null=True)
@@ -85,6 +87,7 @@ class Task(models.Model):
     modification_datetime = models.DateTimeField(auto_now=True)
     ready_datetime = models.DateTimeField(blank=True, null=True)
     project = models.ForeignKey('Project', on_delete=models.CASCADE, blank=True, null=True)
+    project_order = models.IntegerField(default=DEFAULT_PROJECT_ORDER)
     contexts = models.ManyToManyField('Context', related_name="tasks", blank=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
@@ -142,6 +145,9 @@ class Task(models.Model):
         ''' On creation, set ready_time '''
         if self._state.adding:
             self.ready_datetime = timezone.now()
+            if self.project is not None:
+                #self.project_order = Project.objects.get(self.project).task_set.count() + 1
+                self.project_order = self.project.task_set.count() + 1
         super().save(*args, **kwargs)
 
     def update_ready_datetime(self):
