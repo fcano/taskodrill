@@ -32,29 +32,32 @@ $.ajaxSetup({
 // tasks_body es tbody de la tabla
 // esto permite que si se añade un elemento a la tabla dinamicamente
 // también se cace el click
-$('#tasks_body').on('click', 'input[type="checkbox"]', function () {
-    var data = {};
-    data.id = $(this).attr('value');
-    data.value = $(this).is(':checked') ? 1 : 0;
+$('#tasks_body, #project_tasks_body').each(function () {
+    $(this).on('click', 'input[type="checkbox"]', function () {
+        var data = {};
+        data.id = $(this).attr('value');
+        data.value = $(this).is(':checked') ? 1 : 0;
 
-    console.log(data);
-
-    $.ajax({
-        type: "POST",
-        url: "/task/mark_as_done/",
-        data: data,
-        success: function (response) {
-            task_row_str = '#task_row_' + data.id;
-            $(task_row_str).remove();
-            next_task_tr_html = response.next_task_tr;
-            if (next_task_tr_html != "") {
-                $('#tasks_table tr:last').after(next_task_tr_html);
-            }
-        }
-    }).done(function (data) {
         console.log(data);
+
+        $.ajax({
+            type: "POST",
+            url: "/task/mark_as_done/",
+            data: data,
+            success: function (response) {
+                task_row_str = '#task_row_' + data.id;
+                $(task_row_str).remove();
+                next_task_tr_html = response.next_task_tr;
+                if (next_task_tr_html != "") {
+                    $('#tasks_table tr:last').after(next_task_tr_html);
+                }
+            }
+        }).done(function (data) {
+            console.log(data);
+        });
     });
 });
+
 
 $(document).on('click', 'a.confirm-delete', function (event) {
     event.preventDefault();
