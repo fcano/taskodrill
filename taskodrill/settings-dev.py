@@ -64,7 +64,7 @@ AUTH_USER_MODEL = 'myauth.MyUser'
 
 ROOT_URLCONF = 'taskodrill.urls'
 
-LOGIN_REDIRECT_URL = 'task_list'
+LOGIN_REDIRECT_URL = '/task/nextactions/'
 LOGOUT_REDIRECT_URL = 'login'
 
 TEMPLATES = [
