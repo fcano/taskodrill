@@ -4,8 +4,15 @@ import uuid
 
 from django.test import TestCase
 from django.urls import reverse
-from myauth.models import MyUser
 from django.contrib.auth import authenticate, login
+from django.test import LiveServerTestCase
+from django.contrib.staticfiles.testing import StaticLiveServerTestCase
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+from myauth.models import MyUser
 from tasks.models import Task, Project, Context
 
 def mylogin(the_test):
@@ -65,6 +72,14 @@ def create_project(user, *args, **kwargs):
         description="Run a marathon once in live",
         user=user,
     )
+
+def wait_for_ajax(driver):
+    wait = WebDriverWait(driver, 15)
+    try:
+        wait.until(lambda driver: driver.execute_script('return jQuery.active') == 0)
+        wait.until(lambda driver: driver.execute_script('return document.readyState') == 'complete')
+    except Exception as e:
+        pass
 
 class TaskListViewTests(TestCase):
     def setUp(self):
@@ -823,6 +838,68 @@ class ProjectDetailViewTests(TestCase):
         response = self.client.get(reverse('project_detail', args=(project.id,)))
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Paint the bedroom")
+
+class TestProjectDetail(StaticLiveServerTestCase):
+    def setUp(self):
+        MyUser.objects.create_user(
+            username='testuser',
+            password='testpassword',
+        )
+    
+    def test_mark_task_as_done(self):
+        user = mylogin(self)
+        
+        project = Project.objects.create(
+            name="Project 1",
+            user=user,
+        )
+
+        task1 = Task.objects.create(
+            name="Task 1",
+            project=project,
+            user=user,
+        )
+
+        task2 = Task.objects.create(
+            name="Task 2",
+            project=project,
+            user=user,
+        )
+
+        response = self.client.get(reverse('project_detail', args=(project.id,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "id=\"task_row_{0}\"".format(task1.id))
+        self.assertContains(response, "id=\"task_row_{0}\"".format(task2.id))
+
+        selenium = webdriver.Chrome()
+        selenium.get("{0}/accounts/login".format(self.live_server_url))
+        username_field = selenium.find_element_by_id('id_username')
+        password_field = selenium.find_element_by_id('id_password')
+        submit_button = selenium.find_element_by_id('submit_button')
+        
+        current_url = selenium.current_url
+
+        username_field.send_keys('testuser')
+        password_field.send_keys('testpassword')
+        submit_button.send_keys(Keys.RETURN)
+
+        WebDriverWait(selenium, 15).until(EC.url_changes(current_url))
+
+        selenium.get("{0}/project/{1}".format(self.live_server_url, project.id))
+        assert 'Task 2' in selenium.page_source
+
+        trs = selenium.find_elements_by_xpath("//tbody/tr")
+        self.assertEqual(len(trs), 2)
+
+        task2_checkbox = selenium.find_element_by_id("checkbox_{0}".format(task2.id))
+        task2_checkbox.click()
+        wait_for_ajax(selenium)
+
+        trs = selenium.find_elements_by_xpath("//tbody/tr")
+        assert 'Task 2' not in selenium.page_source
+        self.assertEqual(len(trs), 1)
+
+
 
 class TestContextViews(TestCase):
     def setUp(self):
