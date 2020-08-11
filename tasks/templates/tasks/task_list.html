@@ -2,7 +2,9 @@
 
 {% block content %}
     <h1>Task</h1>
-    <a href="{% url 'task_add' %}">New</a>
+    <p>
+      <a class="btn btn-primary" href="{% url 'task_add' %}">New</a>
+    </p>
     {% if task_list %}
       {% include 'tasks/tasks_table.html' with task_list=task_list %}
     {% else %}
