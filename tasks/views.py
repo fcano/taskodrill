@@ -157,7 +157,8 @@ class SaveNewOrdering(LoginRequiredMixin, View):
                     task.save()
                     current_order += 1
 
-        return HttpResponseRedirect(reverse('project_list'))
+        #return HttpResponseRedirect(reverse('project_list'))
+        return HttpResponseRedirect(task.project.get_absolute_url())
 
 class ProjectCreate(LoginRequiredMixin, CreateView):
     model = Project
