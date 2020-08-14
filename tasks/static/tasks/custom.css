@@ -35,3 +35,11 @@
 label {
     margin-bottom: 0;
 }
+
+.bg-my-blue {
+    background-color: #BFFFFE;
+}
+
+.bg-my-meat {
+    background-color: #F9F7D9;
+}
