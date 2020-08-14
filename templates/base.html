@@ -32,8 +32,16 @@
 
       {% if user.is_authenticated %}
       <div class="col-10 text-right">
-        {{ user.username }}
-        <a href="{% url 'logout' %}">logout</a>
+        <div class="dropdown">
+          <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenu2" data-toggle="dropdown"
+            aria-haspopup="true" aria-expanded="false">
+            {{ user.username }}
+          </button>
+          <div class="dropdown-menu" aria-labelledby="dropdownMenu2">
+            <a class="dropdown-item" href="{% url 'logout' %}">logout</a>
+          </div>
+        </div>
+
         {% else %}
         <a href="{% url 'signup' %}">signup</a> |
         <a href="{% url 'login' %}">login</a>
