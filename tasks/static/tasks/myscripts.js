@@ -82,15 +82,17 @@ $(document).on('click', 'a.confirm-delete', function (event) {
 
     var data = {};
     href = $(this).attr('href');
-    data.id = href.split('/')[2]
+    href_elems = href.split('/');
+    data.id = href_elems[2];
+    object_type = href_elems[1];
 
     $.ajax({
         type: "POST",
-        url: "/task/" + data.id + "/delete/",
+        url: "/" + object_type + "/" + data.id + "/delete/",
         data: data,
         success: function (json) {
-            task_row_str = '#task_row_' + data.id;
-            $(task_row_str).remove();
+            object_row_str = '#' + object_type + '_row_' + data.id;
+            $(object_row_str).remove();
         }
     }).done(function (data) {
         console.log(data);

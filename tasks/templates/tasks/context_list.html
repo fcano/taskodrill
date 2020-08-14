@@ -9,9 +9,9 @@
         <th></th>
       </tr>
       {% for context in context_list %}
-      <tr>
+      <tr id="context_row_{{ context.id }}">
         <td><a href="{{ context.get_absolute_url }}">{{ context.name }}</a></td>
-        <td><a href="{% url 'context_delete' context.pk %}">Delete</a></td>
+        <td><a href="{% url 'context_delete' context.pk %}" class="confirm-delete"><img src="/static/tasks/trash-2.svg" /></a></td>
       </tr>
       {% endfor %}
     </table>
