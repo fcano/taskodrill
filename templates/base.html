@@ -1,3 +1,9 @@
+{% url 'task_list' as tasklist %}
+{% url 'task_list_tasklist' 'nextactions' as nextactions %}
+{% url 'task_list_tasklist' 'somedaymaybe' as somedaymaybe %}
+{% url 'project_list' as projectlist %}
+{% url 'context_list' as contextlist %}
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -35,22 +41,22 @@
       </div>
     </div>
     <div class="row">
-      <div class="col-2 bg-my-meat">
+      <div class="col-2 bg-my-meat pl-0 pr-0">
         <ul class="nav flex-column">
           {% if user.is_authenticated %}
-          <li class="nav-item>">
+          <li class="nav-item {% ifequal request.path tasklist %}active{% endifequal %}">
             <a class="nav-link" href="{% url 'task_list' %}">All Tasks</a>
           </li>
-          <li class="nav-item">
+          <li class="nav-item {% ifequal request.path nextactions %}active{% endifequal %}">
             <a class="nav-link" href="{% url 'task_list_tasklist' 'nextactions' %}">Next Actions</a>
           </li>
-          <li class="nav-item">
+          <li class="nav-item {% ifequal request.path somedaymaybe %}active{% endifequal %}">
             <a class="nav-link" href="{% url 'task_list_tasklist' 'somedaymaybe' %}">Someday/Maybe</a>
           </li>
-          <li class="nav-item">
+          <li class="nav-item {% ifequal request.path projectlist %}active{% endifequal %}">
             <a class="nav-link" href="{% url 'project_list' %}">Projects</a>
           </li>
-          <li class="nav-item">
+          <li class="nav-item {% ifequal request.path contextlist %}active{% endifequal %} ">
             <a class="nav-link" href="{% url 'context_list' %}">Contexts</a>
           </li>
           {% endif %}

@@ -5,8 +5,8 @@
 
 .handle {
     display    : inline-block;
-    border-top : 3px solid var(--dark);
-    width      : 30px;
+    border-top : 2px solid var(--dark);
+    width      : 20px;
     padding-top: 5px;
     cursor     : grab;
 }
@@ -16,7 +16,7 @@
     display    : block;
     content    : "";
     padding-top: 5px;
-    border-top : 3px solid var(--dark);
+    border-top : 2px solid var(--dark);
 }
 
 .handle:hover,
@@ -37,9 +37,14 @@ label {
 }
 
 .bg-my-blue {
-    background-color: #BFFFFE;
+    background-color: #BFD7F9;
 }
 
 .bg-my-meat {
-    background-color: #F9F7D9;
+    background-color: #F5F5F3;
+}
+
+li.active {
+    background-color: white;
+    font-weight: bold;
 }

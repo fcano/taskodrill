@@ -11,6 +11,6 @@
   <td>{{ task.start_time | default_if_none:"no time"}}</td>
   <td>{{ task.due_date | default_if_none:"no date"}}</td>
   <td>{{ task.get_repeat_display | default_if_none:"none" }}</td>
-  <td><a href="{% url 'task_update' task.pk %}">Edit</a></td>
-  <td><a href="{% url 'task_delete' task.pk %}" class="confirm-delete">Delete</a></td>
+  <td><a href="{% url 'task_update' task.pk %}"><img src="/static/tasks/edit.svg" /></a></td>
+  <td><a href="{% url 'task_delete' task.pk %}" class="confirm-delete"><img src="/static/tasks/trash-2.svg" /></a></td>
 </tr>
