@@ -640,7 +640,7 @@ class TaskNewFormTests(TestCase):
         self.assertContains(response, '<input type="time" name="start_time"')
         self.assertContains(response, '<input type="date" name="due_date"')
         self.assertContains(response, '<input type="time" name="due_time"')
-        self.assertContains(response, '<select name="project" id="id_project"')
+        self.assertContains(response, '<select name="project"')
 
 class TaskDetailViewTests(TestCase):
     def setUp(self): 
@@ -675,7 +675,7 @@ class TaskCreateViewTests(TestCase):
         self.client.login(username='testuser', password='testpassword')
         response = self.client.get(reverse('task_add'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, '<select name="tasklist" id="id_tasklist"')
+        self.assertContains(response, '<select name="tasklist"')
 
     def test_task_create_view_post(self):
         self.client.login(username='testuser', password='testpassword')

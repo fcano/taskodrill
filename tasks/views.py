@@ -40,6 +40,13 @@ class TaskDetail(LoginRequiredMixin, DetailView):
 class TaskList(LoginRequiredMixin, ListView):
     model = Task
 
+    def get_context_data(self, **kwargs):
+        # Call the base implementation first to get a context
+        context = super(TaskList, self).get_context_data(**kwargs)
+        # Add in a QuerySet of all the books
+        context['form'] = TaskForm(user=self.request.user)
+        return context
+
     def get_queryset(self):
         if 'tasklist_slug' in self.kwargs:
             tasklist_slug = self.kwargs['tasklist_slug']

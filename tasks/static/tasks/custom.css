@@ -30,3 +30,8 @@
 .handle:active:after {
     cursor: grabbing;
 }
+
+
+label {
+    margin-bottom: 0;
+}

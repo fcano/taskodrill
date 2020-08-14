@@ -41,7 +41,6 @@ INSTALLED_APPS = [
     'myauth.apps.MyauthConfig',
     'tasks.apps.TasksConfig',
     'pages.apps.PagesConfig',
-    'debug_toolbar',
 ]
 
 STATIC_URL = '/static/'
