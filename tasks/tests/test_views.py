@@ -839,13 +839,51 @@ class ProjectDetailViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Paint the bedroom")
 
+class TestTaskListSelenium(StaticLiveServerTestCase):
+    def setUp(self):
+        MyUser.objects.create_user(
+            username='testuser',
+            password='testpassword',
+        )
+
+    def test_new_task_button_to_new_form(self):
+        user = mylogin(self)
+        
+        task1 = Task.objects.create(
+            name="Task 1",
+            user=user,
+        )
+    
+        selenium = webdriver.Chrome()
+        selenium.get("{0}/accounts/login".format(self.live_server_url))
+        username_field = selenium.find_element_by_id('id_username')
+        password_field = selenium.find_element_by_id('id_password')
+        submit_button = selenium.find_element_by_id('submit_button')
+        
+        current_url = selenium.current_url
+
+        username_field.send_keys('testuser')
+        password_field.send_keys('testpassword')
+        submit_button.send_keys(Keys.RETURN)
+
+        WebDriverWait(selenium, 15).until(EC.url_changes(current_url))
+
+        selenium.get("{0}/task".format(self.live_server_url))
+
+        current_url = selenium.current_url
+        submit_button = selenium.find_element_by_id('new_task_button')
+        submit_button.click()
+
+        WebDriverWait(selenium, 15).until(EC.url_changes(current_url))
+        assert '<form action="/task/add/"' in selenium.page_source
+        
 class TestProjectDetail(StaticLiveServerTestCase):
     def setUp(self):
         MyUser.objects.create_user(
             username='testuser',
             password='testpassword',
         )
-    
+
     def test_mark_task_as_done(self):
         user = mylogin(self)
         

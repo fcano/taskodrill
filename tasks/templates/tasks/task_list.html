@@ -2,11 +2,8 @@
 
 {% block content %}
 <p>
-  <button id="new_task_button" class="btn btn-primary" href="">New task</button>
+  <a id="new_task_button" class="btn btn-primary" href="{% url 'task_add' %}">New task</a>
 </p>
-<div id="embeded_task_form_div" style="display:none" class="pb-1">
-  {% include 'tasks/embeded_task_form.html' %}
-</div>
 {% if task_list %}
 {% include 'tasks/tasks_table.html' with task_list=task_list %}
 {% else %}

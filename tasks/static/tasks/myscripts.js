@@ -98,7 +98,3 @@ $(document).on('click', 'a.confirm-delete', function (event) {
         console.log(data);
     });
 });
-
-$(document).on('click', '#new_task_button', function (event) {
-    $('#embeded_task_form_div').toggle('slow');
-});
