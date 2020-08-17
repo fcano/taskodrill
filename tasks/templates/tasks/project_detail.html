@@ -1,9 +1,5 @@
 {% extends "base.html" %}
 
-{% block title %}
-     {{ object.title }} - {{ block.super }}
-{% endblock %}
-
 {% block content %}
     <h1>{{ project.name }}</h1>
     <p><a href="{% url 'project_update' project.pk %}">Edit</a>
