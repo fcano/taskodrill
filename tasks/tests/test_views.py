@@ -837,7 +837,7 @@ class ProjectDetailViewTests(TestCase):
 
         response = self.client.get(reverse('project_detail', args=(project.id,)))
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "Paint the bedroom")
+        self.assertNotContains(response, "Paint the bedroom")       
 
 class TestTaskListSelenium(StaticLiveServerTestCase):
     def setUp(self):
@@ -876,7 +876,7 @@ class TestTaskListSelenium(StaticLiveServerTestCase):
 
         WebDriverWait(selenium, 15).until(EC.url_changes(current_url))
         assert '<form action="/task/add/"' in selenium.page_source
-        
+
 class TestProjectDetail(StaticLiveServerTestCase):
     def setUp(self):
         MyUser.objects.create_user(
