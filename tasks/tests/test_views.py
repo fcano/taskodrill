@@ -600,6 +600,8 @@ class TaskUpdateTests(TestCase):
         task.refresh_from_db()
         self.assertEqual(task.name, 'Pending Task')
 
+
+
 class TaskDeleteTests(TestCase):
     def setUp(self):
         MyUser.objects.create_user(
@@ -875,7 +877,7 @@ class TestTaskListSelenium(StaticLiveServerTestCase):
         submit_button.click()
 
         WebDriverWait(selenium, 15).until(EC.url_changes(current_url))
-        assert '<form action="/task/add/"' in selenium.page_source
+        assert '<form action=""' in selenium.page_source
 
 class TestProjectDetail(StaticLiveServerTestCase):
     def setUp(self):

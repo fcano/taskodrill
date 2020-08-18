@@ -3,7 +3,7 @@
 {% block content %}
 
 <h1>New task</h1>
-<form action="{% url 'task_add' %}" method="post">
+<form action="" method="post">
     {% csrf_token %}
     {{ form.non_field_errors }}
     <div class="form-row">

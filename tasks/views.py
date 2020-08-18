@@ -100,12 +100,15 @@ class TaskUpdate(LoginRequiredMixin, UpdateView):
         kwargs['user'] = self.request.user
         return kwargs
 
+    def get_success_url(self):
+        return reverse('task_list_tasklist', kwargs={'tasklist_slug' : 'nextactions', })
+
 #    def get_queryset(self):
 #        return Task.objects.filter(user=self.request.user, id=self.request.POST['id'])
 
 class TaskDelete(LoginRequiredMixin, DeleteView):
     model = Task
-    #success_url = reverse_lazy('task_list')
+    
     def post(self, *args, **kwargs):
         self.object = self.get_object()
         self.object.delete()
