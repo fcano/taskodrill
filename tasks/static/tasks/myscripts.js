@@ -41,7 +41,7 @@ $('#tasks_body').on('click', 'input[type="checkbox"]', function () {
 
     $.ajax({
         type: "POST",
-        url: "/task/mark_as_done/",
+        url: "/tasks/mark_as_done/",
         data: data,
         success: function (response) {
             task_row_str = '#task_row_' + data.id;
@@ -65,7 +65,7 @@ $('#project_tasks_body').on('click', 'input[type="checkbox"]', function () {
 
     $.ajax({
         type: "POST",
-        url: "/task/mark_as_done/",
+        url: "/tasks/mark_as_done/",
         data: data,
         success: function (response) {
             task_row_str = '#task_row_' + data.id;

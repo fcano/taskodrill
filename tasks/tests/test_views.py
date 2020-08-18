@@ -96,7 +96,7 @@ class TaskListViewTests(TestCase):
 
     def test_tasks_no_nextactions(self):
         self.client.login(username='testuser', password='testpassword')
-        response = self.client.get('/task/nextactions/')
+        response = self.client.get(reverse('task_list_tasklist', args=('nextactions',)))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "There are no tasks in this list.")
 
@@ -104,7 +104,7 @@ class TaskListViewTests(TestCase):
         self.client.login(username='testuser', password='testpassword')
         Task.objects.create(name="Example of next action", tasklist=Task.NEXT_ACTION, user=MyUser.objects.first())
         Task.objects.create(name="Example of someday / maybe", tasklist=Task.SOMEDAY_MAYBE, user=MyUser.objects.first())
-        response = self.client.get('/task/nextactions/')
+        response = self.client.get(reverse('task_list_tasklist', args=('nextactions',)))
         self.assertEqual(response.status_code, 200)
         self.assertQuerysetEqual(
             response.context['task_list'],
@@ -113,7 +113,7 @@ class TaskListViewTests(TestCase):
 
     def test_tasks_no_somedaymaybe(self):
         self.client.login(username='testuser', password='testpassword')
-        response = self.client.get('/task/somedaymaybe/')
+        response = self.client.get(reverse('task_list_tasklist', args=('somedaymaybe',)))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "There are no tasks in this list.")
 
@@ -121,7 +121,7 @@ class TaskListViewTests(TestCase):
         self.client.login(username='testuser', password='testpassword')
         Task.objects.create(name="Example of next action", tasklist=Task.NEXT_ACTION, user=MyUser.objects.first())
         Task.objects.create(name="Example of someday/maybe", tasklist=Task.SOMEDAY_MAYBE, user=MyUser.objects.first())
-        response = self.client.get('/task/somedaymaybe/')
+        response = self.client.get(reverse('task_list_tasklist', args=('somedaymaybe',)))
         self.assertEqual(response.status_code, 200)
         self.assertQuerysetEqual(
             response.context['task_list'],
@@ -129,11 +129,11 @@ class TaskListViewTests(TestCase):
         )
 
     def test_tasks_no_auth_nextaction(self):
-        response = self.client.get('/task/nextaction/')
+        response = self.client.get(reverse('task_list_tasklist', args=('nextactions',)))
         self.assertEqual(response.status_code, 302)
 
     def test_tasks_no_auth_nonexistant(self):
-        response = self.client.get('/task/nonexistant/')
+        response = self.client.get('/tasks/nonexistant/')
         self.assertEqual(response.status_code, 302)
 
     def test_list_with_one_task(self):
@@ -154,7 +154,7 @@ class TaskListViewTests(TestCase):
             user=MyUser.objects.first(),
         )
         r = self.client.post(   
-            '/task/mark_as_done/',
+            reverse('task_mark_as_done'),
             {'id': task.id, 'value': '1'},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest',
         )
@@ -196,7 +196,7 @@ class TaskListViewTests(TestCase):
         time.sleep(1)
 
         self.client.post(   
-            '/task/mark_as_done/',
+            reverse('task_mark_as_done'),
             {'id': task1.id, 'value': '1'},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest',
         )
@@ -220,7 +220,7 @@ class TaskListViewTests(TestCase):
         )
         
         self.client.post(
-            '/task/mark_as_done/',
+            reverse('task_mark_as_done'),
             {'id': task.id, 'value': '1'},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest',
         )
@@ -251,7 +251,7 @@ class TaskListViewTests(TestCase):
         )                
         
         self.client.post(   
-            '/task/mark_as_done/',
+            reverse('task_mark_as_done'),
             {'id': task.id, 'value': '1'},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest',
         )
@@ -283,7 +283,7 @@ class TaskListViewTests(TestCase):
         )                
         
         self.client.post(   
-            '/task/mark_as_done/',
+            reverse('task_mark_as_done'),
             {'id': task.id, 'value': '1'},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest',
         )
@@ -315,7 +315,7 @@ class TaskListViewTests(TestCase):
         )                
         
         self.client.post(   
-            '/task/mark_as_done/',
+            reverse('task_mark_as_done'),
             {'id': task.id, 'value': '1'},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest',
         )
@@ -682,7 +682,7 @@ class TaskCreateViewTests(TestCase):
     def test_task_create_view_post(self):
         self.client.login(username='testuser', password='testpassword')
 
-        response = self.client.post('/task/add/', {
+        response = self.client.post(reverse('task_add'), {
             'name':"Paint the bedroom",
             'start_date':datetime.date.today(),
             'start_time':datetime.datetime.now().time(),
@@ -703,7 +703,7 @@ class TaskCreateViewTests(TestCase):
     def test_task_create_username_cannot_come_from_user(self):
         self.client.login(username='testuser', password='testpassword')
 
-        self.client.post('/task/add/', {
+        self.client.post(reverse('task_add'), {
             'name':"Paint the bedroom",
             'start_date':datetime.date.today(),
             'start_time':datetime.datetime.now().time(),
@@ -721,7 +721,7 @@ class TaskCreateViewTests(TestCase):
         self.assertNotEqual(Task.objects.last().user.id, 66)
 
     def test_task_create_nothing_if_unauthenticated(self):
-        self.client.post('/task/add/', {
+        self.client.post(reverse('task_add'), {
             'name':"Paint the bedroom",
             'start_date':datetime.date.today(),
             'start_time':datetime.datetime.now().time(),
@@ -801,7 +801,7 @@ class ProjectListViewTests(TestCase):
         self.assertContains(response, 'Task 1 within Project 1')
         self.assertContains(response, 'Task 2 within Project 1')
         
-        response = self.client.get('/task/nextactions/')
+        response = self.client.get(reverse('task_list_tasklist', args=('nextactions',)))
         self.assertContains(response, 'Task 1 within Project 1')
         self.assertNotContains(response, 'Task 2 within Project 1')
 
@@ -832,7 +832,7 @@ class ProjectDetailViewTests(TestCase):
         self.assertContains(response, "Paint the bedroom")
 
         self.client.post(   
-            '/task/mark_as_done/',
+            reverse('task_mark_as_done'),
             {'id': task.id, 'value': '1'},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest',
         )
@@ -870,7 +870,7 @@ class TestTaskListSelenium(StaticLiveServerTestCase):
 
         WebDriverWait(selenium, 15).until(EC.url_changes(current_url))
 
-        selenium.get("{0}/task".format(self.live_server_url))
+        selenium.get("{0}/tasks".format(self.live_server_url))
 
         current_url = selenium.current_url
         submit_button = selenium.find_element_by_id('new_task_button')
@@ -925,7 +925,7 @@ class TestProjectDetail(StaticLiveServerTestCase):
 
         WebDriverWait(selenium, 15).until(EC.url_changes(current_url))
 
-        selenium.get("{0}/project/{1}".format(self.live_server_url, project.id))
+        selenium.get("{0}/projects/{1}".format(self.live_server_url, project.id))
         assert 'Task 2' in selenium.page_source
 
         trs = selenium.find_elements_by_xpath("//tbody/tr")
