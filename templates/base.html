@@ -39,7 +39,8 @@
             {{ user.username }}
           </button>
           <div class="dropdown-menu" aria-labelledby="dropdownMenu2">
-            <a class="dropdown-item" href="{% url 'logout' %}">logout</a>
+            <a class="dropdown-item" href="{% url 'password_change' %}">Password change</a>
+            <a class="dropdown-item" href="{% url 'logout' %}">Logout</a>
           </div>
         </div>
 

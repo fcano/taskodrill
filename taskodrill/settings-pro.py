@@ -65,7 +65,7 @@ AUTH_USER_MODEL = 'myauth.MyUser'
 
 ROOT_URLCONF = 'taskodrill.urls'
 
-LOGIN_REDIRECT_URL = '/task/nextactions/'
+LOGIN_REDIRECT_URL = '/tasks/nextactions/'
 LOGOUT_REDIRECT_URL = 'login'
 
 TEMPLATES = [
@@ -136,5 +136,16 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
+
+SENDGRID_API_KEY="***REMOVED***"
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+EMAIL_HOST = 'smtp.sendgrid.net'
+EMAIL_HOST_USER = 'apikey'
+EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL='***REMOVED***'
 
 django_heroku.settings(locals())
