@@ -44,7 +44,7 @@ $('#tasks_body').on('click', 'input[type="checkbox"]', function () {
         url: "/tasks/mark_as_done/",
         data: data,
         success: function (response) {
-            task_row_str = '#task_row_' + data.id;
+            task_row_str = '#tasks_row_' + data.id;
             $(task_row_str).remove();
             next_task_tr_html = response.next_task_tr;
             if (next_task_tr_html != "") {
@@ -68,7 +68,7 @@ $('#project_tasks_body').on('click', 'input[type="checkbox"]', function () {
         url: "/tasks/mark_as_done/",
         data: data,
         success: function (response) {
-            task_row_str = '#task_row_' + data.id;
+            task_row_str = '#tasks_row_' + data.id;
             $(task_row_str).remove();
         }
     }).done(function (data) {

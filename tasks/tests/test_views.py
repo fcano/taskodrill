@@ -908,8 +908,8 @@ class TestProjectDetail(StaticLiveServerTestCase):
 
         response = self.client.get(reverse('project_detail', args=(project.id,)))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "id=\"task_row_{0}\"".format(task1.id))
-        self.assertContains(response, "id=\"task_row_{0}\"".format(task2.id))
+        self.assertContains(response, "id=\"tasks_row_{0}\"".format(task1.id))
+        self.assertContains(response, "id=\"tasks_row_{0}\"".format(task2.id))
 
         selenium = webdriver.Chrome()
         selenium.get("{0}/accounts/login".format(self.live_server_url))
