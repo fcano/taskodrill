@@ -68,7 +68,7 @@ class TaskList(LoginRequiredMixin, ListView):
 
         if (tasklist_slug is None) or (tasklist_slug not in ['nextactions', 'somedaymaybe']):
             return Task.objects.filter(user=self.request.user,
-                            status=Task.PENDING).filter(query)
+                            status=Task.PENDING)#.filter(query)
         else:
             if tasklist_slug == 'nextactions':
                 tasklist = Task.NEXT_ACTION

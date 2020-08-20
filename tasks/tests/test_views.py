@@ -510,6 +510,68 @@ class TaskListViewTests(TestCase):
         self.assertContains(response, "Pending Task")
         self.assertNotContains(response, "Done Task")
 
+    def test_show_all_pending_tasks_in_all_tasks(self):
+        user = mylogin(self)
+
+        task1 = Task.objects.create(
+            name="Pending Task",
+            tasklist=Task.NEXT_ACTION,
+            status=Task.PENDING,
+            user=user,
+        )
+
+        task2 = Task.objects.create(
+            name="Done Task",
+            tasklist=Task.NEXT_ACTION,
+            status=Task.DONE,
+            user=user,
+        )
+
+        task4 = Task.objects.create(
+            name="Task in the future",
+            tasklist=Task.NEXT_ACTION,
+            start_date = datetime.date.today() + datetime.timedelta(5),
+            status=Task.PENDING,
+            user=user,
+        )
+
+        task4 = Task.objects.create(
+            name="Task in context",
+            tasklist=Task.NEXT_ACTION,
+            status=Task.PENDING,
+            user=user,
+        )
+
+        project = Project.objects.create(
+            name="Test project 1",
+            user=user,
+        )
+
+        task5 = Task.objects.create(
+            name="First task in project",
+            tasklist=Task.NEXT_ACTION,
+            status=Task.PENDING,
+            project=project,
+            user=user,
+        )
+
+        task6 = Task.objects.create(
+            name="Second task in project",
+            tasklist=Task.NEXT_ACTION,
+            status=Task.PENDING,
+            project=project,
+            user=user,
+        )
+
+        response = self.client.get(reverse('task_list'))
+        self.assertEqual(response.status_code, 200)        
+        self.assertContains(response, "Pending Task")
+        self.assertContains(response, "Task in the future")
+        self.assertNotContains(response, "Done Task")
+        self.assertContains(response, "Task in context")
+        self.assertContains(response, "First task in project")
+        self.assertContains(response, "Second task in project")
+
 class TestSaveNewOrdering(TestCase):
     def setUp(self): 
         MyUser.objects.create_user(

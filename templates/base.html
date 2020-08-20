@@ -54,9 +54,6 @@
       <div class="col-2 bg-my-meat pl-0 pr-0">
         <ul class="nav flex-column">
           {% if user.is_authenticated %}
-          <li class="nav-item {% ifequal request.path tasklist %}active{% endifequal %}">
-            <a class="nav-link" href="{% url 'task_list' %}">All Tasks</a>
-          </li>
           <li class="nav-item {% ifequal request.path nextactions %}active{% endifequal %}">
             <a class="nav-link" href="{% url 'task_list_tasklist' 'nextactions' %}">Next Actions</a>
           </li>
@@ -68,6 +65,9 @@
           </li>
           <li class="nav-item {% ifequal request.path contextlist %}active{% endifequal %} ">
             <a class="nav-link" href="{% url 'context_list' %}">Contexts</a>
+          </li>
+          <li class="nav-item {% ifequal request.path tasklist %}active{% endifequal %}">
+            <a class="nav-link" href="{% url 'task_list' %}">All Tasks</a>
           </li>
           {% endif %}
         </ul>
