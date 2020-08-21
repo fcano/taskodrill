@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ vote.idea.name }}</h1>
+<p>From: {{ vote.user.username }}</p>
+<p>Date: {{ vote.creation_datetime }}</p>
+{% endblock %}

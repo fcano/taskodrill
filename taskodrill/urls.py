@@ -22,6 +22,7 @@ from pages.views import HomePage
 urlpatterns = [
     path('', include('tasks.urls')),
     path('', include('myauth.urls')),
+    path('', include('votes.urls')),
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
     path('', HomePage.as_view(), name='home'),

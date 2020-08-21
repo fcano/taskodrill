@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Votes</h1>
+    {% if vote_list %}
+    <table border="1">
+      <tr>
+        <th>Idea</th>
+        <th>From</th>
+        <th>Date</th>
+        <th></th>
+      </tr>
+      {% for vote in vote_list %}
+      <tr>
+        <td><a href="{{ vote.idea.get_absolute_url }}">{{ vote.idea.name }}</a></td>
+        <td>{{ vote.user.username }}</td>
+        <td>{{ vote.creation_datetime }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+      <p>There are no votes.</p>
+    {% endif %}       
+{% endblock %}

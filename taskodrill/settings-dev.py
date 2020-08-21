@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'myauth.apps.MyauthConfig',
     'tasks.apps.TasksConfig',
     'pages.apps.PagesConfig',
+    'votes.apps.VotesConfig',
     'debug_toolbar',
 ]
 

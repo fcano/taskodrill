@@ -98,3 +98,26 @@ $(document).on('click', 'a.confirm-delete', function (event) {
         console.log(data);
     });
 });
+
+
+$('#ideas_body').on('click', 'button', function () {
+    var data = {};
+    data.id = $(this).attr('value');
+
+    console.log(data);
+
+    $.ajax({
+        type: "POST",
+        url: "/votes/add/",
+        data: data,
+        success: function (response) {
+            $('#user_avaible_votes').html(response.user_available_votes);
+            $('#user_avaible_votes').effect("highlight", {color: 'green'}, 3000);
+            idea_total_votes = '#idea_votes_' + data.id;
+            $(idea_total_votes).html(response.idea_total_votes);
+            $(idea_total_votes).effect("highlight", {color: 'green'}, 3000);
+        }
+    }).done(function (data) {
+        console.log(data);
+    });
+});
