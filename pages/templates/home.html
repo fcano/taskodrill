@@ -1,27 +1,41 @@
 {% extends "base-home.html" %}
 
-{% block title %}TaskODrill - Experience flow with this task management application{% endblock %}
+{% block title %}TaskODrill - Experience flow{% endblock %}
 
 {% block content %}
-<div class="jumbotron jumbotron-fluid">
-    <div class="container">
-        <div class="row">
-            <div class="col">
-                <p>
-                    <a class="btn btn-primary btn-lg" href="{% url 'login' %}" role="button">Sign In</a>
-                </p>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col">
-                <h1 class="display-4 text-white">TaskODrill</h1>
-                <p class="lead text-white">The new web platform to help you with your productivity.</p>
-                <p class="lead">
-                    <a class="btn btn-primary btn-lg" href="{% url 'signup' %}" role="button">Register. It's free!</a>
-                </p>
-            </div>
-        </div>
 
+{% load static %}
+
+<nav id="landing-navbar" class="navbar navbar-expand-lg shadow">
+    <img src="{% static "tasks/logo_and_title.png" %}" class="navbar-brand rounded" alt="TaskODrill logo">
+
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <a class="nav-link" href="#">Features</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">Pricing</a>
+            </li>
+        </ul>
+        <div class="ml-5 my-2 my-lg-0">
+            <a class="btn btn-primary btn-sm" href="{% url 'login' %}" role="button">Sign In</a>
+        </div>
+    </div>
+</nav>
+<div class="container-fluid jumbotron">
+    <div class="row">
+        <div class="col-5">
+            <div class="card shadow">
+                <div class="card-body">
+                    <p class="card-title">The task management application you will love</p>
+                    <p class="card-text">Know what to do. Don't be afraid of forgetting something. Achieve peace of
+                        mind.</p>
+                    <a class="btn btn-primary btn-lg" href="{% url 'signup' %}" role="button">Register. It's free!</a>
+                </div>
+            </div>
+            </p>
+        </div>
     </div>
 </div>
 {% endblock %}
