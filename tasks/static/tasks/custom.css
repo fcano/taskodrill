@@ -73,6 +73,10 @@ li.active {
     background-color: #004085 !important;
 }
 
+.btn-primary:hover {
+    background-color: #66D3AF !important;
+}
+
 .nav-link {
     color: black;
 }
