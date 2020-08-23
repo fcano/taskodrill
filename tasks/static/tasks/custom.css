@@ -1,25 +1,25 @@
 .jumbotron {
-    background-image: url("/static/tasks/woman_work.jpg");
+    background-image        : url("/static/tasks/woman_work.jpg");
     /* background-attachment: scroll; */
-    background-size : cover;
-    min-height: 100vh;
-    padding-top: 113px;
-    padding-left: 95px;
-    padding-right: 95px;
+    background-size         : cover;
+    min-height              : 100vh;
+    padding-top             : 113px;
+    padding-left            : 95px;
+    padding-right           : 95px;
 }
 
 .jumbotron .card-title {
     font-weight: bold;
-    font-size: 2em;
+    font-size  : 2em;
 }
 
 .jumbotron .card-text {
-    font-size: 1.2em;
+    font-size  : 1.2em;
     line-height: 2;
 }
 
 #landing-navbar {
-    padding-left: 95px;
+    padding-left : 95px;
     padding-right: 95px;
 }
 
@@ -74,7 +74,7 @@ li.active {
 }
 
 .btn-primary:hover {
-    background-color: #66D3AF !important;
+    background-color: #107DAC !important;
 }
 
 .nav-link {
@@ -82,7 +82,15 @@ li.active {
 }
 
 .nav-link:hover {
-    color: #004085;
+    color        : #004085;
     border-bottom: .2rem solid #004085;
     margin-bottom: -0.2rem;
+}
+
+.cube-background {
+    min-width        : 100hv;
+    min-height       : 100vh;
+    background-repeat: repeat;
+    background-image :
+        url("/static/tasks/cube_background.png");
 }

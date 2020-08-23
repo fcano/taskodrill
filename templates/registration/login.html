@@ -1,27 +1,28 @@
-{% extends 'base-login.html' %}
+{% extends 'base-home.html' %}
+
+{% load crispy_forms_tags %}
 
 {% block content %}
-<div class="wrapper fadeInDown">
-    <div id="formContent">
-      <!-- Tabs Titles -->
-  
-      <!-- Icon -->
-      <div class="fadeIn first">
-        Log In
-      </div>
-  
-      <!-- Login Form -->
-      <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <input type="submit" id="submit_button" class="fadeIn fourth" value="Log In">
-      </form>
-  
-      <!-- Remind Passowrd -->
-      <div id="formFooter">
-        <a class="underlineHover" href="{% url 'password_reset' %}">Forgot Password?</a>
-      </div>
-  
+<div class="container-fluid cube-background">
+    <div class="row">
+        <div class="col-4 offset-4">
+            <div class="card m-5 shadow">
+                <div class="card-body">
+                    <h3 class="card-title">Log In</h3>
+                    <p class="card-text">
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        <button id="submit_button" class="btn btn-primary mr-3" type="submit">Log in</button>
+                        <a href="{% url 'home' %}">Cancel</a>
+                    </form>
+                    </p>
+                    <div class="card-footer text-muted">
+                      <a href="{% url 'password_reset' %}">Forgot Password?</a>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
-  {% endblock content %}
+</div>
+{% endblock %}

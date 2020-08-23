@@ -42,7 +42,10 @@ INSTALLED_APPS = [
     'tasks.apps.TasksConfig',
     'pages.apps.PagesConfig',
     'votes.apps.VotesConfig',
-]
+    'crispy_forms',
+ ]
+ 
+CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 STATIC_URL = '/static/'
 
