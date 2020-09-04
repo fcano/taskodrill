@@ -17,7 +17,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 
-from pages.views import HomePage
+from pages import views as pages_views
 
 urlpatterns = [
     path('', include('tasks.urls')),
@@ -25,7 +25,9 @@ urlpatterns = [
     path('', include('votes.urls')),
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
-    path('', HomePage.as_view(), name='home'),
+    path('pricing/', pages_views.PricingPage.as_view(), name='pricing'),
+    path('features/', pages_views.FeaturesPage.as_view(), name='features'),
+    path('', pages_views.HomePage.as_view(), name='home'),
 ]
 
 if settings.DEBUG:
