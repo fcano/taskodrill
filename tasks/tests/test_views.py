@@ -762,6 +762,47 @@ class TaskCreateViewTests(TestCase):
         self.assertRedirects(response, reverse('task_list_tasklist', kwargs={'tasklist_slug' : 'nextactions', }), target_status_code=200)
         self.assertEqual(Task.objects.last().name, "Paint the bedroom")
 
+    def test_task_create_form_shows_only_user_contexts(self):
+        user1 = MyUser.objects.create_user(
+            username='testuser1',
+            password='testpassword',
+        )
+        
+        user2 = MyUser.objects.create_user(
+            username='testuser2',
+            password='testpassword',
+        )
+
+        context1 = Context.objects.create(
+            name="Context 1",
+            user=user1,
+        )
+
+        context2 = Context.objects.create(
+            name="Context 2",
+            user=user2,
+        )
+
+        task1 = Task.objects.create(
+            name="Task 1",
+            tasklist=Task.NEXT_ACTION,
+            user=user1,
+        )
+        task1.contexts.add(context1)
+
+        task2 = Task.objects.create(
+            name="Task 2",
+            tasklist=Task.NEXT_ACTION,
+            user=user2,
+        )
+        task2.contexts.add(context2)
+
+        self.client.login(username='testuser1', password='testpassword')
+        response = self.client.get(reverse('task_add'))
+        self.assertContains(response, 'Context 1')
+        self.assertNotContains(response, 'Context 2')
+
+
     def test_task_create_username_cannot_come_from_user(self):
         self.client.login(username='testuser', password='testpassword')
 
