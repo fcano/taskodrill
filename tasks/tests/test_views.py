@@ -499,7 +499,7 @@ class TaskListViewTests(TestCase):
         )
         task1.contexts.add(context)
         task2 = Task.objects.create(
-            name="Done Task",
+            name="Task that is done",
             tasklist=Task.NEXT_ACTION,
             status=Task.DONE,
             user=user,
@@ -508,7 +508,7 @@ class TaskListViewTests(TestCase):
         response = self.client.get(reverse('context_detail', args=(context.id,)))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Pending Task")
-        self.assertNotContains(response, "Done Task")
+        self.assertNotContains(response, "Task that is done")
 
     def test_show_all_pending_tasks_in_all_tasks(self):
         user = mylogin(self)
@@ -521,7 +521,7 @@ class TaskListViewTests(TestCase):
         )
 
         task2 = Task.objects.create(
-            name="Done Task",
+            name="Task that is done",
             tasklist=Task.NEXT_ACTION,
             status=Task.DONE,
             user=user,
@@ -567,7 +567,7 @@ class TaskListViewTests(TestCase):
         self.assertEqual(response.status_code, 200)        
         self.assertContains(response, "Pending Task")
         self.assertContains(response, "Task in the future")
-        self.assertNotContains(response, "Done Task")
+        self.assertNotContains(response, "Task that is done")
         self.assertContains(response, "Task in context")
         self.assertContains(response, "First task in project")
         self.assertContains(response, "Second task in project")

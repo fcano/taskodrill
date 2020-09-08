@@ -67,7 +67,10 @@
             <a class="nav-link" href="{% url 'context_list' %}">Contexts</a>
           </li>
           <li class="nav-item {% ifequal request.path tasklist %}active{% endifequal %}">
-            <a class="nav-link" href="{% url 'task_list' %}">All Tasks</a>
+            <a class="nav-link" href="{% url 'task_list' %}">Pending Tasks</a>
+          </li>
+          <li class="nav-item {% ifequal request.path tasklist %}active{% endifequal %}">
+            <a class="nav-link" href="{% url 'task_list'%}?status=done">Done Tasks</a>
           </li>
           {% endif %}
         </ul>

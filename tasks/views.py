@@ -55,6 +55,14 @@ class TaskList(LoginRequiredMixin, ListView):
 
 #        (start_date=today AND start_time=noworpast) OR (start_time_today AND start_time=null) OR (start_date=past) OR (start_date=null)
 
+        if 'status' in self.request.GET.keys():
+            search_key = 'status'
+            search_value_string = self.request.GET.get('status')
+            search_value = getattr(Task, search_value_string.upper())
+            search_filter = Q(**{search_key: search_value})
+        else:
+            search_filter = Q(status=Task.PENDING)
+
         q1 = Q(start_date=datetime.date.today()) & Q(start_time__lte=datetime.datetime.now())
         q2 = Q(start_date=datetime.date.today()) & Q(start_time__isnull=True)
         q3 = Q(start_date__lt=datetime.date.today())
@@ -67,8 +75,7 @@ class TaskList(LoginRequiredMixin, ListView):
         # query.add(Q(start_date__isnull=True), Q.OR)
 
         if (tasklist_slug is None) or (tasklist_slug not in ['nextactions', 'somedaymaybe']):
-            return Task.objects.filter(user=self.request.user,
-                            status=Task.PENDING)#.filter(query)
+            return Task.objects.filter(user=self.request.user).filter(search_filter).order_by('-modification_datetime')
         else:
             if tasklist_slug == 'nextactions':
                 tasklist = Task.NEXT_ACTION

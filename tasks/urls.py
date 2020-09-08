@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, re_path
 from tasks import views as tasks_views
 
 urlpatterns = [
@@ -7,7 +7,7 @@ urlpatterns = [
     path('tasks/add/', tasks_views.TaskCreate.as_view(), name='task_add'),
     path('tasks/<int:pk>/edit/', tasks_views.TaskUpdate.as_view(), name='task_update'),
     path('tasks/<int:pk>/delete/', tasks_views.TaskDelete.as_view(), name='task_delete'),
-    path('tasks/mark_as_done/', tasks_views.TaskMarkAsDone.as_view(), name = 'task_mark_as_done'),
+    path('tasks/mark_as_done/', tasks_views.TaskMarkAsDone.as_view(), name='task_mark_as_done'),
     path('tasks/save-task-ordering/', tasks_views.SaveNewOrdering.as_view(), name='save-task-oldering'),
     path('tasks/<slug:tasklist_slug>/', tasks_views.TaskList.as_view(), name='task_list_tasklist'),
     path('projects/', tasks_views.ProjectList.as_view(), name='project_list'),
