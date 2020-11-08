@@ -14,9 +14,7 @@ class TaskForm(forms.ModelForm):
         super(TaskForm, self).__init__(*args, **kwargs)
         self.fields['contexts'].widget = forms.CheckboxSelectMultiple()
         self.fields['contexts'].choices = Context.objects.filter(user=self.user).values_list('id', 'name')
-        user_projects = Project.objects.filter(user=self.user).values_list('id', 'name')
-        user_project_choices = [('', '---')] 
-        user_project_choices.extend(user_projects)
+        self.fields['project'].choices = (('', '---------'),) + tuple(Project.objects.filter(user=self.user).values_list('id', 'name'))
         for visible in self.visible_fields():
             visible.field.widget.attrs['class'] = 'form-control form-control-sm'
         self.fields['contexts'].widget.attrs['class'] = 'form-check-input'
