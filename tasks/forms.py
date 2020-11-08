@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Task, Context
+from .models import Task, Context, Project
 
 class DateInput(forms.DateInput):
     input_type = 'date'
@@ -14,6 +14,9 @@ class TaskForm(forms.ModelForm):
         super(TaskForm, self).__init__(*args, **kwargs)
         self.fields['contexts'].widget = forms.CheckboxSelectMultiple()
         self.fields['contexts'].choices = Context.objects.filter(user=self.user).values_list('id', 'name')
+        user_projects = Project.objects.filter(user=self.user).values_list('id', 'name')
+        user_project_choices = [('', '---')] 
+        user_project_choices.extend(user_projects)
         for visible in self.visible_fields():
             visible.field.widget.attrs['class'] = 'form-control form-control-sm'
         self.fields['contexts'].widget.attrs['class'] = 'form-check-input'
@@ -21,8 +24,8 @@ class TaskForm(forms.ModelForm):
 
     class Meta:
         model = Task
-        fields = [  'name', 'start_date', 'start_time', 'due_date', 'due_time', 'repeat',
-                    'repeat_from', 'length', 'priority', 'note', 'contexts', 'project', 'tasklist']
+        fields = ['name', 'start_date', 'start_time', 'due_date', 'due_time', 'repeat',
+                  'repeat_from', 'length', 'priority', 'note', 'contexts', 'project', 'tasklist']
         widgets = {
             'start_date': DateInput(),
             'due_date': DateInput(),
