@@ -10,7 +10,7 @@
       </tr>
       {% for project in project_list %}
       <tr id="project_row_{{ project.id }}">
-        <td><a href="{{ project.get_absolute_url }}">{{ project.name }}</a></td>
+        <td><a href="{{ project.get_absolute_url }}">{{ project.name }}</a> ({{ project.task_set.count }})</td>
         <td><a href="{% url 'project_delete' project.pk %}" class="confirm-delete"><img src="/static/tasks/trash-2.svg" /></a></td>
       </tr>
       {% endfor %}
