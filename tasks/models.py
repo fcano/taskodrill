@@ -95,6 +95,12 @@ class Task(models.Model):
     def __str__(self):
         return self.name
 
+    def is_actionable(self):
+        if (self.tasklist != Task.NEXT_ACTION) or (self.start_date > datetime.date.today()):
+            return False
+        else:
+            return True
+
     def get_next_start_date(self):
         if self.start_date == None:
             return None
