@@ -162,11 +162,24 @@ class Task(models.Model):
     class Meta:
         ordering = ['ready_datetime']
 
+
 class Project(models.Model):
+    
+    OPEN = 0
+    ABANDONED = 1
+    FINISHED = 2
+
+    STATUS = (
+        (OPEN, 'Open'),
+        (ABANDONED, 'Abandoned'),
+        (FINISHED, 'Finished'),
+    )
+
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
     creation_datetime = models.DateTimeField(auto_now_add=True)
     modification_datetime = models.DateTimeField(auto_now=True)
+    status = models.IntegerField(choices=STATUS, default=OPEN)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -180,6 +193,7 @@ class Project(models.Model):
 
     class Meta:
         ordering = ['name']
+
 
 class Context(models.Model):
     name = models.CharField(max_length=100)

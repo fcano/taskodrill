@@ -530,7 +530,7 @@ class TaskListViewTests(TestCase):
         task4 = Task.objects.create(
             name="Task in the future",
             tasklist=Task.NEXT_ACTION,
-            start_date = datetime.date.today() + datetime.timedelta(5),
+            start_date=datetime.date.today() + datetime.timedelta(5),
             status=Task.PENDING,
             user=user,
         )
@@ -564,7 +564,7 @@ class TaskListViewTests(TestCase):
         )
 
         response = self.client.get(reverse('task_list'))
-        self.assertEqual(response.status_code, 200)        
+        self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Pending Task")
         self.assertContains(response, "Task in the future")
         self.assertNotContains(response, "Task that is done")

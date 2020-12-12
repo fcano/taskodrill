@@ -14,6 +14,7 @@ from django.http import HttpResponseRedirect
 from .models import Task, Project, Context
 from .forms import TaskForm, OrderingForm
 
+
 class TaskCreate(LoginRequiredMixin, CreateView):
     form_class = TaskForm
     template_name = 'tasks/task_form.html'
@@ -91,6 +92,7 @@ class TaskList(LoginRequiredMixin, ListView):
                 tasklist=tasklist,
                 status=Task.PENDING,
                 project__isnull=False,
+                project__status=Project.OPEN,
             ).order_by('project_id', 'project_order').distinct('project_id')
             last_task_from_each_project = Task.objects.filter(pk__in=last_task_from_each_project).filter(query)
             #last_task_from_each_project = last_task_from_each_project.filter(query)
@@ -172,7 +174,7 @@ class SaveNewOrdering(LoginRequiredMixin, View):
 
 class ProjectCreate(LoginRequiredMixin, CreateView):
     model = Project
-    fields = ['name', 'description']
+    fields = ['name', 'description', 'status']
 
     success_url = reverse_lazy('project_list')
     
@@ -193,11 +195,23 @@ class ProjectList(LoginRequiredMixin, ListView):
     model = Project
 
     def get_queryset(self):
-        return Project.objects.filter(user=self.request.user)
+        if 'status' in self.request.GET.keys():
+            status = self.request.GET.get('status')
+            if status == 'open':
+                return Project.objects.filter(user=self.request.user, status=Project.OPEN)
+            elif status == 'finished':
+                return Project.objects.filter(user=self.request.user, status=Project.FINISHED)
+            elif status == 'abandoned':
+                return Project.objects.filter(user=self.request.user, status=Project.ABANDONED)
+            else:
+                return Project.objects.filter(user=self.request.user, status=Project.FINISHED)
+        else:
+            return Project.objects.filter(user=self.request.user, status=Project.OPEN)
+
 
 class ProjectUpdate(LoginRequiredMixin,UpdateView):
     model = Project
-    fields = ['name', 'description']
+    fields = ['name', 'description', 'status']
 
 class ProjectDelete(LoginRequiredMixin,DeleteView):
     model = Project
