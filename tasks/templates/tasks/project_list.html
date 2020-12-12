@@ -6,11 +6,23 @@
     <table border="1">
       <tr>
         <th>Name</th>
+        <th>Num of tasks</th>
+        <th>Next action</th>
+        <th>Task list</th>
+        <th>Status</th>
+        <th>Start date</th>
+        <th>End date</th>
         <th></th>
       </tr>
       {% for project in project_list %}
-      <tr id="project_row_{{ project.id }}">
+      <tr id="project_row_{{ project.id }}" {% if not project.pending_tasks.count or not project.next_task.is_actionable %}style="background-color:#FF0000"{% endif %}>
         <td><a href="{{ project.get_absolute_url }}">{{ project.name }}</a></td>
+        <td><a href="{{ project.get_absolute_url }}">{{ project.pending_tasks.count }}</a></td>
+        <td>{{ project.next_task.name }}</td>
+        <td>{{ project.next_task.get_tasklist_display | default_if_none:"none" }}</td>
+        <td>{{ project.next_task.get_status_display | default_if_none:"none" }}</td>
+        <td>{{ project.next_task.start_date | default_if_none:"no date"}}</td>
+        <td>{{ project.next_task.due_date | default_if_none:"no date"}}</td>
         <td><a href="{% url 'project_delete' project.pk %}" class="confirm-delete"><img src="/static/tasks/trash-2.svg" /></a></td>
       </tr>
       {% endfor %}

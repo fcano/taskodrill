@@ -4,6 +4,7 @@ import datetime
 from django.db import models
 from django.urls import reverse
 from django.conf import settings
+from django.db.models import Q
 
 class Task(models.Model):
     NO = 0
@@ -93,6 +94,12 @@ class Task(models.Model):
 
     def __str__(self):
         return self.name
+
+    def is_actionable(self):
+        if (self.tasklist != Task.NEXT_ACTION) or (self.start_date > datetime.date.today()):
+            return False
+        else:
+            return True
 
     def get_next_start_date(self):
         if self.start_date == None:
@@ -187,6 +194,19 @@ class Project(models.Model):
 
     def pending_tasks(self):
         return self.task_set.filter(status=Task.PENDING).order_by('creation_datetime')
+
+    def next_task(self):
+        q1 = Q(start_date=datetime.date.today()) & Q(start_time__lte=datetime.datetime.now())
+        q2 = Q(start_date=datetime.date.today()) & Q(start_time__isnull=True)
+        q3 = Q(start_date__lt=datetime.date.today())
+        q4 = Q(start_date__isnull=True)
+        query = q1 | q2 | q3 | q4
+
+        next_tasks = self.task_set.filter(status=Task.PENDING).filter(query).order_by('project_order')
+        if len(next_tasks) >= 1:
+            return next_tasks[0]
+        else:
+            return "None"
 
     def get_absolute_url(self):
         return reverse('project_detail', kwargs={'pk': self.pk})
