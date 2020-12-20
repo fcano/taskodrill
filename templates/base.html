@@ -57,16 +57,19 @@
             <a class="nav-link" href="{% url 'project_list' %}">Projects</a>
           </li>
           <li class="nav-item {% ifequal request.path projectlist %}active{% endifequal %}">
-            <a class="nav-link" href="{% url 'project_list'%}?status=finished">Finished Projects</a>
+            <a class="nav-link" href="{% url 'project_list'%}?status=finished">&nbsp;&nbsp;&nbsp;&nbsp;Finished</a>
           </li>
           <li class="nav-item {% ifequal request.path contextlist %}active{% endifequal %} ">
             <a class="nav-link" href="{% url 'context_list' %}">Contexts</a>
           </li>
-          <li class="nav-item {% ifequal request.path tasklist %}active{% endifequal %}">
-            <a class="nav-link" href="{% url 'task_list' %}">Pending Tasks</a>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'task_list' %}">All Tasks</a>
           </li>
           <li class="nav-item {% ifequal request.path tasklist %}active{% endifequal %}">
-            <a class="nav-link" href="{% url 'task_list'%}?status=done">Done Tasks</a>
+            <a class="nav-link" href="{% url 'task_list' %}">&nbsp;&nbsp;&nbsp;&nbsp;Pending</a>
+          </li>
+          <li class="nav-item {% ifequal request.path tasklist %}active{% endifequal %}">
+            <a class="nav-link" href="{% url 'task_list'%}?status=done">&nbsp;&nbsp;&nbsp;&nbsp;Done</a>
           </li>
         </ul>
       </div>
