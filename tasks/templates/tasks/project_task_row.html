@@ -7,6 +7,7 @@
   {% else %}
   <td>no project</td>
   {% endif %}
+  <td>{{ task.get_tasklist_display }}</td>
   <td>{{ task.start_date | default_if_none:"no date"}}</td>
   <td>{{ task.start_time | default_if_none:"no time"}}</td>
   <td>{{ task.due_date | default_if_none:"no date"}}</td>
