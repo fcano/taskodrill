@@ -2,9 +2,10 @@
 
 {% block content %}
     <h1>{{ project.name }}</h1>
-    <p><a href="{% url 'project_update' project.pk %}">Edit</a>
+    <p>
+        <a id="edit_project_button" class="btn btn-primary" href="{% url 'project_update' project.pk %}">Edit</a>
+    </p>
     <p>{{ project.description }}</p>
-    <h2>Tasks in project</h2>
     {% if project.task_set.count == 0 %}
     <p>This project does not have tasks.</p>
     {% else %}

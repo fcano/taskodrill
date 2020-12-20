@@ -2,6 +2,8 @@
 
 {% block content %}
 <h1>{{ task.name|urlize }}</h1>
-<p><a href="{% url 'task_update' task.pk %}">Edit</a></p>
+<p>
+    <a id="edit_task_button" class="btn btn-primary" href="{% url 'task_update' task.pk %}">Edit</a>
+</p>
 <p>{{ task.note|urlize }}</p>
 {% endblock %}
