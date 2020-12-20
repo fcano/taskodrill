@@ -60,6 +60,15 @@ label {
     background-color: #BFD7F9;
 }
 
+.bg-nav-grey {
+    background-color: #272C30;
+    color: white;
+}
+
+.bg-sidebar-blue {
+    background-color: #F8F9FA;
+}
+
 .bg-my-meat {
     background-color: #F5F5F3;
 }

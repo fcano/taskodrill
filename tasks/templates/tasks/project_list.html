@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <a href="{% url 'project_add' %}">New</a>
+    <p>
+      <a id="new_project_button" class="btn btn-primary" href="{% url 'project_add' %}">New project</a>
+    </p>
     {% if project_list %}
     <table border="1">
       <tr>
