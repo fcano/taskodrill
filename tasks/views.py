@@ -136,6 +136,8 @@ class TaskMarkAsDone(LoginRequiredMixin, View):
             
             if new_task.repeat:
                 new_task.update_next_dates()
+                if task.contexts:
+                    new_task.contexts.set(task.contexts.all())
 
             # Here I'm returning JsonResponse with serialized task. The html has to be
             # built in the myscripts.js or {% block javascript %}
@@ -148,9 +150,7 @@ class TaskMarkAsDone(LoginRequiredMixin, View):
                     next_task = next_tasks_list[0]
                     next_task.update_ready_datetime()
                     next_task_tr = render_to_string('tasks/task_row.html', {'task': next_task})
-            if task.contexts:
-                new_task.save()
-                new_task.contexts.set(task.contexts.all())
+
             #next_task_json = serializers.serialize("json", [next_task_tr])
             return JsonResponse({'success': True, 'next_task_tr': next_task_tr})
         else:
