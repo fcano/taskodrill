@@ -3,6 +3,7 @@
 {% block content %}
     <h1>{{ context.name }}</h1>
     <p><a href="{% url 'context_update' context.pk %}">Edit</a>
+    <p>Tasks: {{ context.pending_tasks.count }}</p>
     <h2>Tasks in context</h2>
     {% if context.task_set.count == 0 %}
     <p>This context does not have tasks.</p>
