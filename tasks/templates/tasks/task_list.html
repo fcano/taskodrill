@@ -5,7 +5,7 @@
   <a id="new_task_button" class="btn btn-primary" href="{% url 'task_add' %}">New task</a>
 </p>
 <p>
-  Tasks: {{ task_list.count }}
+  Tasks: <span id="tasks_count">{{ task_list.count }}</span>
 </p>
 {% if task_list %}
 {% include 'tasks/tasks_table.html' with task_list=task_list %}
