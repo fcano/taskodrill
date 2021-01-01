@@ -234,6 +234,7 @@ class Context(models.Model):
     def pending_tasks(self):
         tasks_wo_project = self.tasks.filter(
             project__isnull=True,
+            status=Task.PENDING,
         )
         return self.tasks.filter(
             status=Task.PENDING,
