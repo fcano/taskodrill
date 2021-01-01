@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.conf import settings
 from django.db.models import Q
 
+
 class Task(models.Model):
     NO = 0
     DAILY = 1
@@ -16,7 +17,7 @@ class Task(models.Model):
     QUATERLY = 90
     SEMIANNUALLY = 180
     YEARLY = 360
-    END_OF_MONTH = 31 
+    END_OF_MONTH = 31
 
     REPEAT = (
         (NO, 'No'),
@@ -87,10 +88,13 @@ class Task(models.Model):
     creation_datetime = models.DateTimeField(auto_now_add=True)
     modification_datetime = models.DateTimeField(auto_now=True)
     ready_datetime = models.DateTimeField(blank=True, null=True)
-    project = models.ForeignKey('Project', on_delete=models.CASCADE, blank=True, null=True)
+    project = models.ForeignKey(
+        'Project', on_delete=models.CASCADE, blank=True, null=True)
     project_order = models.IntegerField(default=DEFAULT_PROJECT_ORDER)
-    contexts = models.ManyToManyField('Context', related_name="tasks", blank=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    contexts = models.ManyToManyField(
+        'Context', related_name="tasks", blank=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,
+                             on_delete=models.CASCADE)
 
     def __str__(self):
         return self.name
@@ -104,7 +108,7 @@ class Task(models.Model):
     def get_next_start_date(self):
         if self.start_date == None:
             return None
-        
+
         # Set reference dates
         if self.repeat_from == Task.COMPLETION_DATE:
             start_date_reference = datetime.date.today()
@@ -140,10 +144,8 @@ class Task(models.Model):
 
         return next_due_date
 
-
     next_start_date = property(get_next_start_date)
     next_due_date = property(get_next_due_date)
-
 
     def get_absolute_url(self):
         return reverse('task_detail', kwargs={'pk': self.pk})
@@ -153,7 +155,7 @@ class Task(models.Model):
         if self._state.adding:
             self.ready_datetime = timezone.now()
             if self.project is not None:
-                #self.project_order = Project.objects.get(self.project).task_set.count() + 1
+                # self.project_order = Project.objects.get(self.project).task_set.count() + 1
                 self.project_order = self.project.task_set.count() + 1
         super().save(*args, **kwargs)
 
@@ -171,7 +173,7 @@ class Task(models.Model):
 
 
 class Project(models.Model):
-    
+
     OPEN = 0
     ABANDONED = 1
     FINISHED = 2
@@ -187,7 +189,8 @@ class Project(models.Model):
     creation_datetime = models.DateTimeField(auto_now_add=True)
     modification_datetime = models.DateTimeField(auto_now=True)
     status = models.IntegerField(choices=STATUS, default=OPEN)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,
+                             on_delete=models.CASCADE)
 
     def __str__(self):
         return self.name
@@ -196,13 +199,15 @@ class Project(models.Model):
         return self.task_set.filter(status=Task.PENDING).order_by('creation_datetime')
 
     def next_task(self):
-        q1 = Q(start_date=datetime.date.today()) & Q(start_time__lte=datetime.datetime.now())
+        q1 = Q(start_date=datetime.date.today()) & Q(
+            start_time__lte=datetime.datetime.now())
         q2 = Q(start_date=datetime.date.today()) & Q(start_time__isnull=True)
         q3 = Q(start_date__lt=datetime.date.today())
         q4 = Q(start_date__isnull=True)
         query = q1 | q2 | q3 | q4
 
-        next_tasks = self.task_set.filter(status=Task.PENDING).filter(query).order_by('project_order')
+        next_tasks = self.task_set.filter(status=Task.PENDING).filter(
+            query).order_by('project_order')
         if len(next_tasks) >= 1:
             return next_tasks[0]
         else:
@@ -217,7 +222,8 @@ class Project(models.Model):
 
 class Context(models.Model):
     name = models.CharField(max_length=100)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,
+                             on_delete=models.CASCADE)
 
     def __str__(self):
         return self.name
@@ -226,7 +232,13 @@ class Context(models.Model):
         return reverse('context_detail', kwargs={'pk': self.pk})
 
     def pending_tasks(self):
-        return self.tasks.filter(status=Task.PENDING)
+        tasks_wo_project = self.tasks.filter(
+            project__isnull=True,
+        )
+        return self.tasks.filter(
+            status=Task.PENDING,
+            project__isnull=False,
+        ).order_by('project_id', 'project_order').distinct('project_id').union(tasks_wo_project).order_by('due_date', 'ready_datetime')
 
     class Meta:
         ordering = ['name']
