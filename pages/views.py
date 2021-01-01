@@ -8,3 +8,6 @@ class FeaturesPage(TemplateView):
 
 class PricingPage(TemplateView):
     template_name = 'pricing.html'
+
+class InstructionsPage(TemplateView):
+    template_name = 'instructions.html'
