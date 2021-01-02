@@ -21,11 +21,24 @@ class TaskCreate(LoginRequiredMixin, CreateView):
     #fields = [  'name', 'start_date', 'start_time', 'due_date', 'due_time', 'repeat',
     #            'repeat_from', 'length', 'priority', 'note', 'tasklist']
 
-    success_url = reverse_lazy('task_list_tasklist', kwargs={'tasklist_slug' : 'nextactions', })
+    def get_context_data(self, **kwargs):
+        context = super(CreateView, self).get_context_data(**kwargs)
+        next_url = self.request.GET.get('next')
+        if next_url:
+            context['next'] = next_url
+        return context
+
+    def get_success_url(self):
+        next_url = self.request.GET.get('next')
+        if next_url:
+            return next_url # return next url for redirection
+        return reverse_lazy('task_list_tasklist', kwargs={'tasklist_slug' : 'nextactions', })
 
     def get_form_kwargs(self):
         kwargs = super(TaskCreate, self).get_form_kwargs()
         kwargs['user'] = self.request.user
+        if 'context_id' in self.request.GET.keys():
+            kwargs['context_id'] = self.request.GET['context_id']
         return kwargs
 
     def form_valid(self, form):
@@ -64,6 +77,7 @@ class TaskList(LoginRequiredMixin, ListView):
         else:
             search_filter = Q(status=Task.PENDING)
 
+        # Task with datetime in the future
         q1 = Q(start_date=datetime.date.today()) & Q(start_time__lte=datetime.datetime.now())
         q2 = Q(start_date=datetime.date.today()) & Q(start_time__isnull=True)
         q3 = Q(start_date__lt=datetime.date.today())

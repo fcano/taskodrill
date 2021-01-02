@@ -980,7 +980,7 @@ class TestTaskListSelenium(StaticLiveServerTestCase):
         submit_button.click()
 
         WebDriverWait(selenium, 15).until(EC.url_changes(current_url))
-        assert '<form action=""' in selenium.page_source
+        assert '<form action="/tasks/add/?next=' in selenium.page_source
 
 class TestProjectDetail(StaticLiveServerTestCase):
     def setUp(self):

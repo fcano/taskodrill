@@ -3,6 +3,9 @@
 {% block content %}
     <h1>{{ context.name }}</h1>
     <p><a href="{% url 'context_update' context.pk %}">Edit</a>
+    <p>
+        <a id="new_task_button" class="btn btn-primary" href="{% url 'task_add' %}?context_id={{ context.id }}&next={{ context.get_absolute_url }}">New task</a>
+    </p>
     <p>Tasks: <span id="tasks_count">{{ context.pending_tasks.count }}</span></p>
     <h2>Tasks in context</h2>
     {% if context.task_set.count == 0 %}
