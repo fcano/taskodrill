@@ -232,14 +232,22 @@ class Context(models.Model):
         return reverse('context_detail', kwargs={'pk': self.pk})
 
     def pending_tasks(self):
+        q1 = Q(start_date=datetime.date.today()) & Q(start_time__lte=datetime.datetime.now())
+        q2 = Q(start_date=datetime.date.today()) & Q(start_time__isnull=True)
+        q3 = Q(start_date__lt=datetime.date.today())
+        q4 = Q(start_date__isnull=True)
+        active_task = q1 | q2 | q3 | q4
+
         tasks_wo_project = self.tasks.filter(
             project__isnull=True,
             status=Task.PENDING,
-        )
+            tasklist = Task.NEXT_ACTION,
+        ).filter(active_task)
         return self.tasks.filter(
             status=Task.PENDING,
             project__isnull=False,
-        ).order_by('project_id', 'project_order').distinct('project_id').union(tasks_wo_project).order_by('due_date', 'ready_datetime')
+            tasklist = Task.NEXT_ACTION,
+        ).order_by('project_id', 'project_order').distinct('project_id').filter(active_task).union(tasks_wo_project).order_by('due_date', 'ready_datetime')
 
     class Meta:
         ordering = ['name']
