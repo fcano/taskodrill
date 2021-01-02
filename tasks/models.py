@@ -236,18 +236,26 @@ class Context(models.Model):
         q2 = Q(start_date=datetime.date.today()) & Q(start_time__isnull=True)
         q3 = Q(start_date__lt=datetime.date.today())
         q4 = Q(start_date__isnull=True)
-        active_task = q1 | q2 | q3 | q4
+        in_the_future = q1 | q2 | q3 | q4
+        
+        q5 = Q(tasklist=Task.NEXT_ACTION)
+        active_task = in_the_future & q5
 
         tasks_wo_project = self.tasks.filter(
             project__isnull=True,
             status=Task.PENDING,
-            tasklist = Task.NEXT_ACTION,
+            tasklist=Task.NEXT_ACTION,
         ).filter(active_task)
-        return self.tasks.filter(
+
+        last_task_from_each_project = self.tasks.filter(
             status=Task.PENDING,
             project__isnull=False,
-            tasklist = Task.NEXT_ACTION,
-        ).order_by('project_id', 'project_order').distinct('project_id').filter(active_task).union(tasks_wo_project).order_by('due_date', 'ready_datetime')
+            project__status=Project.OPEN
+        ).order_by('project_id', 'project_order').distinct('project_id')
+        last_task_from_each_project = Task.objects.filter(pk__in=last_task_from_each_project).filter(active_task)
+
+        return tasks_wo_project.union(last_task_from_each_project).order_by('due_date', 'ready_datetime')
+
 
     class Meta:
         ordering = ['name']
