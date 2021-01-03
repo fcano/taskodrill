@@ -21,6 +21,8 @@ class TaskCreate(LoginRequiredMixin, CreateView):
     #fields = [  'name', 'start_date', 'start_time', 'due_date', 'due_time', 'repeat',
     #            'repeat_from', 'length', 'priority', 'note', 'tasklist']
 
+    # We get the "next" GET param that comes, and put it in the context for the template
+    # to use it. It should be different if it comes from a project or a context.
     def get_context_data(self, **kwargs):
         context = super(TaskCreate, self).get_context_data(**kwargs)
         next_url = self.request.GET.get('next')
@@ -34,6 +36,8 @@ class TaskCreate(LoginRequiredMixin, CreateView):
             return next_url # return next url for redirection
         return reverse_lazy('task_list_tasklist', kwargs={'tasklist_slug' : 'nextactions', })
 
+    # When we create a task by clicking within a project or context view, we want the
+    # project or context prepopulated.
     def get_form_kwargs(self):
         kwargs = super(TaskCreate, self).get_form_kwargs()
         kwargs['user'] = self.request.user
@@ -120,10 +124,28 @@ class TaskUpdate(LoginRequiredMixin, UpdateView):
     form_class = TaskForm
     template_name = 'tasks/task_form.html'
 
+    # def get_form_kwargs(self):
+    #     kwargs = super(TaskUpdate, self).get_form_kwargs()
+    #     kwargs['user'] = self.request.user
+    #     return kwargs
+
+    # When we create a task by clicking within a project or context view, we want the
+    # project or context prepopulated.
     def get_form_kwargs(self):
         kwargs = super(TaskUpdate, self).get_form_kwargs()
         kwargs['user'] = self.request.user
+        if 'context_id' in self.request.GET.keys():
+            kwargs['context_id'] = self.request.GET['context_id']
+        if 'project_id' in self.request.GET.keys():
+            kwargs['project_id'] = self.request.GET['project_id']
         return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super(TaskUpdate, self).get_context_data(**kwargs)
+        next_url = self.request.GET.get('next')
+        if next_url:
+            context['next'] = next_url
+        return context
 
     def get_success_url(self):
         next_url = self.request.POST.get('next')
@@ -210,6 +232,11 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
 class ProjectDetail(LoginRequiredMixin, DetailView):
     model = Project
 
+    def get_context_data(self, **kwargs):
+        context = super(ProjectDetail, self).get_context_data(**kwargs)
+        context['next'] = self.object.get_absolute_url()
+        return context
+
     def get_queryset(self):
         if self.request.user.is_authenticated:
             return Project.objects.filter(user=self.request.user)
@@ -255,6 +282,11 @@ class ContextCreate(LoginRequiredMixin, CreateView):
 
 class ContextDetail(LoginRequiredMixin, DetailView):
     model = Context
+
+    def get_context_data(self, **kwargs):
+        context = super(ContextDetail, self).get_context_data(**kwargs)
+        context['next'] = self.object.get_absolute_url()
+        return context
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
