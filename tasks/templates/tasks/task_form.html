@@ -3,7 +3,7 @@
 {% block content %}
 
 <h1>New task</h1>
-<form action="{% url 'task_add' %}?next={{ next }}" method="post">
+<form action="" method="post">
     {% csrf_token %}
     {{ form.non_field_errors }}
     <div class="form-row">
@@ -81,8 +81,9 @@
             {{ form.note }}
         </div>
     </div>
+    <input type="hidden" id="next" name="next" value="{{ next }}">
     <div id="submit_div">
-        <input type="submit" value="Submit" />
+        <input type="submit" id="submit_button" value="Submit" />
     </div>
 </form>
 

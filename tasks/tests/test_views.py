@@ -662,6 +662,89 @@ class TaskUpdateTests(TestCase):
         task.refresh_from_db()
         self.assertEqual(task.name, 'Pending Task')
 
+    def test_task_update_same_tasks_num(self):
+        """Test same tasks num after update"""
+        user = mylogin(self)
+        
+        task = Task.objects.create(
+            name="Some Task",
+            repeat=Task.NO,
+            repeat_from=Task.COMPLETION_DATE,
+            priority=Task.HIGH,
+            status=Task.PENDING,
+            tasklist=Task.NEXT_ACTION,
+            user=user,
+        )
+
+        before_tasks_num = Task.objects.count()
+
+        response = self.client.post(
+            reverse('task_update', kwargs={'pk': task.id}), 
+                {
+                    'name': 'Pending Task',
+                    'repeat':'0',
+                    'repeat_from':'0',
+                    'priority':'0',
+                    'tasklist':Task.NEXT_ACTION,
+                })
+
+        task.refresh_from_db()
+
+        after_tasks_num = Task.objects.count()
+
+        self.assertEqual(before_tasks_num, after_tasks_num)
+
+class TestTaskUpdateSelenium(StaticLiveServerTestCase):
+    def setUp(self):
+        MyUser.objects.create_user(
+            username='testuser',
+            password='testpassword',
+        )
+
+    def test_same_tasks_num_after_update(self):
+        user = mylogin(self)
+
+
+        selenium = webdriver.Chrome()
+        selenium.get("{0}/accounts/login".format(self.live_server_url))
+        username_field = selenium.find_element_by_id('id_username')
+        password_field = selenium.find_element_by_id('id_password')
+        submit_button = selenium.find_element_by_id('submit_button')
+        
+        current_url = selenium.current_url
+
+        username_field.send_keys('testuser')
+        password_field.send_keys('testpassword')
+        submit_button.send_keys(Keys.RETURN)
+
+        WebDriverWait(selenium, 15).until(EC.url_changes(current_url))
+
+        task = Task.objects.create(
+            name="Some Task",
+            repeat=Task.NO,
+            repeat_from=Task.COMPLETION_DATE,
+            priority=Task.HIGH,
+            status=Task.PENDING,
+            tasklist=Task.NEXT_ACTION,
+            user=user,
+        )
+
+        before_tasks_num = Task.objects.count()
+
+        selenium.get("{0}/tasks/{1}/edit/".format(self.live_server_url, task.id))
+        name_field = selenium.find_element_by_id('id_name')
+        submit_button = selenium.find_element_by_id('submit_button')
+        
+        current_url = selenium.current_url
+
+        name_field.send_keys('Modified task name')
+        submit_button.send_keys(Keys.RETURN)
+
+        WebDriverWait(selenium, 15).until(EC.url_changes(current_url))
+
+        after_tasks_num = Task.objects.count()
+
+        self.assertEqual(before_tasks_num, after_tasks_num)
 
 
 class TaskDeleteTests(TestCase):
@@ -980,7 +1063,7 @@ class TestTaskListSelenium(StaticLiveServerTestCase):
         submit_button.click()
 
         WebDriverWait(selenium, 15).until(EC.url_changes(current_url))
-        assert '<form action="/tasks/add/?next=' in selenium.page_source
+        assert '<form action=""' in selenium.page_source
 
 class TestProjectDetail(StaticLiveServerTestCase):
     def setUp(self):

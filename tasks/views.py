@@ -22,14 +22,14 @@ class TaskCreate(LoginRequiredMixin, CreateView):
     #            'repeat_from', 'length', 'priority', 'note', 'tasklist']
 
     def get_context_data(self, **kwargs):
-        context = super(CreateView, self).get_context_data(**kwargs)
+        context = super(TaskCreate, self).get_context_data(**kwargs)
         next_url = self.request.GET.get('next')
         if next_url:
             context['next'] = next_url
         return context
 
     def get_success_url(self):
-        next_url = self.request.GET.get('next')
+        next_url = self.request.POST.get('next')
         if next_url:
             return next_url # return next url for redirection
         return reverse_lazy('task_list_tasklist', kwargs={'tasklist_slug' : 'nextactions', })
@@ -126,7 +126,13 @@ class TaskUpdate(LoginRequiredMixin, UpdateView):
         return kwargs
 
     def get_success_url(self):
-        return reverse('task_list_tasklist', kwargs={'tasklist_slug' : 'nextactions', })
+        next_url = self.request.POST.get('next')
+        if next_url:
+            return next_url # return next url for redirection
+        return reverse_lazy('task_list_tasklist', kwargs={'tasklist_slug' : 'nextactions', })
+
+#    def get_success_url(self):
+#        return reverse('task_list_tasklist', kwargs={'tasklist_slug' : 'nextactions', })
 
 #    def get_queryset(self):
 #        return Task.objects.filter(user=self.request.user, id=self.request.POST['id'])
