@@ -39,6 +39,8 @@ class TaskCreate(LoginRequiredMixin, CreateView):
         kwargs['user'] = self.request.user
         if 'context_id' in self.request.GET.keys():
             kwargs['context_id'] = self.request.GET['context_id']
+        if 'project_id' in self.request.GET.keys():
+            kwargs['project_id'] = self.request.GET['project_id']
         return kwargs
 
     def form_valid(self, form):
@@ -194,7 +196,7 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
     fields = ['name', 'description', 'status']
 
     success_url = reverse_lazy('project_list')
-    
+
     def form_valid(self, form):
         form.instance.user = self.request.user
         return super().form_valid(form)

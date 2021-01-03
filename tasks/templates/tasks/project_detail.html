@@ -5,6 +5,9 @@
     <p>
         <a id="edit_project_button" class="btn btn-primary" href="{% url 'project_update' project.pk %}">Edit</a>
     </p>
+    <p>
+        <a id="new_task_button" class="btn btn-primary" href="{% url 'task_add' %}?project_id={{ project.id }}&next={{ project.get_absolute_url }}">New task</a>
+    </p>
     <p>Tasks: <span id="tasks_count">{{ project.pending_tasks.count }}</span></p>
     <p>{{ project.description }}</p>
     {% if project.task_set.count == 0 %}
