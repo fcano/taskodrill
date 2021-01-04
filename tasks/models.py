@@ -252,6 +252,7 @@ class Context(models.Model):
             project__isnull=False,
             project__status=Project.OPEN
         ).order_by('project_id', 'project_order').distinct('project_id')
+        
         last_task_from_each_project = Task.objects.filter(pk__in=last_task_from_each_project).filter(active_task)
 
         return tasks_wo_project.union(last_task_from_each_project).order_by('due_date', 'ready_datetime')

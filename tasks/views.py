@@ -102,18 +102,23 @@ class TaskList(LoginRequiredMixin, ListView):
                 tasklist = Task.NEXT_ACTION
             else:
                 tasklist = Task.SOMEDAY_MAYBE
+            
             tasks_wo_project = Task.objects.filter(
                             user=self.request.user,
                             tasklist=tasklist,
                             status=Task.PENDING,
                             project__isnull=True).filter(query)
+            
             last_task_from_each_project = Task.objects.filter(
                 user=self.request.user,
-                tasklist=tasklist,
                 status=Task.PENDING,
                 project__isnull=False,
                 project__status=Project.OPEN,
             ).order_by('project_id', 'project_order').distinct('project_id')
+
+            q5 = Q(tasklist=tasklist)
+            query = query & q5
+
             last_task_from_each_project = Task.objects.filter(pk__in=last_task_from_each_project).filter(query)
             #last_task_from_each_project = last_task_from_each_project.filter(query)
             return tasks_wo_project.union(last_task_from_each_project).order_by('due_date', 'ready_datetime')
