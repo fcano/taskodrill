@@ -126,3 +126,15 @@ $('#ideas_body').on('click', 'button', function () {
         console.log(data);
     });
 });
+
+
+$('#hide_future_tasks').click(function() {
+    checked = $('#hide_future_tasks').is(':checked');
+    href = window.location.href;
+    href = href.substring(0, href.indexOf('?'));
+    if (checked) {
+        window.location.href = href + "?hide_future_tasks=true";
+    } else {
+        window.location.href = href;
+    }
+});
