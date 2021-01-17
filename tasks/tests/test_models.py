@@ -75,6 +75,7 @@ class ProjectTests(TestCase):
         project = Project.objects.create(
             name="Test Project 1",
             user=MyUser.objects.last(),
+            due_date=datetime.date.today() + datetime.timedelta(days=1),
         )
 
         Task.objects.create(
@@ -86,6 +87,70 @@ class ProjectTests(TestCase):
         )
 
         self.assertEqual(project.pending_tasks().count(), 1)
+
+    def test_task_within_project_gets_due_date(self):
+        """
+        When a project with end date is modified, all tasks within the project should have an end date equal or before to the project end date.
+        """ 
+        project = Project.objects.create(
+            name="Test Project 1",
+            user=MyUser.objects.last(),
+            due_date=datetime.date.today(),
+        )
+
+        task = Task.objects.create(
+            name="Test Task 1",
+            tasklist=Task.NEXT_ACTION,
+            status=Task.PENDING,
+            project=project,
+            user=MyUser.objects.last(),
+        )
+
+        self.assertEqual(task.due_date, project.due_date)
+
+    def test_task_within_project_gets_max_due_date(self):
+        """
+        When a project with end date is modified, all tasks within the project should have an end date equal or before to the project end date.
+        """ 
+        project = Project.objects.create(
+            name="Test Project 1",
+            user=MyUser.objects.last(),
+            due_date=datetime.date.today(),
+        )
+
+        task = Task.objects.create(
+            name="Test Task 1",
+            tasklist=Task.NEXT_ACTION,
+            status=Task.PENDING,
+            project=project,
+            user=MyUser.objects.last(),
+            due_date=datetime.date.today() + datetime.timedelta(days=1),
+        )
+
+        self.assertEqual(task.due_date, project.due_date)
+
+    def test_if_project_due_date_modified_task_modified(self):
+        """If the due_date of a project is modified, the due_date of all tasks related should be modified.""" 
+        
+        project = Project.objects.create(
+            name="Test Project 1",
+            user=MyUser.objects.last(),
+            due_date=datetime.date.today() + datetime.timedelta(days=10),
+        )
+
+        task = Task.objects.create(
+            name="Test Task 1",
+            tasklist=Task.NEXT_ACTION,
+            status=Task.PENDING,
+            project=project,
+            user=MyUser.objects.last(),
+        )
+
+        project.due_date = datetime.date.today() + datetime.timedelta(days=5)
+        project.save()
+
+        task.refresh_from_db()
+        self.assertEqual(task.due_date, project.due_date)
 
 class TaskTests(TestCase):
     def setUp(self):

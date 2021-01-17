@@ -157,6 +157,11 @@ class Task(models.Model):
             if self.project is not None:
                 # self.project_order = Project.objects.get(self.project).task_set.count() + 1
                 self.project_order = self.project.task_set.count() + 1
+                if self.project.due_date is not None:
+                    if self.due_date is None:
+                        self.due_date = self.project.due_date
+                    elif self.project.due_date < self.due_date:
+                        self.due_date = self.project.due_date
         super().save(*args, **kwargs)
 
     def update_ready_datetime(self):
@@ -189,6 +194,7 @@ class Project(models.Model):
     creation_datetime = models.DateTimeField(auto_now_add=True)
     modification_datetime = models.DateTimeField(auto_now=True)
     status = models.IntegerField(choices=STATUS, default=OPEN)
+    due_date = models.DateField(blank=True, null=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL,
                              on_delete=models.CASCADE)
 
@@ -215,6 +221,17 @@ class Project(models.Model):
 
     def get_absolute_url(self):
         return reverse('project_detail', kwargs={'pk': self.pk})
+
+    def save(self, *args, **kwargs):
+        if self.due_date is not None:
+            for task in self.task_set.filter(status=Task.PENDING):
+                if task.due_date is None:
+                    task.due_date = self.due_date
+                    task.save()
+                elif self.due_date < task.due_date:
+                    task.due_date = self.due_date
+                    task.save()
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ['name']

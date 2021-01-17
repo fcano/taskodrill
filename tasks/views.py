@@ -12,7 +12,7 @@ from django.template.loader import render_to_string
 from django.http import HttpResponseRedirect
 
 from .models import Task, Project, Context
-from .forms import TaskForm, OrderingForm
+from .forms import TaskForm, ProjectForm, OrderingForm
 
 
 class TaskCreate(LoginRequiredMixin, CreateView):
@@ -226,7 +226,8 @@ class SaveNewOrdering(LoginRequiredMixin, View):
 
 class ProjectCreate(LoginRequiredMixin, CreateView):
     model = Project
-    fields = ['name', 'description', 'status']
+    form_class = ProjectForm
+    #fields = ['name', 'description', 'status', 'due_date']
 
     success_url = reverse_lazy('project_list')
 
@@ -268,7 +269,8 @@ class ProjectList(LoginRequiredMixin, ListView):
 
 class ProjectUpdate(LoginRequiredMixin,UpdateView):
     model = Project
-    fields = ['name', 'description', 'status']
+    form_class = ProjectForm
+    #fields = ['name', 'description', 'status', 'due_date']
 
 class ProjectDelete(LoginRequiredMixin,DeleteView):
     model = Project
