@@ -6,11 +6,24 @@
     <p>
         <a id="new_task_button" class="btn btn-primary" href="{% url 'task_add' %}?context_id={{ context.id }}&next={{ context.get_absolute_url }}">New task</a>
     </p>
-    <p>Tasks: <span id="tasks_count">{{ context.pending_tasks.count }}</span></p>
+    <p>
+        <input type="checkbox" id="hide_future_tasks" name="hide_future_tasks" value="true" {% if hide_future_tasks %}checked="true"{% endif %}> <label for="hide_future_tasks">Hide future tasks</label>
+    </p>
+    
+    {% if hide_future_tasks %}
+        <p>Tasks: <span id="tasks_count">{{ context.active_pending_tasks.count }}</span></p>
+    {% else %}
+        <p>Tasks: <span id="tasks_count">{{ context.pending_tasks.count }}</span></p>
+    {% endif %}
+
     <h2>Tasks in context</h2>
     {% if context.task_set.count == 0 %}
     <p>This context does not have tasks.</p>
     {% else %}
-        {% include 'tasks/tasks_table.html' with task_list=context.pending_tasks.all %}
+        {% if hide_future_tasks %}
+            {% include 'tasks/tasks_table.html' with task_list=context.active_pending_tasks %}
+        {% else %}
+            {% include 'tasks/tasks_table.html' with task_list=context.pending_tasks.all %}
+        {% endif %}
     {% endif %}
 {% endblock %}

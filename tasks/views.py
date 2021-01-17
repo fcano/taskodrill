@@ -29,7 +29,7 @@ class TaskCreate(LoginRequiredMixin, CreateView):
         if next_url:
             context['next'] = next_url
         return context
-
+        
     def get_success_url(self):
         next_url = self.request.POST.get('next')
         if next_url:
@@ -293,6 +293,11 @@ class ContextDetail(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super(ContextDetail, self).get_context_data(**kwargs)
         context['next'] = self.object.get_absolute_url()
+        
+        hide_future_tasks = self.request.GET.get('hide_future_tasks')
+        if hide_future_tasks:
+            context['hide_future_tasks'] = "true"
+
         return context
 
     def get_queryset(self):
