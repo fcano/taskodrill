@@ -49,7 +49,19 @@ class TaskCreate(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.user = self.request.user
-        return super().form_valid(form)
+        if '|' in form.instance.name:
+            tasks = [task.strip() for task in form.instance.name.split('|')]
+            for task in tasks:
+                t = form.save(commit=False)
+                #print("YYYYYYYYYYYYYYYYYYYY {0}".format(form.cleaned_data['contexts']))
+                #print("XXXXXXXXXXXXXX {0}".format(t.contexts))
+                t.pk = None
+                t.name = task
+                t.save()
+                t.contexts.set(form.cleaned_data['contexts'])
+            return HttpResponseRedirect(self.get_success_url())
+        else:
+            return super().form_valid(form)
 
 class TaskDetail(LoginRequiredMixin, DetailView):
     model = Task
