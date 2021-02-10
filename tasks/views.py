@@ -53,13 +53,24 @@ class TaskCreate(LoginRequiredMixin, CreateView):
             tasks = [task.strip() for task in form.instance.name.split('|')]
             for task in tasks:
                 t = form.save(commit=False)
-                #print("YYYYYYYYYYYYYYYYYYYY {0}".format(form.cleaned_data['contexts']))
-                #print("XXXXXXXXXXXXXX {0}".format(t.contexts))
                 t.pk = None
                 t.name = task
                 t.save()
                 t.contexts.set(form.cleaned_data['contexts'])
             return HttpResponseRedirect(self.get_success_url())
+        elif '->' in form.instance.name:
+            tasks = [task.strip() for task in form.instance.name.split('->')]
+            if not form.cleaned_data['project']:
+                project = Project.objects.create(name=tasks[0], due_date=form.cleaned_data['due_date'], user=self.request.user)
+            for task in tasks:
+                t = form.save(commit=False)
+                t.pk = None
+                t.name = task
+                if not form.cleaned_data['project']:
+                    t.project = project
+                t.save()
+                t.contexts.set(form.cleaned_data['contexts'])
+            return HttpResponseRedirect(self.get_success_url())           
         else:
             return super().form_valid(form)
 
