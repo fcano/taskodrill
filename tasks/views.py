@@ -62,6 +62,7 @@ class TaskCreate(LoginRequiredMixin, CreateView):
             tasks = [task.strip() for task in form.instance.name.split('->')]
             if not form.cleaned_data['project']:
                 project = Project.objects.create(name=tasks[0], due_date=form.cleaned_data['due_date'], user=self.request.user)
+                tasks = tasks[1:]
             for task in tasks:
                 t = form.save(commit=False)
                 t.pk = None
