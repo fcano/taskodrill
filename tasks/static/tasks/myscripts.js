@@ -89,6 +89,14 @@ $('#tasks_body').on('change', 'select', function () {
     action = res[0];
     data.id = res[1];
 
+    if (action=='notthisweek') {
+        tasklist = 3;
+    } else if (action=='nextaction') {
+        tasklist = 0;
+    } else if (action=='someday') {
+        tasklist = 1;
+    }
+
     console.log(data);
 
     $.ajax({
@@ -96,7 +104,7 @@ $('#tasks_body').on('change', 'select', function () {
         url: "/tasks/change-tasklist/",
         data: {
             id: data.id,
-            tasklist: 3, //NOT_THIS_WEEK
+            tasklist: tasklist, //NOT_THIS_WEEK
         },
         success: function (response) {
             task_row_str = '#tasks_row_' + data.id;
