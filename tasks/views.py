@@ -119,11 +119,13 @@ class TaskList(LoginRequiredMixin, ListView):
         # query.add(Q(start_date__lt=datetime.date.today()), Q.OR)
         # query.add(Q(start_date__isnull=True), Q.OR)
 
-        if (tasklist_slug is None) or (tasklist_slug not in ['nextactions', 'somedaymaybe']):
+        if (tasklist_slug is None) or (tasklist_slug not in ['nextactions', 'somedaymaybe', 'notthisweek']):
             return Task.objects.filter(user=self.request.user).filter(search_filter).order_by('-modification_datetime')
         else:
             if tasklist_slug == 'nextactions':
                 tasklist = Task.NEXT_ACTION
+            elif tasklist_slug == 'notthisweek':
+                tasklist = Task.NOT_THIS_WEEK
             else:
                 tasklist = Task.SOMEDAY_MAYBE
             

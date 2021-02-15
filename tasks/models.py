@@ -56,11 +56,13 @@ class Task(models.Model):
     NEXT_ACTION = 0
     SOMEDAY_MAYBE = 1
     SUPPORT_MATERIAL = 2
+    NOT_THIS_WEEK = 3
 
     TASK_LIST = (
         (NEXT_ACTION, 'Next Action'),
         (SOMEDAY_MAYBE, 'Someday / Maybe'),
         (SUPPORT_MATERIAL, 'Support Material'),
+        (NOT_THIS_WEEK, 'Not This Week'),
     )
 
     PENDING = 0

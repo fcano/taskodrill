@@ -273,6 +273,8 @@ class TaskTests(TestCase):
         self.assertEqual(task.get_tasklist_display(), "Someday / Maybe")
         task.tasklist = Task.SUPPORT_MATERIAL
         self.assertEqual(task.get_tasklist_display(), "Support Material")
+        task.tasklist = Task.NOT_THIS_WEEK
+        self.assertEqual(task.get_tasklist_display(), "Not This Week")
     
     def test_task_repeat_daily_no_start_no_due_completion(self):
         task = Task()
