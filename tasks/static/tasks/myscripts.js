@@ -85,13 +85,9 @@ $('#project_tasks_body').on('click', 'input[type="checkbox"]', function () {
 $('#tasks_body').on('change', 'select', function () {
     var data = {};
     data.value = $(this).val();
-    alert(data.value);
     res = data.value.split('_');
     action = res[0];
     data.id = res[1];
-
-    alert(action);
-    alert(data.id);
 
     console.log(data);
 
