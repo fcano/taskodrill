@@ -81,6 +81,36 @@ $('#project_tasks_body').on('click', 'input[type="checkbox"]', function () {
     });
 });
 
+// Triggers when the dropdown at the end of a task line changes to choose an action
+$('#tasks_body').on('change', 'select', function () {
+    var data = {};
+    data.value = $(this).val();
+    alert(data.value);
+    res = data.value.split('_');
+    action = res[0];
+    data.id = res[1];
+
+    alert(action);
+    alert(data.id);
+
+    console.log(data);
+
+    $.ajax({
+        type: "POST",
+        url: "/tasks/change-tasklist/",
+        data: {
+            id: data.id,
+            tasklist: 3, //NOT_THIS_WEEK
+        },
+        success: function (response) {
+            task_row_str = '#tasks_row_' + data.id;
+            $(task_row_str).remove();
+        }
+    }).done(function (data) {
+        console.log(data);
+    });
+});
+
 $(document).on('click', 'a.confirm-delete', function (event) {
     event.preventDefault();
     confirm('Are you sure you want to delete this?');

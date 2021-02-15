@@ -231,6 +231,18 @@ class TaskMarkAsDone(LoginRequiredMixin, View):
         else:
             return JsonResponse({'error': 'Error'})
 
+class TaskChangeTasklist(LoginRequiredMixin, View):
+
+    def post(self, request, *args, **kwargs):
+        if self.request.user.is_authenticated:
+            task = Task.objects.get(user=self.request.user, id=self.request.POST['id'])
+            task.tasklist = self.request.POST['tasklist']
+            task.save()
+            
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'error': 'Error'})
+
 class SaveNewOrdering(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
