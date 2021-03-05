@@ -115,6 +115,31 @@ $('#tasks_body').on('change', 'select', function () {
     });
 });
 
+
+$('#tasks_body').on('click', 'a.postpone', function (event) {
+    event.preventDefault();
+
+    var data = {};
+    href = $(this).attr('href');
+    href_elems = href.split('/');
+    data.id = href_elems[2];
+    object_type = href_elems[1];
+
+    $.ajax({
+        type: "POST",
+        url: "/tasks/" + data.id + "/postpone/",
+        data: data,
+        success: function (response) {
+            object_row_str = '#tasks_row_' + data.id;
+            $(object_row_str).remove();
+        }
+    }).done(function (data) {
+        console.log(data);
+    });
+});
+
+
+
 $(document).on('click', 'a.confirm-delete', function (event) {
     event.preventDefault();
     confirm('Are you sure you want to delete this?');
