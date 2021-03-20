@@ -67,10 +67,12 @@ class Task(models.Model):
 
     PENDING = 0
     DONE = 1
+    BLOCKED = 2
 
     STATUS = (
         (PENDING, 'Pending'),
         (DONE, 'Done'),
+        (BLOCKED, 'Blocked')
     )
 
     DEFAULT_PROJECT_ORDER = 1
@@ -95,6 +97,7 @@ class Task(models.Model):
     project_order = models.IntegerField(default=DEFAULT_PROJECT_ORDER)
     contexts = models.ManyToManyField(
         'Context', related_name="tasks", blank=True)
+    blocked_by = models.ForeignKey('Task', on_delete=models.SET_NULL, blank=True, null=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL,
                              on_delete=models.CASCADE)
 

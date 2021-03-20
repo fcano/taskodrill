@@ -70,8 +70,8 @@ class TaskCreate(LoginRequiredMixin, CreateView):
                 t.save()
                 t.contexts.set(form.cleaned_data['contexts'])
             return HttpResponseRedirect(self.get_success_url())
-        elif '->' in form.instance.name:
-            tasks = [task.strip() for task in form.instance.name.split('->')]
+        elif '=>' in form.instance.name:
+            tasks = [task.strip() for task in form.instance.name.split('=>')]
             if not form.cleaned_data['project']:
                 project = Project.objects.create(name=tasks[0], due_date=form.cleaned_data['due_date'], user=self.request.user)
                 tasks = tasks[1:]
@@ -83,7 +83,21 @@ class TaskCreate(LoginRequiredMixin, CreateView):
                     t.project = project
                 t.save()
                 t.contexts.set(form.cleaned_data['contexts'])
-            return HttpResponseRedirect(self.get_success_url())           
+            return HttpResponseRedirect(self.get_success_url())
+        elif '->' in form.instance.name:
+            tasks = [task.strip() for task in form.instance.name.split('->')]
+            prev_task = ''
+            for task in tasks:
+                t = form.save(commit=False)
+                t.pk = None
+                t.name = task
+                if prev_task:
+                    t.blocked_by = prev_task
+                    t.status = Task.BLOCKED
+                t.save()
+                t.contexts.set(form.cleaned_data['contexts'])
+                prev_task = Task.objects.get(pk=t.id)
+            return HttpResponseRedirect(self.get_success_url())
         else:
             return super().form_valid(form)
 
@@ -250,6 +264,14 @@ class TaskMarkAsDone(LoginRequiredMixin, View):
                     next_task = next_tasks_list[0]
                     next_task.update_ready_datetime()
                     next_task_tr = render_to_string('tasks/task_row.html', {'task': next_task})
+            blocked_tasks = Task.objects.filter(blocked_by=task)
+            if blocked_tasks:
+                for blocked_task in blocked_tasks:
+                    blocked_task.update_ready_datetime()
+                    blocked_task.status = Task.PENDING
+                    blocked_task.save()
+                next_task = blocked_task
+                next_task_tr = render_to_string('tasks/task_row.html', {'task': next_task})
 
             #next_task_json = serializers.serialize("json", [next_task_tr])
             return JsonResponse({'success': True, 'next_task_tr': next_task_tr})
