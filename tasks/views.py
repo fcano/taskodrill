@@ -101,8 +101,8 @@ class TaskCreate(LoginRequiredMixin, CreateView):
                 t.contexts.set(form.cleaned_data['contexts'])
                 prev_task = Task.objects.get(pk=t.id)
             return HttpResponseRedirect(self.get_success_url())
-        else:
-            return super().form_valid(form)
+        
+        return super().form_valid(form)
 
 class TaskDetail(LoginRequiredMixin, DetailView):
     model = Task
@@ -216,12 +216,11 @@ class TaskUpdate(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         if form.instance.blocked_by:
             form.instance.status = Task.BLOCKED
-            return HttpResponseRedirect(self.get_success_url())
-        elif not form.instance.blocked_by and form.instance.status == Task.BLOCKED:
+
+        if not form.instance.blocked_by and form.instance.status == Task.BLOCKED:
             form.instance.status = Task.PENDING
-            return HttpResponseRedirect(self.get_success_url())
-        else:
-            return super().form_valid(form)
+
+        return super().form_valid(form)
 
 #    def get_success_url(self):
 #        return reverse('task_list_tasklist', kwargs={'tasklist_slug' : 'nextactions', })
