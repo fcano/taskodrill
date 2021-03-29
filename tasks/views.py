@@ -216,6 +216,8 @@ class TaskUpdate(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         if form.instance.blocked_by:
             form.instance.status = Task.BLOCKED
+        if not form.instance.blocked_by and form.instance.status == Task.BLOCKED:
+            form.instance.status = Task.PENDING
 
 #    def get_success_url(self):
 #        return reverse('task_list_tasklist', kwargs={'tasklist_slug' : 'nextactions', })
