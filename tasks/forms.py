@@ -1,4 +1,5 @@
 from django import forms
+from dal import autocomplete
 
 from .models import Task, Context, Project
 
@@ -21,6 +22,10 @@ class TaskForm(forms.ModelForm):
         self.fields['project'].choices = (('', '---------'),) + tuple(Project.objects.filter(user=self.user).values_list('id', 'name'))
         if self.project_id:
             self.fields['project'].initial = self.project_id
+        #self.fields['blocked_by'] = forms.ModelChoiceField(
+        #    queryset=Task.objects.all(),
+        #    widget=autocomplete.ModelSelect2(url='task-autocomplete')
+        #)
         for visible in self.visible_fields():
             visible.field.widget.attrs['class'] = 'form-control form-control-sm'
         self.fields['contexts'].widget.attrs['class'] = 'form-check-input'
@@ -30,12 +35,13 @@ class TaskForm(forms.ModelForm):
     class Meta:
         model = Task
         fields = ['name', 'start_date', 'start_time', 'due_date', 'due_time', 'repeat',
-                  'repeat_from', 'length', 'priority', 'note', 'contexts', 'project', 'tasklist']
+                  'repeat_from', 'length', 'priority', 'note', 'contexts', 'project', 'blocked_by', 'tasklist']
         widgets = {
             'start_date': DateInput(),
             'due_date': DateInput(),
             'start_time': TimeInput(),
             'due_time': TimeInput(),
+            'blocked_by': autocomplete.ModelSelect2(url='task-autocomplete'),
         }
 
 class OrderingForm(forms.Form):

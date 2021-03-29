@@ -60,6 +60,11 @@
             {{ form.project }}
         </div>
         <div class="form-group mr-2 fieldWrapper">
+            {{ form.blocked_by.errors }}
+            <label class="col-form-label-sm" for="{{ form.blocked_by.id_for_label }}">Blocking task</label>
+            {{ form.blocked_by }}
+        </div>        
+        <div class="form-group mr-2 fieldWrapper">
             {{ form.tasklist.errors }}
             <label class="col-form-label-sm" for="{{ form.tasklist.id_for_label }}">Tasklist</label>
             {{ form.tasklist }}

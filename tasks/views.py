@@ -1,4 +1,5 @@
 import datetime
+from dal import autocomplete
 
 from django.views.generic import ListView, View
 from django.views.generic.detail import DetailView
@@ -61,6 +62,8 @@ class TaskCreate(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.user = self.request.user
+        if form.instance.blocked_by:
+            form.instance.status = Task.BLOCKED
         if '|' in form.instance.name:
             tasks = [task.strip() for task in form.instance.name.split('|')]
             for task in tasks:
@@ -131,7 +134,7 @@ class TaskList(LoginRequiredMixin, ListView):
             search_value = getattr(Task, search_value_string.upper())
             search_filter = Q(**{search_key: search_value})
         else:
-            search_filter = Q(status=Task.PENDING)
+            search_filter = Q(status=Task.PENDING) | Q(status=Task.BLOCKED)
 
         # Task with datetime in the future
         q1 = Q(start_date=datetime.date.today()) & Q(start_time__lte=datetime.datetime.now())
@@ -289,6 +292,20 @@ class TaskChangeTasklist(LoginRequiredMixin, View):
             return JsonResponse({'success': True})
         else:
             return JsonResponse({'error': 'Error'})
+
+class TaskAutocomplete(autocomplete.Select2QuerySetView):
+    
+    def get_queryset(self):
+        # Don't forget to filter out results depending on the visitor !
+        if not self.request.user.is_authenticated:
+            return Task.objects.none()
+
+        qs = self.request.user.task_set.all()
+
+        if self.q:
+            qs = qs.filter(name__icontains=self.q)
+
+        return qs
 
 class SaveNewOrdering(LoginRequiredMixin, View):
 
