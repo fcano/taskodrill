@@ -300,7 +300,7 @@ class TaskAutocomplete(autocomplete.Select2QuerySetView):
         if not self.request.user.is_authenticated:
             return Task.objects.none()
 
-        qs = self.request.user.task_set.all()
+        qs = self.request.user.task_set.filter(status=Task.PENDING).order_by('-modification_datetime')
 
         if self.q:
             qs = qs.filter(name__icontains=self.q)
