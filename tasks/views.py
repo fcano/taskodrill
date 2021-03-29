@@ -213,6 +213,10 @@ class TaskUpdate(LoginRequiredMixin, UpdateView):
             return next_url # return next url for redirection
         return reverse_lazy('task_list_tasklist', kwargs={'tasklist_slug' : 'nextactions', })
 
+    def form_valid(self, form):
+        if form.instance.blocked_by:
+            form.instance.status = Task.BLOCKED
+
 #    def get_success_url(self):
 #        return reverse('task_list_tasklist', kwargs={'tasklist_slug' : 'nextactions', })
 
