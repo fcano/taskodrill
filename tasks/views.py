@@ -220,6 +220,25 @@ class TaskUpdate(LoginRequiredMixin, UpdateView):
         if not form.instance.blocked_by and form.instance.status == Task.BLOCKED:
             form.instance.status = Task.PENDING
 
+        if '->' in form.instance.name:
+            tasks = [task.strip() for task in form.instance.name.split('->')]
+            prev_task = ''
+            for task in tasks:
+                try:
+                    t = self.request.user.task_set.filter(Q(status=Task.PENDING) | Q(status=Task.BLOCKED)).get(name=task)
+                except Task.DoesNotExist:
+                    t = form.save(commit=False)
+                    t.pk = None
+                    t.name = task
+                if prev_task:
+                    t.blocked_by = prev_task
+                    t.status = Task.BLOCKED
+                t.save()
+                t.contexts.set(form.cleaned_data['contexts'])
+                prev_task = Task.objects.get(pk=t.id)
+            return HttpResponseRedirect(self.get_success_url())
+
+
         return super().form_valid(form)
 
 #    def get_success_url(self):
