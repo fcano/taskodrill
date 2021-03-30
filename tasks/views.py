@@ -407,6 +407,20 @@ class ProjectDelete(LoginRequiredMixin,DeleteView):
     success_url = reverse_lazy('project_list')
 
 
+class ProjectAutocomplete(autocomplete.Select2QuerySetView):
+    
+    def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            return Task.objects.none()
+
+        qs = self.request.user.project_set.filter(status=Project.OPEN).order_by('-modification_datetime')
+
+        if self.q:
+            qs = qs.filter(name__icontains=self.q)
+
+        return qs
+
+
 class ContextCreate(LoginRequiredMixin, CreateView):
     model = Context
     fields = ['name']

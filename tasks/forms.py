@@ -19,7 +19,7 @@ class TaskForm(forms.ModelForm):
         self.fields['contexts'].choices = Context.objects.filter(user=self.user).values_list('id', 'name')
         if self.context_id:
             self.fields['contexts'].initial = [self.context_id]
-        self.fields['project'].choices = (('', '---------'),) + tuple(Project.objects.filter(user=self.user).values_list('id', 'name'))
+        #self.fields['project'].choices = (('', '---------'),) + tuple(Project.objects.filter(user=self.user).values_list('id', 'name'))
         if self.project_id:
             self.fields['project'].initial = self.project_id
         #self.fields['blocked_by'] = forms.ModelChoiceField(
@@ -42,6 +42,7 @@ class TaskForm(forms.ModelForm):
             'start_time': TimeInput(),
             'due_time': TimeInput(),
             'blocked_by': autocomplete.ModelSelect2(url='task-autocomplete'),
+            'project': autocomplete.ModelSelect2(url='project-autocomplete'),
         }
 
 class OrderingForm(forms.Form):

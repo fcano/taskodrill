@@ -18,6 +18,7 @@ urlpatterns = [
     path('projects/add/', tasks_views.ProjectCreate.as_view(), name='project_add'),
     path('projects/<int:pk>/edit/', tasks_views.ProjectUpdate.as_view(), name='project_update'),
     path('projects/<int:pk>/delete/', tasks_views.ProjectDelete.as_view(), name='project_delete'),
+    path('projects/project-autocomplete/', tasks_views.ProjectAutocomplete.as_view(), name='project-autocomplete'),
     path('contexts/', tasks_views.ContextList.as_view(), name='context_list'),
     path('contexts/<int:pk>/', tasks_views.ContextDetail.as_view(), name='context_detail'),
     path('contexts/add/', tasks_views.ContextCreate.as_view(), name='context_add'),
