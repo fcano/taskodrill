@@ -36,7 +36,7 @@ $('#tasks_body').on('click', 'input[type="checkbox"]', function () {
     var data = {};
     data.id = $(this).attr('value');
     data.value = $(this).is(':checked') ? 1 : 0;
-    tasks_count = $('#tasks_count').text();
+    tasks_count = parseInt($('#tasks_count').text());
 
     console.log(data);
 
@@ -47,12 +47,18 @@ $('#tasks_body').on('click', 'input[type="checkbox"]', function () {
         success: function (response) {
             task_row_str = '#tasks_row_' + data.id;
             $(task_row_str).remove();
-            next_task_tr_html = response.next_task_tr;
-            if (next_task_tr_html != "") {
+            tasks_count = tasks_count - 1;
+            for (next_task_tr_html of response.tasks_to_render) {
+                tasks_count = tasks_count + 1;
                 $('#tasks_table tr:last').after(next_task_tr_html);
-            } else {
-                $('#tasks_count').text(tasks_count - 1);
             }
+            $('#tasks_count').text(tasks_count);
+            // next_task_tr_html = response.next_task_tr;
+            // if (next_task_tr_html != "") {
+            //     $('#tasks_table tr:last').after(next_task_tr_html);
+            // } else {
+            //     $('#tasks_count').text(tasks_count - 1);
+            // }
         }
     }).done(function (data) {
         console.log(data);

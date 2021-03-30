@@ -271,10 +271,12 @@ class TaskMarkAsDone(LoginRequiredMixin, View):
             task.status = Task.DONE
             task.save()
             
+            tasks_to_render = []
             if new_task.repeat:
                 new_task.update_next_dates()
                 if task.contexts:
                     new_task.contexts.set(task.contexts.all())
+                tasks_to_render.append(render_to_string('tasks/task_row.html', {'task': new_task}))
 
             # Here I'm returning JsonResponse with serialized task. The html has to be
             # built in the myscripts.js or {% block javascript %}
@@ -286,18 +288,20 @@ class TaskMarkAsDone(LoginRequiredMixin, View):
                 if next_tasks_list:
                     next_task = next_tasks_list[0]
                     next_task.update_ready_datetime()
-                    next_task_tr = render_to_string('tasks/task_row.html', {'task': next_task})
+                    #next_task_tr = render_to_string('tasks/task_row.html', {'task': next_task})
+                    tasks_to_render.append(render_to_string('tasks/task_row.html', {'task': next_task}))
             blocked_tasks = Task.objects.filter(blocked_by=task)
             if blocked_tasks:
                 for blocked_task in blocked_tasks:
                     blocked_task.update_ready_datetime()
                     blocked_task.status = Task.PENDING
                     blocked_task.save()
-                next_task = blocked_task
-                next_task_tr = render_to_string('tasks/task_row.html', {'task': next_task})
+                    tasks_to_render.append(render_to_string('tasks/task_row.html', {'task': blocked_task}))
+                #next_task = blocked_task
+                #next_task_tr = render_to_string('tasks/task_row.html', {'task': next_task})
 
-            #next_task_json = serializers.serialize("json", [next_task_tr])
-            return JsonResponse({'success': True, 'next_task_tr': next_task_tr})
+            #return JsonResponse({'success': True, 'next_task_tr': next_task_tr})
+            return JsonResponse({'success': True, 'tasks_to_render': tasks_to_render})
         else:
             return JsonResponse({'error': 'Error'})
 
