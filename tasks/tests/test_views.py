@@ -662,6 +662,36 @@ class TaskUpdateTests(TestCase):
         task.refresh_from_db()
         self.assertEqual(task.name, 'Pending Task')
 
+    def test_task_update_task_with_blocking(self):
+        user = mylogin(self)
+
+        task = Task.objects.create(
+            name="Paint the bedroom",
+            repeat=Task.NO,
+            repeat_from=Task.COMPLETION_DATE,
+            priority=Task.HIGH,
+            status=Task.PENDING,
+            tasklist=Task.NEXT_ACTION,
+            user=user,
+        )
+
+        response = self.client.post(
+            reverse('task_update', kwargs={'pk': task.id}), 
+                {
+                    'name': 'Buy paint -> Paint the bedroom',
+                    'repeat':'0',
+                    'repeat_from':'0',
+                    'priority':'0',
+                    'tasklist':Task.NEXT_ACTION,
+                }
+            )
+
+        task1 = Task.objects.get(name="Buy paint")
+        self.assertEqual(task1.status, Task.PENDING)
+        task2 = Task.objects.get(name="Paint the bedroom")
+        self.assertEqual(task2.status, Task.BLOCKED)
+        self.assertEqual(task2.blocked_by, task1)
+
     def test_task_update_same_tasks_num(self):
         """Test same tasks num after update"""
         user = mylogin(self)
@@ -844,6 +874,107 @@ class TaskCreateViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, reverse('task_list_tasklist', kwargs={'tasklist_slug' : 'nextactions', }), target_status_code=200)
         self.assertEqual(Task.objects.last().name, "Paint the bedroom")
+
+    def test_task_create_with_block(self):
+        self.client.login(username='testuser', password='testpassword')
+
+        response = self.client.post(reverse('task_add'), {
+            'name':"Paint the bedroom -> Make your bed",
+            'start_date':datetime.date.today(),
+            'start_time':datetime.datetime.now().time(),
+            'due_date':datetime.date.today() + datetime.timedelta(days=1),
+            'due_time':datetime.datetime.now().time(),
+            'repeat':Task.NO,
+            'repeat_from':Task.DUE_DATE,
+            'length':15,
+            'priority':Task.TOP,
+            'note':"This is a test task",
+            'tasklist':Task.NEXT_ACTION,
+        })
+
+        task1 = Task.objects.get(name="Paint the bedroom")
+        self.assertEqual(task1.status, Task.PENDING)
+        task2 = Task.objects.get(name="Make your bed")
+        self.assertEqual(task2.status, Task.BLOCKED)
+        self.assertEqual(task2.blocked_by, task1)
+
+    def test_task_create_with_two_blocks(self):
+        self.client.login(username='testuser', password='testpassword')
+
+        response = self.client.post(reverse('task_add'), {
+            'name':"Paint the bedroom -> Make your bed -> Go for a walk",
+            'start_date':datetime.date.today(),
+            'start_time':datetime.datetime.now().time(),
+            'due_date':datetime.date.today() + datetime.timedelta(days=1),
+            'due_time':datetime.datetime.now().time(),
+            'repeat':Task.NO,
+            'repeat_from':Task.DUE_DATE,
+            'length':15,
+            'priority':Task.TOP,
+            'note':"This is a test task",
+            'tasklist':Task.NEXT_ACTION,
+        })
+
+        task1 = Task.objects.get(name="Paint the bedroom")
+        self.assertEqual(task1.status, Task.PENDING)
+        task2 = Task.objects.get(name="Make your bed")
+        self.assertEqual(task2.status, Task.BLOCKED)
+        self.assertEqual(task2.blocked_by, task1)
+        task3 = Task.objects.get(name="Go for a walk")
+        self.assertEqual(task2.status, Task.BLOCKED)
+        self.assertEqual(task3.blocked_by, task2)
+
+    def test_task_create_project_and_two_tasks(self):
+        self.client.login(username='testuser', password='testpassword')
+
+        response = self.client.post(reverse('task_add'), {
+            'name':"Paint the bedroom => Make your bed => Go for a walk",
+            'start_date':datetime.date.today(),
+            'start_time':datetime.datetime.now().time(),
+            'due_date':datetime.date.today() + datetime.timedelta(days=1),
+            'due_time':datetime.datetime.now().time(),
+            'repeat':Task.NO,
+            'repeat_from':Task.DUE_DATE,
+            'length':15,
+            'priority':Task.TOP,
+            'note':"This is a test task",
+            'tasklist':Task.NEXT_ACTION,
+        })
+
+        project = Project.objects.get(name="Paint the bedroom")
+        self.assertEqual(project.status, Project.OPEN)
+        task1 = Task.objects.get(name="Make your bed")
+        self.assertEqual(task1.status, Task.PENDING)
+        self.assertEqual(task1.project, project)
+        self.assertEqual(task1.blocked_by, None)
+        task2 = Task.objects.get(name="Go for a walk")
+        self.assertEqual(task2.status, Task.PENDING)
+        self.assertEqual(task1.project, project)
+        self.assertEqual(task2.blocked_by, None)
+
+    def test_task_create_two_tasks(self):
+        self.client.login(username='testuser', password='testpassword')
+
+        response = self.client.post(reverse('task_add'), {
+            'name':"Paint the bedroom | Make your bed",
+            'start_date':datetime.date.today(),
+            'start_time':datetime.datetime.now().time(),
+            'due_date':datetime.date.today() + datetime.timedelta(days=1),
+            'due_time':datetime.datetime.now().time(),
+            'repeat':Task.NO,
+            'repeat_from':Task.DUE_DATE,
+            'length':15,
+            'priority':Task.TOP,
+            'note':"This is a test task",
+            'tasklist':Task.NEXT_ACTION,
+        })
+
+        task1 = Task.objects.get(name="Paint the bedroom")
+        self.assertEqual(task1.status, Task.PENDING)
+        self.assertEqual(task1.blocked_by, None)
+        task2 = Task.objects.get(name="Make your bed")
+        self.assertEqual(task2.status, Task.PENDING)
+        self.assertEqual(task2.blocked_by, None)
 
     def test_task_create_form_shows_only_user_contexts(self):
         user1 = MyUser.objects.create_user(
