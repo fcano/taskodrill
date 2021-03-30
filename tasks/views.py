@@ -263,7 +263,9 @@ class TaskPostpone(LoginRequiredMixin, View):
         if self.request.user.is_authenticated:
             task = Task.objects.get(user=self.request.user, id=self.request.POST['id'])
             task.start_date = next_business_day()
-            task.due_date = next_business_day()
+            # If due_date is in the future, don't change it
+            if task.due_date <= datetime.date.today():
+                task.due_date = next_business_day()
             task.save()
             data = {'success': 'OK'}
             return JsonResponse(data)            
