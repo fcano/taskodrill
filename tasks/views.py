@@ -16,17 +16,6 @@ from .models import Task, Project, Context
 from .forms import TaskForm, ProjectForm, OrderingForm
 
 import datetime
-import holidays
-
-ONE_DAY = datetime.timedelta(days=1)
-HOLIDAYS_ES_VC = holidays.CountryHoliday('ES', prov='VC')
-
-def next_business_day():
-    next_day = datetime.date.today() + ONE_DAY
-    while next_day.weekday() in holidays.WEEKEND or next_day in HOLIDAYS_ES_VC:
-        next_day += ONE_DAY
-    return next_day
-
 
 class TaskCreate(LoginRequiredMixin, CreateView):
     form_class = TaskForm
@@ -262,10 +251,11 @@ class TaskPostpone(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         if self.request.user.is_authenticated:
             task = Task.objects.get(user=self.request.user, id=self.request.POST['id'])
-            task.start_date = next_business_day()
-            # If due_date is in the future, don't change it
+            task.start_date = Task.next_business_day()
+            # If due_date is in the future and we click "postpone", we don't want to change
+            # the due_date, only the start_date
             if task.due_date <= datetime.date.today():
-                task.due_date = next_business_day()
+                task.due_date = Task.next_business_day()
             task.save()
             data = {'success': 'OK'}
             return JsonResponse(data)            

@@ -6,10 +6,15 @@ from django.urls import reverse
 from django.conf import settings
 from django.db.models import Q
 
+import holidays
+
+ONE_DAY = datetime.timedelta(days=1)
+HOLIDAYS_ES_VC = holidays.CountryHoliday('ES', prov='VC')
 
 class Task(models.Model):
     NO = 0
     DAILY = 1
+    DAILYBD = 2
     WEEKLY = 7
     BIWEEKLY = 15
     MONTHLY = 30
@@ -22,6 +27,7 @@ class Task(models.Model):
     REPEAT = (
         (NO, 'No'),
         (DAILY, 'Daily'),
+        (DAILYBD, 'Daily (BD)'),
         (WEEKLY, 'Weekly'),
         (BIWEEKLY, 'Biweekly'),
         (MONTHLY, 'Monthly'),
@@ -101,6 +107,15 @@ class Task(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL,
                              on_delete=models.CASCADE)
 
+    @classmethod
+    def next_business_day(cls, reference_date):
+        if not reference_date:
+            reference_date = datetime.date.today()
+        next_day = reference_date + ONE_DAY
+        while next_day.weekday() in holidays.WEEKEND or next_day in HOLIDAYS_ES_VC:
+            next_day += ONE_DAY
+        return next_day
+
     def __str__(self):
         return self.name
 
@@ -123,6 +138,8 @@ class Task(models.Model):
         # Calcule new dates
         if self.repeat == Task.DAILY:
             next_start_date = start_date_reference + datetime.timedelta(1)
+        if self.repeat == Task.DAILYBD:
+            next_start_date = Task.next_business_day(start_date_reference)
         elif self.repeat == Task.WEEKLY:
             next_start_date = start_date_reference + datetime.timedelta(7)
         elif self.repeat == Task.MONTHLY:
@@ -142,6 +159,8 @@ class Task(models.Model):
         # Calcule new dates
         if self.repeat == Task.DAILY:
             next_due_date = due_date_reference + datetime.timedelta(1)
+        if self.repeat == Task.DAILYBD:
+            next_due_date = Task.next_business_day(due_date_reference)            
         elif self.repeat == Task.WEEKLY:
             next_due_date = due_date_reference + datetime.timedelta(7)
         elif self.repeat == Task.MONTHLY:
