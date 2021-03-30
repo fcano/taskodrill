@@ -22,7 +22,6 @@ from pages import views as pages_views
 urlpatterns = [
     path('', include('tasks.urls')),
     path('', include('myauth.urls')),
-    path('', include('votes.urls')),
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
     path('pricing/', pages_views.PricingPage.as_view(), name='pricing'),
