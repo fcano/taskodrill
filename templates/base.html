@@ -57,10 +57,10 @@
           <li class="nav-item {% ifequal request.path somedaymaybe %}active{% endifequal %}">
             <a class="nav-link" href="{% url 'task_list_tasklist' 'somedaymaybe' %}">Someday/Maybe</a>
           </li>
-          <li class="nav-item {% ifequal request.path projectlist %}active{% endifequal %}">
+          <li class="nav-item {% if request.path == projectlist and not request.GET.status %}active{% endif %}">
             <a class="nav-link" href="{% url 'project_list' %}">Projects</a>
           </li>
-          <li class="nav-item {% ifequal request.path projectlist %}active{% endifequal %}">
+          <li class="nav-item {% if request.path == projectlist and request.GET.status == 'finished' %}active{% endif %}">
             <a class="nav-link" href="{% url 'project_list'%}?status=finished">&nbsp;&nbsp;&nbsp;&nbsp;Finished</a>
           </li>
           <li class="nav-item {% ifequal request.path contextlist %}active{% endifequal %} ">
@@ -69,10 +69,10 @@
           <li class="nav-item">
             <a class="nav-link" href="{% url 'task_list' %}">All Tasks</a>
           </li>
-          <li class="nav-item {% ifequal request.path tasklist %}active{% endifequal %}">
+          <li class="nav-item {% if request.path == tasklist and not request.GET.status %}active{% endif %}">
             <a class="nav-link" href="{% url 'task_list' %}">&nbsp;&nbsp;&nbsp;&nbsp;Pending</a>
           </li>
-          <li class="nav-item {% ifequal request.path tasklist %}active{% endifequal %}">
+          <li class="nav-item {% if request.path == tasklist and request.GET.status == 'done' %}active{% endif %}">
             <a class="nav-link" href="{% url 'task_list'%}?status=done">&nbsp;&nbsp;&nbsp;&nbsp;Done</a>
           </li>
         </ul>
