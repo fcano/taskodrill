@@ -95,9 +95,9 @@ WSGI_APPLICATION = 'taskodrill.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': '***REMOVED***',
-        'USER': '***REMOVED***',
-        'PASSWORD': '***REMOVED***',
+        'NAME': os.environ['DBNAME'],
+        'USER': os.environ['DBUSER'],
+        'PASSWORD': os.environ['DBPASS'],
         'HOST': '127.0.0.1',
         'PORT': '5432',
     }
