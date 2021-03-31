@@ -19,11 +19,13 @@
   <td><a href="{% url 'task_delete' task.pk %}" class="confirm-delete"><img src="/static/tasks/trash-2.svg" width="18" /></a></td>
   <td><a href="{% url 'task_postpone' task.pk %}" class="postpone"><img src="/static/tasks/skip-forward.svg" data-toggle='tooltip' title='Postpone to next business day.' width="18" /></a></td>
   <td>
-    <select name="actions" id="actions">
-      <option value="--">--</option>
-      <option value="notthisweek_{{ task.id }}">Not This Week</option>
-      <option value="nextaction_{{ task.id }}">Next Action</option>
-      <option value="someday_{{ task.id }}">Someday/Maybe</option>
-    </select>  
+    <div class="btn-group dropleft">
+      <img class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-reference="parent" src="/static/tasks/chevron-down.svg" width="18" />
+      <div class="dropdown-menu move-to-tasklist" aria-labelledby="dropdownMenuReference">
+        <button class="dropdown-item" type="button" value="notthisweek_{{ task.id }}">Not This Week</button>
+        <button class="dropdown-item" type="button" value="nextaction_{{ task.id }}">Next Action</button>
+        <button class="dropdown-item" type="button" value="someday_{{ task.id }}">Someday/Maybe</button>
+      </div>
+    </div>
   </td>
 </tr>

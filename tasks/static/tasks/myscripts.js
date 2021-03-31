@@ -88,7 +88,7 @@ $('#project_tasks_body').on('click', 'input[type="checkbox"]', function () {
 });
 
 // Triggers when the dropdown at the end of a task line changes to choose an action
-$('#tasks_body').on('change', 'select', function () {
+$('#tasks_body').on('click', '.move-to-tasklist .dropdown-item', function () {
     var data = {};
     data.value = $(this).val();
     res = data.value.split('_');
