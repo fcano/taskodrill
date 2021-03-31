@@ -17,7 +17,7 @@
     <td><a href="{% url 'task_update' task.pk %}"><img src="/static/tasks/edit.svg" width="18" /></a></td>
   {% endif %}
   <td><a href="{% url 'task_delete' task.pk %}" class="confirm-delete"><img src="/static/tasks/trash-2.svg" width="18" /></a></td>
-  <td><a href="{% url 'task_postpone' task.pk %}" class="postpone"><img src="/static/tasks/skip-forward.svg" width="18" /></a></td>
+  <td><a href="{% url 'task_postpone' task.pk %}" class="postpone"><img src="/static/tasks/skip-forward.svg" data-toggle='tooltip' title='Postpone to next business day.' width="18" /></a></td>
   <td>
     <select name="actions" id="actions">
       <option value="--">--</option>
