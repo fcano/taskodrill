@@ -20,18 +20,17 @@ from django.conf import settings
 from pages import views as pages_views
 
 urlpatterns = [
-    path('', include('tasks.urls')),
-    path('', include('myauth.urls')),
-    path('admin/', admin.site.urls),
-    path('accounts/', include('django.contrib.auth.urls')),
-    path('pricing/', pages_views.PricingPage.as_view(), name='pricing'),
-    path('features/', pages_views.FeaturesPage.as_view(), name='features'),
-    path('instructions/', pages_views.InstructionsPage.as_view(), name='instructions'),
-    path('', pages_views.HomePage.as_view(), name='home'),
+    path("", include("tasks.urls")),
+    path("", include("myauth.urls")),
+    path("admin/", admin.site.urls),
+    path("accounts/", include("django.contrib.auth.urls")),
+    path("features/", pages_views.FeaturesPage.as_view(), name="features"),
+    path("", pages_views.HomePage.as_view(), name="home"),
 ]
 
 if settings.DEBUG:
     import debug_toolbar
+
     urlpatterns = [
-        path('__debug__/', include(debug_toolbar.urls)),
+        path("__debug__/", include(debug_toolbar.urls)),
     ] + urlpatterns
