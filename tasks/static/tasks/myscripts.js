@@ -95,11 +95,11 @@ $('#tasks_body').on('change', 'select', function () {
     action = res[0];
     data.id = res[1];
 
-    if (action=='notthisweek') {
+    if (action == 'notthisweek') {
         tasklist = 3;
-    } else if (action=='nextaction') {
+    } else if (action == 'nextaction') {
         tasklist = 0;
-    } else if (action=='someday') {
+    } else if (action == 'someday') {
         tasklist = 1;
     }
 
@@ -170,7 +170,7 @@ $(document).on('click', 'a.confirm-delete', function (event) {
 });
 
 
-$('#hide_future_tasks').click(function() {
+$('#hide_future_tasks').click(function () {
     checked = $('#hide_future_tasks').is(':checked');
     href = window.location.href;
     href = href.substring(0, href.indexOf('?'));
@@ -180,3 +180,5 @@ $('#hide_future_tasks').click(function() {
         window.location.href = href;
     }
 });
+
+$('[data-toggle="tooltip"]').tooltip();

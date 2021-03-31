@@ -9,71 +9,71 @@
     <div class="form-row">
         <div class="form-group fieldWrapper col-md-10">
             {{ form.name.errors }}
-            <label class="col-form-label-sm" for="{{ form.name.id_for_label }}">Name</label>
+            <label class="col-form-label-sm" for="{{ form.name.id_for_label }}">Name</label> <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='Name of the task. URLs will be clickable.' />
             {{ form.name }}
         </div>
     </div>
     <div class="form-row">
         <div class="form-group mr-2 fieldWrapper">
             {{ form.start_date.errors }}
-            <label class="col-form-label-sm" for="{{ form.start_date.id_for_label }}">Start date</label>
+            <label class="col-form-label-sm" for="{{ form.start_date.id_for_label }}">Start date</label> <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='The task will not be shown in the Next Actions list until this date.' />
             {{ form.start_date }}
         </div>
         <div class="form-group mr-2 fieldWrapper">
             {{ form.start_time.errors }}
-            <label class="col-form-label-sm" for="{{ form.start_time.id_for_label }}">Start time</label>
+            <label class="col-form-label-sm" for="{{ form.start_time.id_for_label }}">Start time</label> <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='The task will not be shown in the Next Actions list until this time.' />
             {{ form.start_time }}
         </div>
         <div class="form-group mr-2 fieldWrapper">
             {{ form.due_date.errors }}
-            <label class="col-form-label-sm" for="{{ form.due_date.id_for_label }}">Due date</label>
+            <label class="col-form-label-sm" for="{{ form.due_date.id_for_label }}">Due date</label> <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='It must be a real deadline. Used to sort the task in the Next Actions list.' />
             {{ form.due_date }}
         </div>
         <div class="form-group mr-2 fieldWrapper">
             {{ form.due_time.errors }}
-            <label class="col-form-label-sm" for="{{ form.due_time.id_for_label }}">Due time</label><br>
+            <label class="col-form-label-sm" for="{{ form.due_time.id_for_label }}">Due time</label> <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='It must be a real deadline. Used to sort the task in the Next Actions list.' />
             {{ form.due_time }}
         </div>
         <div class="form-group mr-2 fieldWrapper">
             {{ form.repeat.errors }}
-            <label class="col-form-label-sm" for="{{ form.repeat.id_for_label }}">Repeat</label>
+            <label class="col-form-label-sm" for="{{ form.repeat.id_for_label }}">Repeat</label> <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='If a schedule is set, when this task is marked as done, another task with the same attributes will be created based on the schedule.' />
             {{ form.repeat }}
         </div>
         <div class="form-group mr-2 fieldWrapper">
             {{ form.repeat_from.errors }}
-            <label class="col-form-label-sm" for="{{ form.repeat_from.id_for_label }}">Repeat from</label>
+            <label class="col-form-label-sm" for="{{ form.repeat_from.id_for_label }}">Repeat from</label> <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='Date that will be taken as reference when creating a new task based on the Repeat attribute.' />
             {{ form.repeat_from }}
         </div>
         <div class="form-group mr-2 fieldWrapper">
             {{ form.length.errors }}
-            <label class="col-form-label-sm" for="{{ form.length.id_for_label }}">Length</label>
+            <label class="col-form-label-sm" for="{{ form.length.id_for_label }}">Length</label> <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='Length of the task. Currently not used.' />
             {{ form.length }}
         </div>
         <div class="form-group mr-2 fieldWrapper">
             {{ form.priority.errors }}
-            <label class="col-form-label-sm" for="{{ form.priority.id_for_label }}">Priority</label>
+            <label class="col-form-label-sm" for="{{ form.priority.id_for_label }}">Priority</label> <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='Priority of the task. Currently not used. The order of the tasks are based mostly on the Due Date.' />
             {{ form.priority }}
         </div>
         <div class="form-group mr-2 fieldWrapper">
             {{ form.project.errors }}
-            <label class="col-form-label-sm" for="{{ form.project.id_for_label }}">Project</label>
+            <label class="col-form-label-sm" for="{{ form.project.id_for_label }}">Project</label> <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='Project this task belongs to. Only first task of a project is shown in the Next Action list (sequential projects).' />
             {{ form.project }}
         </div>
         <div class="form-group mr-2 fieldWrapper">
             {{ form.blocked_by.errors }}
-            <label class="col-form-label-sm" for="{{ form.blocked_by.id_for_label }}">Blocking task</label>
+            <label class="col-form-label-sm" for="{{ form.blocked_by.id_for_label }}">Blocked by</label> <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='The task will not be shown in the Next Actions list until the blocking task is done' />
             {{ form.blocked_by }}
         </div>        
         <div class="form-group mr-2 fieldWrapper">
             {{ form.tasklist.errors }}
-            <label class="col-form-label-sm" for="{{ form.tasklist.id_for_label }}">Tasklist</label>
+            <label class="col-form-label-sm" for="{{ form.tasklist.id_for_label }}">Tasklist</label> <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='Task list where you want to put the task. The Next Action list is the actionable and main list.' />
             {{ form.tasklist }}
         </div>
     </div>
     <div class="form-row">
         <fieldset class="form-group mr-2 fieldWrapper">
             {{ form.contexts.errors }}
-            <legend class="col-form-label-sm">Contexts</legend>
+            <legend class="col-form-label-sm">Contexts <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='Assign the contexts where you want to see this task.' /></legend>
             {% for checkbox in form.contexts %}
             <div class="form-check">
                 {{ checkbox.tag }}<label class="col-form-label-sm for="{{ checkbox.choice_label }}">{{ checkbox.choice_label }}</label>
@@ -82,7 +82,7 @@
         </fieldset>
         <div class="form-group fieldWrapper">
             {{ form.note.errors }}
-            <label class="col-form-label-sm" for="{{ form.note.id_for_label }}">Note</label>
+            <label class="col-form-label-sm" for="{{ form.note.id_for_label }}">Note</label> <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='Additional information about the task.' />
             {{ form.note }}
         </div>
     </div>
