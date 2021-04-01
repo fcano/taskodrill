@@ -24,4 +24,5 @@ urlpatterns = [
     path('contexts/add/', tasks_views.ContextCreate.as_view(), name='context_add'),
     path('contexts/<int:pk>/edit/', tasks_views.ContextUpdate.as_view(), name='context_update'),
     path('contexts/<int:pk>/delete/', tasks_views.ContextDelete.as_view(), name='context_delete'),
+    path('dashboard/', tasks_views.DashboardDetail.as_view(), name='dashboard_detail'),
 ]

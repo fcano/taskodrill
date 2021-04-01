@@ -4,6 +4,7 @@
 {% url 'task_list_tasklist' 'notthisweek' as notthisweek %}
 {% url 'project_list' as projectlist %}
 {% url 'context_list' as contextlist %}
+{% url 'dashboard_detail' as dashboard %}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -74,6 +75,9 @@
           </li>
           <li class="nav-item {% if request.path == tasklist and request.GET.status == 'done' %}active{% endif %}">
             <a class="nav-link" href="{% url 'task_list'%}?status=done">&nbsp;&nbsp;&nbsp;&nbsp;Done</a>
+          </li>
+          <li class="nav-item {% if request.path == dashboard %}active{% endif %}">
+            <a class="nav-link" href="{% url 'dashboard_detail'%}">Dashboard</a>
           </li>
         </ul>
       </div>

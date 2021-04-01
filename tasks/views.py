@@ -11,6 +11,7 @@ from django.urls import reverse_lazy, reverse
 from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.http import HttpResponseRedirect
+from django.template.response import TemplateResponse
 
 from .models import Task, Project, Context
 from .forms import TaskForm, ProjectForm, OrderingForm
@@ -350,6 +351,27 @@ class SaveNewOrdering(LoginRequiredMixin, View):
         #return HttpResponseRedirect(reverse('project_list'))
         return HttpResponseRedirect(task.project.get_absolute_url())
 
+class DashboardDetail(LoginRequiredMixin, View):
+
+    def get(self, request, *args, **kwargs):
+        num_projects = self.request.user.project_set.filter(status=Project.OPEN).count()
+        num_next_actions = self.request.user.task_set.filter((Q(status=Task.PENDING) | Q(status=Task.BLOCKED)) & Q(tasklist=Task.NEXT_ACTION)).count()
+        num_next_actions_in_projects = self.request.user.task_set.filter(project__isnull=False).count()
+        num_someday_maybe_items = self.request.user.task_set.filter((Q(status=Task.PENDING) | Q(status=Task.BLOCKED)) & Q(tasklist=Task.SOMEDAY_MAYBE)).count()
+        num_contexts = self.request.user.context_set.count()
+        avg_nas_per_proj = num_next_actions_in_projects/num_projects
+        avg_nas_per_con = num_next_actions/num_contexts
+        
+        return TemplateResponse(request, 'tasks/dashboard.html', {
+            'num_projects': num_projects,
+            'num_next_actions': num_next_actions,
+            'num_someday_maybe_items': num_someday_maybe_items,
+            'num_contexts': num_contexts,
+            'num_next_actions_in_projects': num_next_actions_in_projects,
+            'avg_nas_per_proj': avg_nas_per_proj,
+            'avg_nas_per_con': avg_nas_per_con,
+            })
+        
 class ProjectCreate(LoginRequiredMixin, CreateView):
     model = Project
     form_class = ProjectForm
