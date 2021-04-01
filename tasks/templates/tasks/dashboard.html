@@ -5,8 +5,8 @@
     <ul>
         <li>Number of Next Actions <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='David Allen says that people usually have between 50 and 100.' />: {{ num_next_actions }}</li>
         <li>Number of Projects: {{ num_projects }}</li>
-        <li>Number of Next Actions in Projects: {{ num_next_actions_in_projects }} (Avg of {{ avg_nas_per_proj }} per project)</li>
+        <li>Number of Next Actions in Projects: {{ num_next_actions_in_projects }} (Avg of {{ avg_nas_per_proj|floatformat:2 }} per project)</li>
         <li>Number of items in Someday/Maybe: {{ num_someday_maybe_items }}</li>
-        <li>Number of Contexts: {{ num_contexts }} (Avg of {{ avg_nas_per_con }} per context)</li>
+        <li>Number of Contexts: {{ num_contexts }} (Avg of {{ avg_nas_per_con|floatformat:2 }} per context)</li>
     </ul>
 {% endblock %}
