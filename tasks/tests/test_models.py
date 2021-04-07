@@ -5,6 +5,7 @@ import uuid
 from django.test import TestCase
 from tasks.models import Task, Project, Context
 from myauth.models import MyUser
+import time_machine
 
 def mylogin(the_test):
     """Logins with default 'testuser' and returns MyUser object"""
@@ -349,3 +350,17 @@ class TaskTests(TestCase):
         )        
         self.assertEqual(task1.project_order, 1)
         self.assertEqual(task2.project_order, 2)
+
+
+    @time_machine.travel(datetime.date(2021, 4, 9))
+    def test_next_business_day_friday(self):
+        date = Task.next_business_day()
+        
+        self.assertEqual(datetime.date.today(), datetime.date(2021, 4, 9))
+        self.assertEqual(date, datetime.date.today()+datetime.timedelta(days=3))
+
+    @time_machine.travel(datetime.date(2021, 4, 8))
+    def test_next_business_day_monday(self):
+        date = Task.next_business_day()
+        
+        self.assertEqual(date, datetime.date.today()+datetime.timedelta(days=1))

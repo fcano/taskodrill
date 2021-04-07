@@ -11,6 +11,7 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import time_machine
 
 from myauth.models import MyUser
 from tasks.models import Task, Project, Context
@@ -89,6 +90,131 @@ def wait_for_ajax(driver):
     except Exception as e:
         pass
 
+class TaskPostponeViewTests(TestCase):
+    def setUp(self):
+        MyUser.objects.create_user(
+            username="testuser",
+            password="testpassword",
+        )
+
+    @time_machine.travel(datetime.date(2021, 4, 8))
+    def test_postpone_wo_due_date(self):
+        self.client.login(username="testuser", password="testpassword")
+        user = MyUser.objects.get(username="testuser")
+
+        task_before = Task.objects.create(
+            name="Project Task 1",
+            tasklist=Task.NEXT_ACTION,
+            user=user,
+        )
+
+        time.sleep(1)
+
+        self.client.post(
+            reverse("task_postpone", kwargs={"pk": task_before.id}),
+            {"id": task_before.id},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        task_after = Task.objects.get(id=task_before.id)
+        self.assertEqual(task_after.start_date, datetime.date.today() + datetime.timedelta(1))
+        self.assertEqual(task_after.due_date, datetime.date.today() + datetime.timedelta(1))
+
+    @time_machine.travel(datetime.date(2021, 4, 9))
+    def test_postpone_wo_due_date_today_is_friday(self):
+        self.client.login(username="testuser", password="testpassword")
+        user = MyUser.objects.get(username="testuser")
+      
+        task_before = Task.objects.create(
+            name="Project Task 1",
+            tasklist=Task.NEXT_ACTION,
+            user=user,
+        )
+
+        time.sleep(1)
+
+        self.client.post(
+            reverse("task_postpone", kwargs={"pk": task_before.id}),
+            {"id": task_before.id},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        task_after = Task.objects.get(id=task_before.id)
+        self.assertEqual(task_after.start_date, datetime.date.today() + datetime.timedelta(3))
+        self.assertEqual(task_after.due_date, datetime.date.today() + datetime.timedelta(3))
+
+    @time_machine.travel(datetime.date(2021, 4, 9))
+    def test_postpone_w_due_date_in_future(self):
+        self.client.login(username="testuser", password="testpassword")
+        user = MyUser.objects.get(username="testuser")
+      
+        task_before = Task.objects.create(
+            name="Project Task 1",
+            tasklist=Task.NEXT_ACTION,
+            user=user,
+            due_date=datetime.date.today() + datetime.timedelta(10),
+        )
+
+        time.sleep(1)
+
+        self.client.post(
+            reverse("task_postpone", kwargs={"pk": task_before.id}),
+            {"id": task_before.id},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        task_after = Task.objects.get(id=task_before.id)
+        self.assertEqual(task_after.start_date, datetime.date.today() + datetime.timedelta(3))
+        self.assertEqual(task_after.due_date, datetime.date.today() + datetime.timedelta(10))
+
+    @time_machine.travel(datetime.date(2021, 4, 9))
+    def test_postpone_w_due_date_in_past(self):
+        self.client.login(username="testuser", password="testpassword")
+        user = MyUser.objects.get(username="testuser")
+      
+        task_before = Task.objects.create(
+            name="Project Task 1",
+            tasklist=Task.NEXT_ACTION,
+            user=user,
+            due_date=datetime.date.today() - datetime.timedelta(10),
+        )
+
+        time.sleep(1)
+
+        self.client.post(
+            reverse("task_postpone", kwargs={"pk": task_before.id}),
+            {"id": task_before.id},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        task_after = Task.objects.get(id=task_before.id)
+        self.assertEqual(task_after.start_date, datetime.date.today() + datetime.timedelta(3))
+        self.assertEqual(task_after.due_date, datetime.date.today() + datetime.timedelta(3))
+
+    @time_machine.travel(datetime.date(2021, 4, 9))
+    def test_postpone_w_start_and_due_date_in_past(self):
+        self.client.login(username="testuser", password="testpassword")
+        user = MyUser.objects.get(username="testuser")
+      
+        task_before = Task.objects.create(
+            name="Project Task 1",
+            tasklist=Task.NEXT_ACTION,
+            user=user,
+            due_date=datetime.date.today() - datetime.timedelta(10),
+            start_date=datetime.date.today() - datetime.timedelta(10),
+        )
+
+        time.sleep(1)
+
+        self.client.post(
+            reverse("task_postpone", kwargs={"pk": task_before.id}),
+            {"id": task_before.id},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        task_after = Task.objects.get(id=task_before.id)
+        self.assertEqual(task_after.start_date, datetime.date.today() + datetime.timedelta(3))
+        self.assertEqual(task_after.due_date, datetime.date.today() + datetime.timedelta(3))
 
 class TaskListViewTests(TestCase):
     def setUp(self):

@@ -108,10 +108,12 @@ class Task(models.Model):
                              on_delete=models.CASCADE)
 
     @classmethod
-    def next_business_day(cls, reference_date=datetime.date.today()):
+    def next_business_day(cls, reference_date=None):
+        if not reference_date:
+            reference_date = datetime.date.today()
         next_day = reference_date + ONE_DAY
         while next_day.weekday() in holidays.WEEKEND or next_day in HOLIDAYS_ES_VC:
-            next_day += ONE_DAY
+            next_day = next_day + ONE_DAY
         return next_day
 
     def __str__(self):

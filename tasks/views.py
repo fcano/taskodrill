@@ -255,7 +255,7 @@ class TaskPostpone(LoginRequiredMixin, View):
             task.start_date = Task.next_business_day()
             # If due_date is in the future and we click "postpone", we don't want to change
             # the due_date, only the start_date
-            if task.due_date <= datetime.date.today():
+            if not task.due_date or task.due_date <= datetime.date.today():
                 task.due_date = Task.next_business_day()
             task.save()
             data = {'success': 'OK'}
