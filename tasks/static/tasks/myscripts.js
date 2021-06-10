@@ -130,10 +130,11 @@ $('#tasks_body').on('click', 'a.postpone', function (event) {
     href_elems = href.split('/');
     data.id = href_elems[2];
     object_type = href_elems[1];
+    data.ndays = 1
 
     $.ajax({
         type: "POST",
-        url: "/tasks/" + data.id + "/postpone/",
+        url: "/tasks/" + data.id + "/postpone/" + data.ndays + "/",
         data: data,
         success: function (response) {
             object_row_str = '#tasks_row_' + data.id;
@@ -144,6 +145,29 @@ $('#tasks_body').on('click', 'a.postpone', function (event) {
     });
 });
 
+
+$('#tasks_body').on('click', 'a.postpone2', function (event) {
+    event.preventDefault();
+
+    var data = {};
+    href = $(this).attr('href');
+    href_elems = href.split('/');
+    data.id = href_elems[2];
+    object_type = href_elems[1];
+    data.ndays = 2
+
+    $.ajax({
+        type: "POST",
+        url: "/tasks/" + data.id + "/postpone/" + data.ndays + "/",
+        data: data,
+        success: function (response) {
+            object_row_str = '#tasks_row_' + data.id;
+            $(object_row_str).remove();
+        }
+    }).done(function (data) {
+        console.log(data);
+    });
+});
 
 
 $(document).on('click', 'a.confirm-delete', function (event) {

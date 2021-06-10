@@ -17,7 +17,8 @@
     <td><a href="{% url 'task_update' task.pk %}"><img src="/static/tasks/edit.svg" width="18" /></a></td>
   {% endif %}
   <td><a href="{% url 'task_delete' task.pk %}" class="confirm-delete"><img src="/static/tasks/trash-2.svg" width="18" /></a></td>
-  <td><a href="{% url 'task_postpone' task.pk %}" class="postpone"><img src="/static/tasks/skip-forward.svg" data-toggle='tooltip' title='Postpone to next business day.' width="18" /></a></td>
+  <td><a href="{% url 'task_postpone' pk=task.pk ndays=1 %}" class="postpone"><img src="/static/tasks/skip-forward.svg" data-toggle='tooltip' title='Postpone to NBD.' width="18" /></a></td>
+  <td><a href="{% url 'task_postpone' pk=task.pk ndays=2 %}" class="postpone2"><img src="/static/tasks/fast-forward.svg" data-toggle='tooltip' title='Postpone to 48h+NBD.' width="18" /></a></td>
   <td>
     <div class="btn-group dropleft">
       <img class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-reference="parent" src="/static/tasks/chevron-down.svg" width="18" />

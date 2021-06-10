@@ -18,6 +18,10 @@ from .models import Task, Project, Context
 from .forms import TaskForm, ProjectForm, OrderingForm
 
 import datetime
+import holidays
+
+ONE_DAY = datetime.timedelta(days=1)
+HOLIDAYS_ES_VC = holidays.CountryHoliday('ES', prov='VC')
 
 class TaskCreate(LoginRequiredMixin, CreateView):
     form_class = TaskForm
@@ -95,7 +99,6 @@ class TaskCreate(LoginRequiredMixin, CreateView):
         #elif re.match('(\[(\w+)-(\w+)\])', form.instance.name):
         elif '[' in form.instance.name:
             task = form.instance.name[:]
-            print("AQUI")
             m = re.search('(\[(\w+)-(\w+)\])', form.instance.name)
             first_value = int(m.group(2))
             last_value = int(m.group(3))
@@ -273,11 +276,18 @@ class TaskPostpone(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         if self.request.user.is_authenticated:
             task = Task.objects.get(user=self.request.user, id=self.request.POST['id'])
-            task.start_date = Task.next_business_day()
+            ndays = int(self.request.POST['ndays'])
+
+            next_day = datetime.date.today() + datetime.timedelta(days=ndays)
+           
+            while next_day.weekday() in holidays.WEEKEND or next_day in HOLIDAYS_ES_VC:
+                next_day = next_day + datetime.timedelta(days=1)
+                  
+            task.start_date = next_day
             # If due_date is in the future and we click "postpone", we don't want to change
             # the due_date, only the start_date
             if not task.due_date or task.due_date <= datetime.date.today():
-                task.due_date = Task.next_business_day()
+                task.due_date = next_day
             task.save()
             data = {'success': 'OK'}
             return JsonResponse(data)            

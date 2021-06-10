@@ -111,8 +111,8 @@ class TaskPostponeViewTests(TestCase):
         time.sleep(1)
 
         self.client.post(
-            reverse("task_postpone", kwargs={"pk": task_before.id}),
-            {"id": task_before.id},
+            reverse("task_postpone", kwargs={"pk": task_before.id, "ndays": 1}),
+            {"id": task_before.id, "ndays": 1},
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
 
@@ -134,8 +134,8 @@ class TaskPostponeViewTests(TestCase):
         time.sleep(1)
 
         self.client.post(
-            reverse("task_postpone", kwargs={"pk": task_before.id}),
-            {"id": task_before.id},
+            reverse("task_postpone", kwargs={"pk": task_before.id, "ndays": 1}),
+            {"id": task_before.id, "ndays": 1},
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
 
@@ -158,8 +158,8 @@ class TaskPostponeViewTests(TestCase):
         time.sleep(1)
 
         self.client.post(
-            reverse("task_postpone", kwargs={"pk": task_before.id}),
-            {"id": task_before.id},
+            reverse("task_postpone", kwargs={"pk": task_before.id, "ndays": 1}),
+            {"id": task_before.id, "ndays": 1},
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
 
@@ -182,8 +182,8 @@ class TaskPostponeViewTests(TestCase):
         time.sleep(1)
 
         self.client.post(
-            reverse("task_postpone", kwargs={"pk": task_before.id}),
-            {"id": task_before.id},
+            reverse("task_postpone", kwargs={"pk": task_before.id, "ndays": 1}),
+            {"id": task_before.id, "ndays": 1},
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
 
@@ -207,8 +207,8 @@ class TaskPostponeViewTests(TestCase):
         time.sleep(1)
 
         self.client.post(
-            reverse("task_postpone", kwargs={"pk": task_before.id}),
-            {"id": task_before.id},
+            reverse("task_postpone", kwargs={"pk": task_before.id, "ndays": 1}),
+            {"id": task_before.id, "ndays": 1},
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
 
