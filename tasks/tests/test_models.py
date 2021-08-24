@@ -35,7 +35,7 @@ def create_task(user, *args, **kwargs):
         repeat=Task.NO,
         repeat_from=Task.DUE_DATE,
         length=15,
-        priority=Task.TOP,
+        priority=Task.URGENT,
         note="This is a test task",
         tasklist=Task.NEXT_ACTION,
         project=project,
@@ -208,50 +208,50 @@ class TaskTests(TestCase):
 
         task = Task.objects.create(
             name="Paint the bedroom",
-            priority=Task.TOP,
+            priority=Task.URGENT,
             user=user,
         )
 
-        self.assertEqual(task.get_priority_display(), "3 Top")
-        task.priority = Task.HIGH
-        self.assertEqual(task.get_priority_display(), "2 High")
-        task.priority = Task.MEDIUM
-        self.assertEqual(task.get_priority_display(), "1 Medium")
-        task.priority = Task.LOW
-        self.assertEqual(task.get_priority_display(), "0 Low")
-        task.priority = Task.NEGATIVE
-        self.assertEqual(task.get_priority_display(), "-1 Negative")
+        self.assertEqual(task.get_priority_display(), "3 Urgent")
+        task.priority = Task.COMMITMENT
+        self.assertEqual(task.get_priority_display(), "2 Commitment")
+        task.priority = Task.ABOVE_NORMAL
+        self.assertEqual(task.get_priority_display(), "1 Above normal")
+        task.priority = Task.NORMAL
+        self.assertEqual(task.get_priority_display(), "0 Normal")
+        task.priority = Task.BELOW_NORMAL
+        self.assertEqual(task.get_priority_display(), "-1 Below normal")
 
     def test_task_priority_enum_values_order(self):
         user = MyUser.objects.get(username="testuser")
 
         task1 = Task.objects.create(
             name="Paint the bedroom",
-            priority=Task.TOP,
+            priority=Task.URGENT,
             user=user,
         )
 
         task2 = Task.objects.create(
             name="Paint the bedroom",
-            priority=Task.HIGH,
+            priority=Task.COMMITMENT,
             user=user,
         )
 
         task3 = Task.objects.create(
             name="Paint the bedroom",
-            priority=Task.MEDIUM,
+            priority=Task.ABOVE_NORMAL,
             user=user,
         )
 
         task4 = Task.objects.create(
             name="Paint the bedroom",
-            priority=Task.LOW,
+            priority=Task.NORMAL,
             user=user,
         )
 
         task5 = Task.objects.create(
             name="Paint the bedroom",
-            priority=Task.NEGATIVE,
+            priority=Task.BELOW_NORMAL,
             user=user,
         )
 

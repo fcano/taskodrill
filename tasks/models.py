@@ -45,18 +45,18 @@ class Task(models.Model):
         (COMPLETION_DATE, 'Completion Date'),
     )
 
-    TOP = 3
-    HIGH = 2
-    MEDIUM = 1
-    LOW = 0
-    NEGATIVE = -1
+    URGENT = 3
+    COMMITMENT = 2
+    ABOVE_NORMAL = 1
+    NORMAL = 0
+    BELOW_NORMAL = -1
 
     PRIORITY = (
-        (TOP, '3 Top'),
-        (HIGH, '2 High'),
-        (MEDIUM, '1 Medium'),
-        (LOW, '0 Low'),
-        (NEGATIVE, '-1 Negative'),
+        (URGENT, '3 Urgent'),
+        (COMMITMENT, '2 Commitment'),
+        (ABOVE_NORMAL, '1 Above normal'),
+        (NORMAL, '0 Normal'),
+        (BELOW_NORMAL, '-1 Below normal'),
     )
 
     NEXT_ACTION = 0
@@ -91,7 +91,7 @@ class Task(models.Model):
     repeat = models.IntegerField(choices=REPEAT, default=NO)
     repeat_from = models.IntegerField(choices=REPEAT_FROM, default=DUE_DATE)
     length = models.IntegerField(blank=True, null=True)
-    priority = models.IntegerField(choices=PRIORITY, default=TOP)
+    priority = models.IntegerField(choices=PRIORITY, default=NORMAL)
     tasklist = models.IntegerField(choices=TASK_LIST, default=NEXT_ACTION)
     status = models.IntegerField(choices=STATUS, default=PENDING)
     note = models.TextField(blank=True, null=True)
