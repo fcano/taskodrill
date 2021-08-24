@@ -10,6 +10,7 @@
   <td>{{ task.start_time | default_if_none:"no time"}}</td>
   <td>{{ task.due_date | default_if_none:"no date"}}</td>
   <td>{{ task.get_repeat_display | default_if_none:"none" }}</td>
+  <td>{{ task.get_priority_display | default_if_none:"none" }}</td>
   <td><a href="{{ task.get_absolute_url }}"><img src="/static/tasks/eye.svg" width="18" /></a></td>
   {% if next %}
     <td><a href="{% url 'task_update' task.pk %}?next={{ next }}"><img src="/static/tasks/edit.svg" width="18" /></a></td>
