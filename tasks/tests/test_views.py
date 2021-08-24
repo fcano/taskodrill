@@ -478,21 +478,6 @@ class TaskListViewTests(TestCase):
         self.assertEqual(task.status, Task.PENDING)
         self.assertEqual(task.start_date, datetime.date.today() + datetime.timedelta(1))
 
-    def test_task_mark_as_done_repeat_daily_w_due_date_wo_start_date(self):
-        pass
-
-    def test_task_mark_as_done_repeat_daily_w_due_date_w_start_date(self):
-        pass
-
-    def test_task_mark_as_done_repeat_daily_w_due_date_wo_start_date_from_due_date(
-        self,
-    ):
-        pass
-
-    def test_task_mark_as_done_repeat_daily_w_due_date_wo_start_date_from_completion_date(
-        self,
-    ):
-        pass
 
     def test_task_start_date_past_appear(self):
         self.client.login(username="testuser", password="testpassword")
@@ -507,6 +492,7 @@ class TaskListViewTests(TestCase):
         self.assertQuerysetEqual(
             response.context["task_list"], ["<Task: Testing tasks in the past>"]
         )
+
 
     def test_task_start_date_today_appear(self):
         self.client.login(username="testuser", password="testpassword")
@@ -572,14 +558,6 @@ class TaskListViewTests(TestCase):
         task4 = create_task(user=user, project=project)
         task5 = create_task(user=user, project=project)
 
-    def test_task_reorder_handle_exists_and_can_be_moved(self):
-        pass
-
-    def test_task_reorder_handle_exists_and_can_be_moved(self):
-        pass
-
-    def test_task_reorder(self):
-        pass
 
     def test_project_task_start_date_future_not_shown_wo_end_date(self):
         user = mylogin(self)
@@ -706,6 +684,73 @@ class TaskListViewTests(TestCase):
         self.assertContains(response, "Task in context")
         self.assertContains(response, "First task in project")
         self.assertContains(response, "Second task in project")
+
+    def test_tasks_correct_order(self):
+        self.client.login(username="testuser", password="testpassword")
+
+        self.client.post(
+            reverse("task_add"),
+            {
+                "name": "Task1",
+                "due_date": datetime.date.today() + datetime.timedelta(days=1),
+                "repeat": Task.NO,
+                "repeat_from": Task.DUE_DATE,
+                "length": 15,
+                "priority": Task.NORMAL,
+                "tasklist": Task.NEXT_ACTION,
+            },
+        )
+
+        self.client.post(
+            reverse("task_add"),
+            {
+                "name": "Task2",
+                "due_date": datetime.date.today() + datetime.timedelta(days=1),
+                "repeat": Task.NO,
+                "repeat_from": Task.DUE_DATE,
+                "length": 15,
+                "priority": Task.NORMAL,
+                "tasklist": Task.NEXT_ACTION,
+            },
+        )
+
+        response = self.client.get(reverse("task_list_tasklist", args=("nextactions",)))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context["task_list"], ["<Task: Task1>", "<Task: Task2>"])
+
+
+    def test_tasks_correct_order_dif_priority(self):
+        self.client.login(username="testuser", password="testpassword")
+
+        self.client.post(
+            reverse("task_add"),
+            {
+                "name": "Task1",
+                "due_date": datetime.date.today() + datetime.timedelta(days=1),
+                "repeat": Task.NO,
+                "repeat_from": Task.DUE_DATE,
+                "length": 15,
+                "priority": Task.NORMAL,
+                "tasklist": Task.NEXT_ACTION,
+            },
+        )
+
+        self.client.post(
+            reverse("task_add"),
+            {
+                "name": "Task2",
+                "due_date": datetime.date.today() + datetime.timedelta(days=1),
+                "repeat": Task.NO,
+                "repeat_from": Task.DUE_DATE,
+                "length": 15,
+                "priority": Task.COMMITMENT,
+                "tasklist": Task.NEXT_ACTION,
+            },
+        )
+
+        response = self.client.get(reverse("task_list_tasklist", args=("nextactions",)))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context["task_list"], ["<Task: Task2>", "<Task: Task1>"])
 
 
 class TestSaveNewOrdering(TestCase):
@@ -1387,6 +1432,20 @@ class TestTaskListSelenium(StaticLiveServerTestCase):
         submit_button.send_keys(Keys.RETURN)
 
         WebDriverWait(selenium, 15).until(EC.url_changes(current_url))
+
+        task = Task.objects.create(
+            name="Task 1",
+            tasklist=Task.NEXT_ACTION,
+            priority=Task.URGENT,
+            user=MyUser.objects.last(),
+        )
+
+        task = Task.objects.create(
+            name="Task 2",
+            tasklist=Task.NEXT_ACTION,
+            priority=Task.URGENT,
+            user=MyUser.objects.last(),
+        )
 
         selenium.get("{0}/tasks".format(self.live_server_url))
 

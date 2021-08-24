@@ -190,7 +190,7 @@ class TaskList(LoginRequiredMixin, ListView):
 
             last_task_from_each_project = Task.objects.filter(pk__in=last_task_from_each_project).filter(query)
             #last_task_from_each_project = last_task_from_each_project.filter(query)
-            return tasks_wo_project.union(last_task_from_each_project).order_by('due_date', 'ready_datetime')
+            return tasks_wo_project.union(last_task_from_each_project).order_by('due_date', '-priority', 'ready_datetime')
         
 
 class TaskUpdate(LoginRequiredMixin, UpdateView):
