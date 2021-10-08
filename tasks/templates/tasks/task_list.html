@@ -1,15 +1,16 @@
 {% extends "base.html" %}
 
 {% block content %}
-<p>
-  <a id="new_task_button" class="btn btn-primary" href="{% url 'task_add' %}">New task</a>
-</p>
-<p>
-  Tasks: <span id="tasks_count">{{ task_list.count }}</span>
-</p>
-{% if task_list %}
-{% include 'tasks/tasks_table.html' with task_list=task_list %}
-{% else %}
-<p>There are no tasks in this list.</p>
-{% endif %}
+  <p>
+    <a id="new_task_button" class="btn btn-primary" href="{% url 'task_add' %}">New task</a>
+  </p>
+  <p>
+    Tasks: <span id="tasks_count">{{ task_list.count }}</span> | 
+    Tasks with due date < today: <span id="tasks_due_date_count">{{ num_tasks_due_date }}</span>
+  </p>
+  {% if task_list %}
+    {% include 'tasks/tasks_table.html' with task_list=task_list %}
+  {% else %}
+    <p>There are no tasks in this list.</p>
+  {% endif %}
 {% endblock %}

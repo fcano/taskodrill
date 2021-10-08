@@ -132,6 +132,12 @@ class TaskList(LoginRequiredMixin, ListView):
         context = super(TaskList, self).get_context_data(**kwargs)
         # Add in a QuerySet of all the books
         context['form'] = TaskForm(user=self.request.user)
+        context['num_tasks_due_date'] = 0
+
+        for task in context['task_list']:
+            if task.due_date and task.due_date <= datetime.date.today():
+                context['num_tasks_due_date'] += 1
+
         return context
 
     def get_queryset(self):
