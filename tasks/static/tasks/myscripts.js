@@ -37,6 +37,7 @@ $('#tasks_body').on('click', 'input[type="checkbox"]', function () {
     data.id = $(this).attr('value');
     data.value = $(this).is(':checked') ? 1 : 0;
     tasks_count = parseInt($('#tasks_count').text());
+    tasks_due_date_count = parseInt($('#tasks_due_date_count').text());
 
     console.log(data);
 
@@ -48,11 +49,13 @@ $('#tasks_body').on('click', 'input[type="checkbox"]', function () {
             task_row_str = '#tasks_row_' + data.id;
             $(task_row_str).remove();
             tasks_count = tasks_count - 1;
+            tasks_due_date_count = tasks_due_date_count - 1;
             for (next_task_tr_html of response.tasks_to_render) {
                 tasks_count = tasks_count + 1;
                 $('#tasks_table tr:last').after(next_task_tr_html);
             }
             $('#tasks_count').text(tasks_count);
+            $('#tasks_due_date_count').text(tasks_due_date_count);
             // next_task_tr_html = response.next_task_tr;
             // if (next_task_tr_html != "") {
             //     $('#tasks_table tr:last').after(next_task_tr_html);
@@ -70,6 +73,7 @@ $('#project_tasks_body').on('click', 'input[type="checkbox"]', function () {
     data.id = $(this).attr('value');
     data.value = $(this).is(':checked') ? 1 : 0;
     tasks_count = $('#tasks_count').text();
+    tasks_due_date_count = parseInt($('#tasks_due_date_count').text());
 
     console.log(data);
 
@@ -81,6 +85,7 @@ $('#project_tasks_body').on('click', 'input[type="checkbox"]', function () {
             task_row_str = '#tasks_row_' + data.id;
             $(task_row_str).remove();
             $('#tasks_count').text(tasks_count - 1);
+            $('#tasks_due_date_count').text(tasks_due_date_count - 1);
         }
     }).done(function (data) {
         console.log(data);
@@ -132,6 +137,8 @@ $('#tasks_body').on('click', 'a.postpone', function (event) {
     object_type = href_elems[1];
     data.ndays = 1
 
+    tasks_due_date_count = parseInt($('#tasks_due_date_count').text());
+
     $.ajax({
         type: "POST",
         url: "/tasks/" + data.id + "/postpone/" + data.ndays + "/",
@@ -139,6 +146,7 @@ $('#tasks_body').on('click', 'a.postpone', function (event) {
         success: function (response) {
             object_row_str = '#tasks_row_' + data.id;
             $(object_row_str).remove();
+            $('#tasks_due_date_count').text(tasks_due_date_count - 1);
         }
     }).done(function (data) {
         console.log(data);
@@ -156,6 +164,8 @@ $('#tasks_body').on('click', 'a.postpone2', function (event) {
     object_type = href_elems[1];
     data.ndays = 2
 
+    tasks_due_date_count = parseInt($('#tasks_due_date_count').text());
+
     $.ajax({
         type: "POST",
         url: "/tasks/" + data.id + "/postpone/" + data.ndays + "/",
@@ -163,6 +173,7 @@ $('#tasks_body').on('click', 'a.postpone2', function (event) {
         success: function (response) {
             object_row_str = '#tasks_row_' + data.id;
             $(object_row_str).remove();
+            $('#tasks_due_date_count').text(tasks_due_date_count - 1);
         }
     }).done(function (data) {
         console.log(data);
@@ -180,6 +191,8 @@ $(document).on('click', 'a.confirm-delete', function (event) {
     data.id = href_elems[2];
     object_type = href_elems[1];
 
+    tasks_due_date_count = parseInt($('#tasks_due_date_count').text());
+
     $.ajax({
         type: "POST",
         url: "/" + object_type + "/" + data.id + "/delete/",
@@ -187,6 +200,7 @@ $(document).on('click', 'a.confirm-delete', function (event) {
         success: function (json) {
             object_row_str = '#' + object_type + '_row_' + data.id;
             $(object_row_str).remove();
+            $('#tasks_due_date_count').text(tasks_due_date_count - 1);
         }
     }).done(function (data) {
         console.log(data);
