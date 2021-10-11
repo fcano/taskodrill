@@ -103,6 +103,8 @@ class Task(models.Model):
     project_order = models.IntegerField(default=DEFAULT_PROJECT_ORDER)
     contexts = models.ManyToManyField(
         'Context', related_name="tasks", blank=True)
+    folder = models.ForeignKey(
+        'Folder', related_name="tasks", on_delete=models.SET_NULL, blank=True, null=True)
     blocked_by = models.ForeignKey('Task', on_delete=models.SET_NULL, blank=True, null=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL,
                              on_delete=models.CASCADE)
@@ -325,3 +327,41 @@ class Context(models.Model):
     class Meta:
         ordering = ['name']
         unique_together = (('name', 'user'),)
+
+
+class Folder(models.Model):
+    name = models.CharField(max_length=100)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
+
+    def get_absolute_url(self):
+        return reverse("folder_detail", kwargs={"pk": self.pk})
+
+    def pending_tasks(self):
+        q1 = Q(start_date=datetime.date.today()) & Q(start_time__lte=datetime.datetime.now())
+        q2 = Q(start_date=datetime.date.today()) & Q(start_time__isnull=True)
+        q3 = Q(start_date__lt=datetime.date.today())
+        q4 = Q(start_date__isnull=True)
+        in_the_future = q1 | q2 | q3 | q4
+        
+        tasks_wo_project = self.tasks.filter(
+            project__isnull=True,
+            status=Task.PENDING,
+            tasklist=Task.NEXT_ACTION,
+        )
+
+        last_task_from_each_project = self.tasks.filter(
+            status=Task.PENDING,
+            project__isnull=False,
+            project__status=Project.OPEN
+        ).order_by('project_id', 'project_order').distinct('project_id')
+        
+        last_task_from_each_project = Task.objects.filter(pk__in=last_task_from_each_project)
+
+        return tasks_wo_project.union(last_task_from_each_project).order_by('due_date', 'ready_datetime')
+
+    class Meta:
+        ordering = ["name"]
+        unique_together = (("name", "user"),)

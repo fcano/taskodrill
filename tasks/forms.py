@@ -14,6 +14,7 @@ class TaskForm(forms.ModelForm):
         self.user = kwargs.pop('user', None)
         self.context_id = kwargs.pop('context_id', None)
         self.project_id = kwargs.pop('project_id', None)
+        self.folder_id = kwargs.pop('folder_id', None)
         super(TaskForm, self).__init__(*args, **kwargs)
         self.fields['contexts'].widget = forms.CheckboxSelectMultiple()
         self.fields['contexts'].choices = Context.objects.filter(user=self.user).values_list('id', 'name')
@@ -26,6 +27,8 @@ class TaskForm(forms.ModelForm):
         #    queryset=Task.objects.all(),
         #    widget=autocomplete.ModelSelect2(url='task-autocomplete')
         #)
+        if self.folder_id:
+            self.fields['folder'].initial = self.folder_id        
         for visible in self.visible_fields():
             visible.field.widget.attrs['class'] = 'form-control form-control-sm'
         self.fields['contexts'].widget.attrs['class'] = 'form-check-input'
@@ -35,7 +38,7 @@ class TaskForm(forms.ModelForm):
     class Meta:
         model = Task
         fields = ['name', 'start_date', 'start_time', 'due_date', 'due_time', 'repeat',
-                  'repeat_from', 'length', 'priority', 'note', 'contexts', 'project', 'blocked_by', 'tasklist']
+                  'repeat_from', 'length', 'priority', 'note', 'contexts', 'project', 'folder', 'blocked_by', 'tasklist']
         widgets = {
             'start_date': DateInput(),
             'due_date': DateInput(),
@@ -43,6 +46,7 @@ class TaskForm(forms.ModelForm):
             'due_time': TimeInput(),
             'blocked_by': autocomplete.ModelSelect2(url='task-autocomplete'),
             'project': autocomplete.ModelSelect2(url='project-autocomplete'),
+            'folder': autocomplete.ModelSelect2(url='folder-autocomplete'),
         }
 
 class OrderingForm(forms.Form):

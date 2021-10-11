@@ -14,7 +14,7 @@ from django.template.loader import render_to_string
 from django.http import HttpResponseRedirect
 from django.template.response import TemplateResponse
 
-from .models import Task, Project, Context
+from .models import Task, Project, Context, Folder
 from .forms import TaskForm, ProjectForm, OrderingForm
 
 import datetime
@@ -53,6 +53,8 @@ class TaskCreate(LoginRequiredMixin, CreateView):
             kwargs['context_id'] = self.request.GET['context_id']
         if 'project_id' in self.request.GET.keys():
             kwargs['project_id'] = self.request.GET['project_id']
+        if 'folder_id' in self.request.GET.keys():
+            kwargs['folder_id'] = self.request.GET['folder_id']            
         return kwargs
 
     def form_valid(self, form):
@@ -518,3 +520,62 @@ class ContextUpdate(LoginRequiredMixin,UpdateView):
 class ContextDelete(LoginRequiredMixin,DeleteView):
     model = Context
     success_url = reverse_lazy('context_list')
+
+
+class FolderCreate(LoginRequiredMixin, CreateView):
+    model = Folder
+    fields = ['name']
+
+    success_url = reverse_lazy('folder_list')
+    
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        return super().form_valid(form)
+
+
+class FolderDetail(LoginRequiredMixin, DetailView):
+    model = Folder
+
+    def get_context_data(self, **kwargs):
+        context = super(FolderDetail, self).get_context_data(**kwargs)
+        context['next'] = self.object.get_absolute_url()
+        return context
+
+    def get_queryset(self):
+        if self.request.user.is_authenticated:
+            return Folder.objects.filter(user=self.request.user)
+        else:
+            return Folder.objects.none()
+
+class FolderList(LoginRequiredMixin, ListView):
+    model = Context
+
+    def get_queryset(self):
+        return Context.objects.filter(user=self.request.user)
+
+class FolderList(LoginRequiredMixin, ListView):
+    model = Folder
+
+    def get_queryset(self):
+        return Folder.objects.filter(user=self.request.user)
+
+class FolderUpdate(LoginRequiredMixin,UpdateView):
+    model = Folder
+    fields = ['name']
+
+class FolderDelete(LoginRequiredMixin,DeleteView):
+    model = Folder
+    success_url = reverse_lazy('folder_list')
+
+class FolderAutocomplete(autocomplete.Select2QuerySetView):
+    
+    def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            return Task.objects.none()
+
+        qs = self.request.user.folder_set.all()
+
+        if self.q:
+            qs = qs.filter(name__icontains=self.q)
+
+        return qs

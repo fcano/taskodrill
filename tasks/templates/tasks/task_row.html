@@ -6,6 +6,11 @@
   {% else %}
     <td>none</td>
   {% endif %}
+  {% if task.folder %}
+  <td><a href="{{ task.folder.get_absolute_url }}">{{ task.folder.name }}</a></td>
+  {% else %}
+    <td>none</td>
+  {% endif %}
   <td>{{ task.start_date | default_if_none:"no date"}}</td>
   <td>{{ task.start_time | default_if_none:"no time"}}</td>
   <td>{{ task.due_date | default_if_none:"no date"}}</td>

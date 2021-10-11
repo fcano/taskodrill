@@ -24,5 +24,11 @@ urlpatterns = [
     path('contexts/add/', tasks_views.ContextCreate.as_view(), name='context_add'),
     path('contexts/<int:pk>/edit/', tasks_views.ContextUpdate.as_view(), name='context_update'),
     path('contexts/<int:pk>/delete/', tasks_views.ContextDelete.as_view(), name='context_delete'),
+    path('folder/', tasks_views.FolderList.as_view(), name='folder_list'),
+    path('folder/<int:pk>/', tasks_views.FolderDetail.as_view(), name='folder_detail'),
+    path('folder/add/', tasks_views.FolderCreate.as_view(), name='folder_add'),
+    path('folder/<int:pk>/edit/', tasks_views.FolderUpdate.as_view(), name='folder_update'),
+    path('folder/<int:pk>/delete/', tasks_views.FolderDelete.as_view(), name='folder_delete'),
+    path('folders/folder-autocomplete/', tasks_views.FolderAutocomplete.as_view(), name='folder-autocomplete'),
     path('dashboard/', tasks_views.DashboardDetail.as_view(), name='dashboard_detail'),
 ]

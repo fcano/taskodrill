@@ -76,6 +76,9 @@
           <li class="nav-item {% if request.path == tasklist and request.GET.status == 'done' %}active{% endif %}">
             <a class="nav-link" href="{% url 'task_list'%}?status=done">&nbsp;&nbsp;&nbsp;&nbsp;Done</a>
           </li>
+          <li class="nav-item {% if request.path == folderlist and not request.GET.status %}active{% endif %}">
+            <a class="nav-link" href="{% url 'folder_list' %}">Folders</a>
+          </li>          
           <li class="nav-item {% if request.path == dashboard %}active{% endif %}">
             <a class="nav-link" href="{% url 'dashboard_detail'%}">Dashboard</a>
           </li>

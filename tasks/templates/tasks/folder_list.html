@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <p>
+      <a id="new_folder_button" class="btn btn-primary" href="{% url 'folder_add' %}">New folder</a>
+    </p>
+    {% if folder_list %}
+    <table class="table table-hover table-sm">
+      <tr>
+        <th>Name</th>
+        <th></th>
+      </tr>
+      {% for folder in folder_list %}
+      <tr id="folder_row_{{ folder.id }}">
+        <td><a href="{{ folder.get_absolute_url }}">{{ folder.name }}</a></td>
+        <td><a href="{% url 'folder_delete' folder.pk %}" class="confirm-delete"><img src="/static/tasks/trash-2.svg" /></a></td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+      <p>There are no folders.</p>
+    {% endif %}       
+{% endblock %}
