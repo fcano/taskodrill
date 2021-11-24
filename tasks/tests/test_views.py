@@ -716,7 +716,7 @@ class TaskListViewTests(TestCase):
 
         response = self.client.get(reverse("task_list_tasklist", args=("nextactions",)))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context["task_list"], ["<Task: Task1>", "<Task: Task2>"])
+        self.assertQuerysetEqual(list(response.context["task_list"]), ["<Task: Task1>", "<Task: Task2>"])
 
 
     def test_tasks_correct_order_dif_priority(self):
@@ -740,6 +740,44 @@ class TaskListViewTests(TestCase):
             {
                 "name": "Task2",
                 "due_date": datetime.date.today() + datetime.timedelta(days=1),
+                "repeat": Task.NO,
+                "repeat_from": Task.DUE_DATE,
+                "length": 15,
+                "priority": Task.COMMITMENT,
+                "tasklist": Task.NEXT_ACTION,
+            },
+        )
+
+        response = self.client.get(reverse("task_list_tasklist", args=("nextactions",)))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context["task_list"], ["<Task: Task2>", "<Task: Task1>"])
+
+
+    def test_tasks_correct_order_priority_over_date_when_overdue(self):
+        """ Task1 has due date today, but priority commitment,
+            Task2 has due date yesterday, but priority normal.
+            Task1 should be above Task2 in nextactions """
+
+        self.client.login(username="testuser", password="testpassword")
+
+        self.client.post(
+            reverse("task_add"),
+            {
+                "name": "Task1",
+                "due_date": datetime.date.today() - datetime.timedelta(days=2),
+                "repeat": Task.NO,
+                "repeat_from": Task.DUE_DATE,
+                "length": 15,
+                "priority": Task.NORMAL,
+                "tasklist": Task.NEXT_ACTION,
+            },
+        )
+
+        self.client.post(
+            reverse("task_add"),
+            {
+                "name": "Task2",
+                "due_date": datetime.date.today() - datetime.timedelta(days=1),
                 "repeat": Task.NO,
                 "repeat_from": Task.DUE_DATE,
                 "length": 15,

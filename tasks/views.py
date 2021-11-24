@@ -6,7 +6,7 @@ from django.views.generic import ListView, View
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Q
+from django.db.models import Q, ExpressionWrapper, F, Case, Value, When, IntegerField, DateTimeField
 from django.db import transaction
 from django.urls import reverse_lazy, reverse
 from django.http import JsonResponse
@@ -184,7 +184,25 @@ class TaskList(LoginRequiredMixin, ListView):
                             user=self.request.user,
                             tasklist=tasklist,
                             status=Task.PENDING,
-                            project__isnull=True).filter(query)
+                            project__isnull=True).filter(query).annotate(
+                                overdue=Case(
+                                        When(due_date__lte=datetime.datetime.now(), then=1),
+                                        default=2,
+                                        output_field=IntegerField()
+                                    ),
+                                first_field=
+                                    Case(
+                                        When(due_date__lte=datetime.datetime.now(), then=None),
+                                        default=F('due_date'),
+                                        output_field=DateTimeField()
+                                    ),
+                                second_field=
+                                    Case(
+                                        When(due_date__lte=datetime.datetime.now(), then=F('priority')),
+                                        default=None,
+                                        output_field=IntegerField()
+                                    ) 
+                                )
             
             last_task_from_each_project = Task.objects.filter(
                 user=self.request.user,
@@ -195,10 +213,28 @@ class TaskList(LoginRequiredMixin, ListView):
 
             q5 = Q(tasklist=tasklist)
             query = query & q5
+          
+            last_task_from_each_project = Task.objects.filter(pk__in=last_task_from_each_project).filter(query).annotate(
+                                overdue=Case(
+                                        When(due_date__lte=datetime.datetime.now(), then=1),
+                                        default=2,
+                                        output_field=IntegerField()
+                                    ),
+                                first_field=
+                                    Case(
+                                        When(due_date__lte=datetime.datetime.now(), then=None),
+                                        default=F('due_date'),
+                                        output_field=DateTimeField()
+                                    ),
+                                second_field=
+                                    Case(
+                                        When(due_date__lte=datetime.datetime.now(), then=F('priority')),
+                                        default=None,
+                                        output_field=IntegerField()
+                                    )
+                                )
 
-            last_task_from_each_project = Task.objects.filter(pk__in=last_task_from_each_project).filter(query)
-            #last_task_from_each_project = last_task_from_each_project.filter(query)
-            return tasks_wo_project.union(last_task_from_each_project).order_by('due_date', '-priority', 'ready_datetime')
+            return tasks_wo_project.union(last_task_from_each_project).order_by('overdue', 'first_field', '-second_field', '-priority', 'ready_datetime')
         
 
 class TaskUpdate(LoginRequiredMixin, UpdateView):
