@@ -234,7 +234,7 @@ class TaskList(LoginRequiredMixin, ListView):
                                     )
                                 )
 
-            return tasks_wo_project.union(last_task_from_each_project).order_by('overdue', 'first_field', '-second_field', '-priority', 'ready_datetime')
+            return tasks_wo_project.union(last_task_from_each_project).order_by('overdue', 'first_field', '-second_field', 'due_date', '-priority', 'ready_datetime')
         
 
 class TaskUpdate(LoginRequiredMixin, UpdateView):
