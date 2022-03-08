@@ -1,4 +1,5 @@
 import datetime
+from email.encoders import encode_7or8bit
 from dal import autocomplete
 import re
 
@@ -125,6 +126,7 @@ class TaskDetail(LoginRequiredMixin, DetailView):
 
     def get_queryset(self):
         return Task.objects.filter(user=self.request.user)
+
 
 class TaskList(LoginRequiredMixin, ListView):
     model = Task
@@ -345,6 +347,7 @@ class TaskMarkAsDone(LoginRequiredMixin, View):
             new_task.pk = None
             task = Task.objects.get(user=self.request.user, id=self.request.POST['id'])
             task.status = Task.DONE
+            task.done_datetime = datetime.datetime.now()
             task.save()
             
             tasks_to_render = []
@@ -426,6 +429,27 @@ class SaveNewOrdering(LoginRequiredMixin, View):
         #return HttpResponseRedirect(reverse('project_list'))
         return HttpResponseRedirect(task.project.get_absolute_url())
 
+
+class TaskListDone(LoginRequiredMixin, ListView):
+    #model = Task
+    template_name = 'tasks/task_list_done.html'
+    
+    #def get(self, request, *args, **kwargs):
+    def get_queryset(self):
+        status_filter = Q(status=Task.DONE)
+        
+        from_date = self.request.GET.get('from')
+        to_date = self.request.GET.get('to')
+        to_date = datetime.datetime.strptime(to_date, "%Y-%m-%d")
+        to_date = to_date + datetime.timedelta(days=1)
+        to_date = to_date.strftime("%Y-%m-%d")
+        date_filter = Q(done_datetime__gte=from_date) & Q(done_datetime__lte=to_date)
+
+        search_filter = status_filter & date_filter
+
+        return Task.objects.filter(user=self.request.user).filter(search_filter).order_by('-modification_datetime')
+
+
 class DashboardDetail(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
@@ -436,7 +460,16 @@ class DashboardDetail(LoginRequiredMixin, View):
         num_contexts = self.request.user.context_set.count()
         avg_nas_per_proj = num_next_actions_in_projects/num_projects
         avg_nas_per_con = num_next_actions/num_contexts
-        
+        today = datetime.date.today()
+        start = today - datetime.timedelta(days=today.weekday())
+        end = start + datetime.timedelta(days=6)
+        start_7 = start - datetime.timedelta(days=7)
+        end_7 = end - datetime.timedelta(days=7)
+        start_14 = start - datetime.timedelta(days=14)
+        end_14 = end - datetime.timedelta(days=14)
+        start_21 = start - datetime.timedelta(days=21)
+        end_21 = end - datetime.timedelta(days=21)
+
         return TemplateResponse(request, 'tasks/dashboard.html', {
             'num_projects': num_projects,
             'num_next_actions': num_next_actions,
@@ -445,6 +478,14 @@ class DashboardDetail(LoginRequiredMixin, View):
             'num_next_actions_in_projects': num_next_actions_in_projects,
             'avg_nas_per_proj': avg_nas_per_proj,
             'avg_nas_per_con': avg_nas_per_con,
+            'start': start.strftime("%Y-%m-%d"),
+            'end': end.strftime("%Y-%m-%d"),
+            'start_7': start_7.strftime("%Y-%m-%d"),
+            'end_7': end_7.strftime("%Y-%m-%d"),
+            'start_14': start_14.strftime("%Y-%m-%d"),
+            'end_14': end_14.strftime("%Y-%m-%d"),  
+            'start_21': start_21.strftime("%Y-%m-%d"),
+            'end_21': end_21.strftime("%Y-%m-%d")
             })
         
 class ProjectCreate(LoginRequiredMixin, CreateView):

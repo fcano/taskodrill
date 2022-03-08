@@ -98,6 +98,7 @@ class Task(models.Model):
     creation_datetime = models.DateTimeField(auto_now_add=True)
     modification_datetime = models.DateTimeField(auto_now=True)
     ready_datetime = models.DateTimeField(blank=True, null=True)
+    done_datetime = models.DateTimeField(blank=True, null=True)
     project = models.ForeignKey(
         'Project', on_delete=models.CASCADE, blank=True, null=True)
     project_order = models.IntegerField(default=DEFAULT_PROJECT_ORDER)

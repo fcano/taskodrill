@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <p>
+    Tasks: <span id="tasks_count">{{ task_list.count }}</span>
+  </p>
+  {% if task_list %}
+    {% for task in task_list %}
+        {{ task.name }}<br />
+    {% endfor %}
+  {% else %}
+    <p>There are no tasks in this list.</p>
+  {% endif %}
+{% endblock %}

@@ -6,4 +6,6 @@
     <a id="edit_task_button" class="btn btn-primary" href="{% url 'task_update' task.pk %}">Edit</a>
 </p>
 <p>{{ task.note|urlize }}</p>
+<p>{{ task.status }}</p>
+<p>{{ task.done_datetime }}</p>
 {% endblock %}

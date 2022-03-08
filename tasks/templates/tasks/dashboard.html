@@ -9,4 +9,11 @@
         <li>Number of items in Someday/Maybe: {{ num_someday_maybe_items }}</li>
         <li>Number of Contexts: {{ num_contexts }} (Avg of {{ avg_nas_per_con|floatformat:2 }} per context)</li>
     </ul>
+    <h2>Tasks done per week</h2>
+    <ul>
+        <li><a href="{% url 'task_list_done' %}?from={{ start }}&to={{ end }}">{{start}} - {{end}}</a></li>
+        <li><a href="{% url 'task_list_done' %}?from={{ start_7 }}&to={{ end_7 }}">{{start_7}} - {{end_7}}</a></li>
+        <li><a href="{% url 'task_list_done' %}?from={{ start_14 }}&to={{ end_14 }}">{{start_14}} - {{end_14}}</a></li>
+        <li><a href="{% url 'task_list_done' %}?from={{ start_21 }}&to={{ end_21 }}">{{start_21}} - {{end_21}}</a></li>
+    </ul>
 {% endblock %}

@@ -3,6 +3,7 @@ from tasks import views as tasks_views
 
 urlpatterns = [
     path('tasks/', tasks_views.TaskList.as_view(), name='task_list'),
+    path('tasks/done/', tasks_views.TaskListDone.as_view(), name='task_list_done'),
     path('tasks/<int:pk>/', tasks_views.TaskDetail.as_view(), name='task_detail'),
     path('tasks/add/', tasks_views.TaskCreate.as_view(), name='task_add'),
     path('tasks/<int:pk>/edit/', tasks_views.TaskUpdate.as_view(), name='task_update'),
