@@ -80,8 +80,8 @@
             {{ form.contexts.errors }}
             <legend class="col-form-label-sm">Contexts <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='Assign the contexts where you want to see this task.' /></legend>
             {% for checkbox in form.contexts %}
-            <div class="form-check">
-                {{ checkbox.tag }}<label class="col-form-label-sm for="{{ checkbox.choice_label }}">{{ checkbox.choice_label }}</label>
+            <div class="form-check float-left mr-3">
+                {{ checkbox.tag }}<label class="form-check-label" for="{{ checkbox.choice_label }}">{{ checkbox.choice_label }}</label>
             </div>
             {% endfor %}
         </fieldset>
