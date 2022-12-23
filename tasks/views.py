@@ -161,11 +161,14 @@ class TaskList(LoginRequiredMixin, ListView):
             search_filter = Q(status=Task.PENDING) | Q(status=Task.BLOCKED)
 
         # Task with datetime in the future
-        q1 = Q(start_date=datetime.date.today()) & Q(start_time__lte=datetime.datetime.now())
-        q2 = Q(start_date=datetime.date.today()) & Q(start_time__isnull=True)
-        q3 = Q(start_date__lt=datetime.date.today())
-        q4 = Q(start_date__isnull=True)
-        query = q1 | q2 | q3 | q4
+        if 'start_date' in self.request.GET.keys() and self.request.GET.get('start_date') == 'ignore':
+            query = Q()
+        else:
+            q1 = Q(start_date=datetime.date.today()) & Q(start_time__lte=datetime.datetime.now())
+            q2 = Q(start_date=datetime.date.today()) & Q(start_time__isnull=True)
+            q3 = Q(start_date__lt=datetime.date.today())
+            q4 = Q(start_date__isnull=True)
+            query = q1 | q2 | q3 | q4
 
         # query = Q(start_date=datetime.date.today())
         # query.add(Q(start_time__lte=datetime.datetime.now()), Q.AND)
