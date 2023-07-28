@@ -8,7 +8,7 @@ from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q, ExpressionWrapper, F, Case, Value, When, IntegerField, DateTimeField
-from django.db import transaction
+from django.db import transaction, models
 from django.urls import reverse_lazy, reverse
 from django.http import JsonResponse
 from django.template.loader import render_to_string
@@ -137,6 +137,7 @@ class TaskList(LoginRequiredMixin, ListView):
         # Add in a QuerySet of all the books
         context['form'] = TaskForm(user=self.request.user)
         context['num_tasks_due_date'] = 0
+        context['contexts'] = Context.objects.annotate(num_tasks=models.Count('tasks')).order_by('-num_tasks')[:5]
 
         for task in context['task_list']:
             if task.due_date and task.due_date <= datetime.date.today():
