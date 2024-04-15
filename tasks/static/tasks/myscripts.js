@@ -221,12 +221,9 @@ $(document).on('click', 'a.remove-deadline', function (event) {
         url: "/" + object_type + "/" + data.id + "/remove_deadline/",
         data: data,
         success: function (json) {
-            tasks_td_start_date = '#' + object_type + '_td_start_date_' + data.id;
-            tasks_td_start_time = '#' + object_type + '_td_start_time_' + data.id;
-            tasks_td_due_date = '#' + object_type + '_td_due_date_' + data.id;
-            $(tasks_td_start_date).text("no date");
-            $(tasks_td_start_time).text("no time");
-            $(tasks_td_due_date).text("no date");
+            /* If the result is to reload the page, AJAX is not needed */
+            /* Pending: remove AJAX */
+            window.location.reload();
         }
     }).done(function (data) {
         console.log(data);
