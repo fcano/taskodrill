@@ -180,7 +180,6 @@ $('#tasks_body').on('click', 'a.postpone2', function (event) {
     });
 });
 
-
 $(document).on('click', 'a.confirm-delete', function (event) {
     event.preventDefault();
     confirm('Are you sure you want to delete this?');
@@ -201,6 +200,33 @@ $(document).on('click', 'a.confirm-delete', function (event) {
             object_row_str = '#' + object_type + '_row_' + data.id;
             $(object_row_str).remove();
             $('#tasks_due_date_count').text(tasks_due_date_count - 1);
+        }
+    }).done(function (data) {
+        console.log(data);
+    });
+});
+
+
+$(document).on('click', 'a.remove-deadline', function (event) {
+    event.preventDefault();
+
+    var data = {};
+    href = $(this).attr('href');
+    href_elems = href.split('/');
+    data.id = href_elems[2];
+    object_type = href_elems[1];
+
+    $.ajax({
+        type: "POST",
+        url: "/" + object_type + "/" + data.id + "/remove_deadline/",
+        data: data,
+        success: function (json) {
+            tasks_td_start_date = '#' + object_type + '_td_start_date_' + data.id;
+            tasks_td_start_time = '#' + object_type + '_td_start_time_' + data.id;
+            tasks_td_due_date = '#' + object_type + '_td_due_date_' + data.id;
+            $(tasks_td_start_date).text("no date");
+            $(tasks_td_start_time).text("no time");
+            $(tasks_td_due_date).text("no date");
         }
     }).done(function (data) {
         console.log(data);

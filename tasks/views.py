@@ -323,6 +323,20 @@ class TaskDelete(LoginRequiredMixin, DeleteView):
         data = {'success': 'OK'}
         return JsonResponse(data)
 
+class TaskRemoveDeadline(LoginRequiredMixin, View):
+
+    def post(self, request, *args, **kwargs):
+        if self.request.user.is_authenticated:
+            task = Task.objects.get(user=self.request.user, id=self.request.POST['id'])
+
+            task.start_date = None
+            task.start_time = None
+            task.due_date = None
+            task.due_time = None
+
+            task.save()
+            data = {'success': 'OK'}
+            return JsonResponse(data) 
 
 class TaskPostpone(LoginRequiredMixin, View):
 
