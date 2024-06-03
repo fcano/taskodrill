@@ -38,7 +38,7 @@ class TaskCreate(LoginRequiredMixin, CreateView):
         if next_url:
             context['next'] = next_url
         return context
-        
+
     def get_success_url(self):
         next_url = self.request.POST.get('next')
         if next_url:
@@ -55,7 +55,7 @@ class TaskCreate(LoginRequiredMixin, CreateView):
         if 'project_id' in self.request.GET.keys():
             kwargs['project_id'] = self.request.GET['project_id']
         if 'folder_id' in self.request.GET.keys():
-            kwargs['folder_id'] = self.request.GET['folder_id']            
+            kwargs['folder_id'] = self.request.GET['folder_id']
         return kwargs
 
     def form_valid(self, form):
@@ -113,12 +113,12 @@ class TaskCreate(LoginRequiredMixin, CreateView):
                 t.name = re.sub(r"\[\w+-\w+\]", str(i), task)
                 if prev_task:
                     t.blocked_by = prev_task
-                    t.status = Task.BLOCKED                
+                    t.status = Task.BLOCKED
                 t.save()
                 t.contexts.set(form.cleaned_data['contexts'])
                 prev_task = Task.objects.get(pk=t.id)
-            return HttpResponseRedirect(self.get_success_url())                
-        
+            return HttpResponseRedirect(self.get_success_url())
+
         return super().form_valid(form)
 
 class TaskDetail(LoginRequiredMixin, DetailView):
@@ -154,6 +154,13 @@ class TaskList(LoginRequiredMixin, ListView):
         else:
             tasklist_slug = None
 
+
+        if 'available_time' in  self.request.GET.keys():
+            available_time = int(self.request.GET.get('available_time'))
+        else:
+            available_time = None
+
+
 #        (start_date=today AND start_time=noworpast) OR (start_time_today AND start_time=null) OR (start_date=past) OR (start_date=null)
 
         if 'status' in self.request.GET.keys():
@@ -188,7 +195,7 @@ class TaskList(LoginRequiredMixin, ListView):
                 tasklist = Task.NOT_THIS_WEEK
             else:
                 tasklist = Task.SOMEDAY_MAYBE
-            
+
             tasks_wo_project = Task.objects.filter(
                             user=self.request.user,
                             tasklist=tasklist,
@@ -210,9 +217,9 @@ class TaskList(LoginRequiredMixin, ListView):
                                         When(due_date__lte=datetime.datetime.now(), then=F('priority')),
                                         default=None,
                                         output_field=IntegerField()
-                                    ) 
+                                    )
                                 )
-            
+
             last_task_from_each_project = Task.objects.filter(
                 user=self.request.user,
                 status=Task.PENDING,
@@ -222,7 +229,7 @@ class TaskList(LoginRequiredMixin, ListView):
 
             q5 = Q(tasklist=tasklist)
             query = query & q5
-          
+
             last_task_from_each_project = Task.objects.filter(pk__in=last_task_from_each_project).filter(query).annotate(
                                 overdue=Case(
                                         When(due_date__lte=datetime.datetime.now(), then=1),
@@ -243,8 +250,23 @@ class TaskList(LoginRequiredMixin, ListView):
                                     )
                                 )
 
-            return tasks_wo_project.union(last_task_from_each_project).order_by('overdue', 'first_field', '-second_field', 'due_date', '-priority', 'ready_datetime')
-        
+            tasks = tasks_wo_project.union(last_task_from_each_project).order_by('overdue', 'first_field', '-second_field', 'due_date', '-priority', 'ready_datetime')
+
+            if not available_time:
+                return tasks
+            else:
+                selected_task_ids = []
+
+                total_required_time = 0
+                for task in tasks:
+                    task_length = task.length or 60
+                    if total_required_time + task_length <= available_time:
+                        selected_task_ids.append(task.id)
+                        total_required_time += task_length
+
+                selected_tasks = Task.objects.filter(id__in=selected_task_ids)
+                return selected_tasks
+
 
 class TaskUpdate(LoginRequiredMixin, UpdateView):
     model = Task
@@ -316,7 +338,7 @@ class TaskUpdate(LoginRequiredMixin, UpdateView):
 
 class TaskDelete(LoginRequiredMixin, DeleteView):
     model = Task
-    
+
     def post(self, *args, **kwargs):
         self.object = self.get_object()
         self.object.delete()
@@ -336,7 +358,7 @@ class TaskRemoveDeadline(LoginRequiredMixin, View):
 
             task.save()
             data = {'success': 'OK'}
-            return JsonResponse(data) 
+            return JsonResponse(data)
 
 class TaskPostpone(LoginRequiredMixin, View):
 
@@ -346,10 +368,10 @@ class TaskPostpone(LoginRequiredMixin, View):
             ndays = int(self.request.POST['ndays'])
 
             next_day = datetime.date.today() + datetime.timedelta(days=ndays)
-           
+
             while next_day.weekday() in holidays.WEEKEND or next_day in HOLIDAYS_ES_VC:
                 next_day = next_day + datetime.timedelta(days=1)
-                  
+
             task.start_date = next_day
             # We change the due_date only if it is in the past.
             # It the due_date is in the future or it is not set, we don't set it.
@@ -359,7 +381,7 @@ class TaskPostpone(LoginRequiredMixin, View):
                 task.due_date = next_day
             task.save()
             data = {'success': 'OK'}
-            return JsonResponse(data)            
+            return JsonResponse(data)
 
 
 class TaskMarkAsDone(LoginRequiredMixin, View):
@@ -372,7 +394,7 @@ class TaskMarkAsDone(LoginRequiredMixin, View):
             task.status = Task.DONE
             task.done_datetime = datetime.datetime.now()
             task.save()
-            
+
             tasks_to_render = []
             if new_task.repeat:
                 new_task.update_next_dates()
@@ -414,13 +436,13 @@ class TaskChangeTasklist(LoginRequiredMixin, View):
             task = Task.objects.get(user=self.request.user, id=self.request.POST['id'])
             task.tasklist = self.request.POST['tasklist']
             task.save()
-            
+
             return JsonResponse({'success': True})
         else:
             return JsonResponse({'error': 'Error'})
 
 class TaskAutocomplete(autocomplete.Select2QuerySetView):
-    
+
     def get_queryset(self):
         # Don't forget to filter out results depending on the visitor !
         if not self.request.user.is_authenticated:
@@ -456,11 +478,11 @@ class SaveNewOrdering(LoginRequiredMixin, View):
 class TaskListDone(LoginRequiredMixin, ListView):
     #model = Task
     template_name = 'tasks/task_list_done.html'
-    
+
     #def get(self, request, *args, **kwargs):
     def get_queryset(self):
         status_filter = Q(status=Task.DONE)
-        
+
         from_date = self.request.GET.get('from')
         to_date = self.request.GET.get('to')
         to_date = datetime.datetime.strptime(to_date, "%Y-%m-%d")
@@ -506,11 +528,11 @@ class DashboardDetail(LoginRequiredMixin, View):
             'start_7': start_7.strftime("%Y-%m-%d"),
             'end_7': end_7.strftime("%Y-%m-%d"),
             'start_14': start_14.strftime("%Y-%m-%d"),
-            'end_14': end_14.strftime("%Y-%m-%d"),  
+            'end_14': end_14.strftime("%Y-%m-%d"),
             'start_21': start_21.strftime("%Y-%m-%d"),
             'end_21': end_21.strftime("%Y-%m-%d")
             })
-        
+
 class ProjectCreate(LoginRequiredMixin, CreateView):
     model = Project
     form_class = ProjectForm
@@ -565,7 +587,7 @@ class ProjectDelete(LoginRequiredMixin,DeleteView):
 
 
 class ProjectAutocomplete(autocomplete.Select2QuerySetView):
-    
+
     def get_queryset(self):
         if not self.request.user.is_authenticated:
             return Task.objects.none()
@@ -583,7 +605,7 @@ class ContextCreate(LoginRequiredMixin, CreateView):
     fields = ['name']
 
     success_url = reverse_lazy('context_list')
-    
+
     def form_valid(self, form):
         form.instance.user = self.request.user
         return super().form_valid(form)
@@ -594,7 +616,7 @@ class ContextDetail(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super(ContextDetail, self).get_context_data(**kwargs)
         context['next'] = self.object.get_absolute_url()
-        
+
         hide_future_tasks = self.request.GET.get('hide_future_tasks')
         if hide_future_tasks:
             context['hide_future_tasks'] = "true"
@@ -627,7 +649,7 @@ class FolderCreate(LoginRequiredMixin, CreateView):
     fields = ['name']
 
     success_url = reverse_lazy('folder_list')
-    
+
     def form_valid(self, form):
         form.instance.user = self.request.user
         return super().form_valid(form)
@@ -668,7 +690,7 @@ class FolderDelete(LoginRequiredMixin,DeleteView):
     success_url = reverse_lazy('folder_list')
 
 class FolderAutocomplete(autocomplete.Select2QuerySetView):
-    
+
     def get_queryset(self):
         if not self.request.user.is_authenticated:
             return Task.objects.none()

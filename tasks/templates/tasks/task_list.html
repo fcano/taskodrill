@@ -3,6 +3,10 @@
 {% block content %}
   <p>
     <a id="new_task_button" class="btn btn-primary" href="{% url 'task_add' %}">New task</a>
+    <form action="" method="get">
+      Scheduler: <input type="text" name="available_time" value="">
+      <input type="submit" value="Filter">
+    </form>
   </p>
   <p>
     Tasks: <span id="tasks_count">{{ task_list.count }}</span> | 
