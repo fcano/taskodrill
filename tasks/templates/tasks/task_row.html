@@ -1,11 +1,6 @@
 <tr id="tasks_row_{{ task.id }}">
   <td><input class="checkbox align-middle" type="checkbox" id="checkbox_{{ task.id }}" value="{{ task.id }}"></td>
   <td>{{ task.name|urlizetrunc:50 }}</td>
-  {% if task.project %}
-  <td><a href="{{ task.project.get_absolute_url }}">{{ task.project.name }}</a></td>
-  {% else %}
-    <td>none</td>
-  {% endif %}
   {% if task.folder %}
   <td><a href="{{ task.folder.get_absolute_url }}">{{ task.folder.name }}</a></td>
   {% else %}
@@ -16,6 +11,7 @@
   <td id="tasks_td_due_date_{{ task.id }}">{{ task.due_date | default_if_none:"no date"}}</td>
   <td>{{ task.get_repeat_display | default_if_none:"none" }}</td>
   <td>{{ task.get_priority_display | default_if_none:"none" }}</td>
+  <td>{{ task.length | default_if_none:"none" }}</td>
   <td><a href="{% url 'task_remove_deadline' task.pk %}" class="remove-deadline"><img src="/static/tasks/empty.svg" width="18" /></a></td>
   <td><a href="{{ task.get_absolute_url }}"><img src="/static/tasks/eye.svg" width="18" /></a></td>
   {% if next %}
