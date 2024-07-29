@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>{{ goal.name }}</h1>
+    <p>
+        Deadline: {{ goal.due_date }}<br />
+        Weekdays until deadline: {{ weekdays_until_deadline }}
+    </p>
+    <p><a href="{% url 'goal_update' goal.pk %}">Edit</a>
+    <p>
+        <a id="new_task_button" class="btn btn-primary" href="{% url 'task_add' %}?goal_id={{ goal.id }}&next={{ goal.get_absolute_url }}">New task</a>
+    </p>
+    
+    <h2>Tasks in goal</h2>
+    {% if goal.task_set.count == 0 %}
+    <p>This goal does not have tasks.</p>
+    {% else %}
+        {% include 'tasks/tasks_table.html' with task_list=goal.pending_tasks.all %}
+    {% endif %}
+{% endblock %}

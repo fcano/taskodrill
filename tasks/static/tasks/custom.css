@@ -103,3 +103,7 @@ li.active {
     background-image :
         url("/static/tasks/cube_background.png");
 }
+
+.row-time-constrained {
+    background-color: red;
+}

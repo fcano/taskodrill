@@ -1,11 +1,14 @@
 import datetime
-import time
 import uuid
+from django.urls import reverse
+from datetime import datetime, date, timedelta
 
 from django.test import TestCase
-from tasks.models import Task, Project, Context
+from tasks.models import Task, Project, Context, Goal
 from myauth.models import MyUser
+
 import time_machine
+
 
 def mylogin(the_test):
     """Logins with default 'testuser' and returns MyUser object"""
@@ -364,3 +367,90 @@ class TaskTests(TestCase):
         date = Task.next_business_day()
         
         self.assertEqual(date, datetime.date.today()+datetime.timedelta(days=1))
+
+
+class GoalModelTests(TestCase):
+
+    def setUp(self):    
+        self.user = MyUser.objects.create_user(username='testuser', password='12345')
+        self.goal = Goal.objects.create(name='Test Goal', user=self.user)
+
+    def test_str_method(self):
+        """Test the string representation of the Goal model."""
+        self.assertEqual(str(self.goal), 'Test Goal')
+
+    def test_get_absolute_url(self):
+        """Test the get_absolute_url method."""
+        self.assertEqual(self.goal.get_absolute_url(), reverse('goal_detail', kwargs={'pk': self.goal.pk}))
+
+    def test_unique_together(self):
+        """Test the unique_together constraint."""
+        with self.assertRaises(Exception):
+            Goal.objects.create(name='Test Goal', user=self.user)
+
+    def test_pending_tasks(self):
+        """Test the pending_tasks method."""
+        # Create some tasks related to the goal
+        task1 = Task.objects.create(
+            name='Task 1',
+            goal=self.goal,
+            status=Task.PENDING,
+            tasklist=Task.NEXT_ACTION,
+            start_date=date.today(),
+            start_time=datetime.now().time()
+        )
+
+        task2 = Task.objects.create(
+            name='Task 2',
+            goal=self.goal,
+            status=Task.PENDING,
+            tasklist=Task.NEXT_ACTION,
+            start_date=date.today(),
+            start_time=None
+        )
+
+        task3 = Task.objects.create(
+            name='Task 3',
+            goal=self.goal,
+            status=Task.PENDING,
+            tasklist=Task.NEXT_ACTION,
+            start_date=date.today() - timedelta(days=1)
+        )
+
+        task4 = Task.objects.create(
+            name='Task 4',
+            goal=self.goal,
+            status=Task.PENDING,
+            tasklist=Task.NEXT_ACTION,
+            start_date=None
+        )
+
+        project = Project.objects.create(
+            name='Project 1',
+            status=Project.OPEN
+        )
+
+        task5 = Task.objects.create(
+            name='Task 5',
+            goal=self.goal,
+            status=Task.PENDING,
+            tasklist=Task.NEXT_ACTION,
+            project=project,
+            project_order=1
+        )
+
+        pending_tasks = self.goal.pending_tasks()
+        
+        self.assertIn(task1, pending_tasks)
+        self.assertIn(task2, pending_tasks)
+        self.assertIn(task3, pending_tasks)
+        self.assertIn(task4, pending_tasks)
+        self.assertIn(task5, pending_tasks)
+        self.assertEqual(pending_tasks.count(), 5)
+
+    def test_ordering(self):
+        """Test the ordering of the Goal model."""
+        goal2 = Goal.objects.create(name='Another Goal', user=self.user)
+        goals = Goal.objects.all()
+        self.assertEqual(goals[0], goal2)
+        self.assertEqual(goals[1], self.goal)

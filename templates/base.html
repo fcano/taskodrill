@@ -54,7 +54,7 @@
           </li>
           <li class="nav-item {% ifequal request.path notthisweek %}active{% endifequal %}">
             <a class="nav-link" href="{% url 'task_list_tasklist' 'notthisweek' %}">Not This Week</a>
-          </li>          
+          </li>
           <li class="nav-item {% ifequal request.path somedaymaybe %}active{% endifequal %}">
             <a class="nav-link" href="{% url 'task_list_tasklist' 'somedaymaybe' %}">Someday/Maybe</a>
           </li>
@@ -78,7 +78,10 @@
           </li>
           <li class="nav-item {% if request.path == folderlist and not request.GET.status %}active{% endif %}">
             <a class="nav-link" href="{% url 'folder_list' %}">Folders</a>
-          </li>          
+          </li>
+          <li class="nav-item {% if request.path == goallist and not request.GET.status %}active{% endif %}">
+            <a class="nav-link" href="{% url 'goal_list' %}">Goals</a>
+          </li>
           <li class="nav-item {% if request.path == dashboard %}active{% endif %}">
             <a class="nav-link" href="{% url 'dashboard_detail'%}">Dashboard</a>
           </li>
@@ -126,7 +129,7 @@
           newTable.slideDown()
       })
   })($)
-  </script>  
+  </script>
 </body>
 
 </html>

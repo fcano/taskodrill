@@ -7,7 +7,7 @@ from django.views.generic import ListView, View
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Q, ExpressionWrapper, F, Case, Value, When, IntegerField, DateTimeField
+from django.db.models import Q, ExpressionWrapper, F, Case, Value, When, IntegerField, DateTimeField, BooleanField
 from django.db import transaction, models
 from django.urls import reverse_lazy, reverse
 from django.http import JsonResponse
@@ -15,14 +15,22 @@ from django.template.loader import render_to_string
 from django.http import HttpResponseRedirect
 from django.template.response import TemplateResponse
 
-from .models import Task, Project, Context, Folder
-from .forms import TaskForm, ProjectForm, OrderingForm
+from .models import Task, Project, Context, Folder, Goal
+from .forms import TaskForm, ProjectForm, OrderingForm, GoalForm
 
 import datetime
 import holidays
 
 ONE_DAY = datetime.timedelta(days=1)
 HOLIDAYS_ES_VC = holidays.CountryHoliday('ES', prov='VC')
+
+
+def weekdays_between(start_date, end_date):
+    # Generate the range of dates
+    day_generator = (start_date + datetime.timedelta(days=x) for x in range((end_date - start_date).days + 1))
+    # Count the weekdays
+    return sum(1 for day in day_generator if day.weekday() < 5)
+
 
 class TaskCreate(LoginRequiredMixin, CreateView):
     form_class = TaskForm
@@ -56,6 +64,8 @@ class TaskCreate(LoginRequiredMixin, CreateView):
             kwargs['project_id'] = self.request.GET['project_id']
         if 'folder_id' in self.request.GET.keys():
             kwargs['folder_id'] = self.request.GET['folder_id']
+        if 'goal_id' in self.request.GET.keys():
+            kwargs['goal_id'] = self.request.GET['goal_id']
         return kwargs
 
     def form_valid(self, form):
@@ -126,6 +136,15 @@ class TaskDetail(LoginRequiredMixin, DetailView):
 
     def get_queryset(self):
         return Task.objects.filter(user=self.request.user)
+
+
+def none_to_max_date(date):
+    """Convert None to a max date for correct sorting."""
+    return date if date is not None else datetime.datetime.max.date()
+
+def none_to_max_datetime(datetime_value):
+    """Convert None to a max datetime for correct sorting."""
+    return datetime_value if datetime_value is not None else datetime.datetime.max
 
 
 class TaskList(LoginRequiredMixin, ListView):
@@ -250,7 +269,23 @@ class TaskList(LoginRequiredMixin, ListView):
                                     )
                                 )
 
+            #tasks_wo_project.annotate(time_constrained=ExpressionWrapper(Goal.weekdays_between(datetime.datetime.today(), F('due_date')), output_field=BooleanField()))
+            #last_task_from_each_project.annotate(time_constrained=ExpressionWrapper(Goal.weekdays_between(datetime.datetime.today(), F('due_date')), output_field=BooleanField()))
             tasks = tasks_wo_project.union(last_task_from_each_project).order_by('overdue', 'first_field', '-second_field', 'due_date', '-priority', 'ready_datetime')
+
+            task_list = list(tasks)
+            task_list.sort(key=lambda x: not x.is_time_constrained)
+
+            sorted_ids = [obj.id for obj in task_list]
+
+            # Create a Case expression for custom ordering
+            preserved_order = Case(
+                *[When(id=pk, then=pos) for pos, pk in enumerate(sorted_ids)],
+                output_field=IntegerField()
+            )
+
+            # Create a QuerySet ordered by the custom Case expression
+            tasks = Task.objects.filter(id__in=sorted_ids).order_by(preserved_order)
 
             if not available_time:
                 return tasks
@@ -670,12 +705,6 @@ class FolderDetail(LoginRequiredMixin, DetailView):
             return Folder.objects.none()
 
 class FolderList(LoginRequiredMixin, ListView):
-    model = Context
-
-    def get_queryset(self):
-        return Context.objects.filter(user=self.request.user)
-
-class FolderList(LoginRequiredMixin, ListView):
     model = Folder
 
     def get_queryset(self):
@@ -696,6 +725,60 @@ class FolderAutocomplete(autocomplete.Select2QuerySetView):
             return Task.objects.none()
 
         qs = self.request.user.folder_set.all()
+
+        if self.q:
+            qs = qs.filter(name__icontains=self.q)
+
+        return qs
+
+
+class GoalCreate(LoginRequiredMixin, CreateView):
+    model = Goal
+    form_class = GoalForm
+
+    success_url = reverse_lazy('goal_list')
+
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        return super().form_valid(form)
+
+
+class GoalDetail(LoginRequiredMixin, DetailView):
+    model = Goal
+
+    def get_context_data(self, **kwargs):
+        context = super(GoalDetail, self).get_context_data(**kwargs)
+        context['next'] = self.object.get_absolute_url()
+        context['weekdays_until_deadline'] = Goal.weekdays_between(datetime.datetime.today().date(), self.object.due_date)
+        return context
+
+    def get_queryset(self):
+        if self.request.user.is_authenticated:
+            return Goal.objects.filter(user=self.request.user)
+        else:
+            return Goal.objects.none()
+
+class GoalList(LoginRequiredMixin, ListView):
+    model = Goal
+
+    def get_queryset(self):
+        return Goal.objects.filter(user=self.request.user)
+
+class GoalUpdate(LoginRequiredMixin,UpdateView):
+    model = Goal
+    form_class = GoalForm
+
+class GoalDelete(LoginRequiredMixin,DeleteView):
+    model = Goal
+    success_url = reverse_lazy('goal_list')
+
+class GoalAutocomplete(autocomplete.Select2QuerySetView):
+
+    def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            return Task.objects.none()
+
+        qs = self.request.user.goal_set.all()
 
         if self.q:
             qs = qs.filter(name__icontains=self.q)

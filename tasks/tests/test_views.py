@@ -14,7 +14,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import time_machine
 
 from myauth.models import MyUser
-from tasks.models import Task, Project, Context
+from tasks.models import Task, Project, Context, Goal
 
 
 def mylogin(the_test):
@@ -1600,3 +1600,61 @@ class TestContextViews(TestCase):
         response = self.client.get(reverse("context_detail", args=(context.id,)))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Test Task 1")
+
+
+class GoalCreateTest(TestCase):
+    def setUp(self):
+        self.user = MyUser.objects.create_user(username='testuser', password='12345')
+        self.client.login(username='testuser', password='12345')
+
+    def test_create_goal(self):
+        response = self.client.post(reverse('goal_add'), {'name': 'Test Goal'})
+        self.assertEqual(response.status_code, 302)  # Redirect after successful creation
+        self.assertEqual(Goal.objects.count(), 1)
+        self.assertEqual(Goal.objects.first().name, 'Test Goal')
+        self.assertEqual(Goal.objects.first().user, self.user)
+
+class GoalDetailTest(TestCase):
+    def setUp(self):
+        self.user = MyUser.objects.create_user(username='testuser', password='12345')
+        self.client.login(username='testuser', password='12345')
+        self.goal = Goal.objects.create(name='Test Goal', user=self.user)
+
+    def test_goal_detail_view(self):
+        response = self.client.get(reverse('goal_detail', args=[self.goal.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.goal.name)
+
+class GoalListTest(TestCase):
+    def setUp(self):
+        self.user = MyUser.objects.create_user(username='testuser', password='12345')
+        self.client.login(username='testuser', password='12345')
+        Goal.objects.create(name='Test Goal', user=self.user)
+
+    def test_goal_list_view(self):
+        response = self.client.get(reverse('goal_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Test Goal')
+
+class GoalUpdateTest(TestCase):
+    def setUp(self):
+        self.user = MyUser.objects.create_user(username='testuser', password='12345')
+        self.client.login(username='testuser', password='12345')
+        self.goal = Goal.objects.create(name='Test Goal', user=self.user)
+
+    def test_update_goal(self):
+        response = self.client.post(reverse('goal_update', args=[self.goal.id]), {'name': 'Updated Goal'})
+        self.assertEqual(response.status_code, 302)  # Redirect after successful update
+        self.goal.refresh_from_db()
+        self.assertEqual(self.goal.name, 'Updated Goal')
+
+class GoalDeleteTest(TestCase):
+    def setUp(self):
+        self.user = MyUser.objects.create_user(username='testuser', password='12345')
+        self.client.login(username='testuser', password='12345')
+        self.goal = Goal.objects.create(name='Test Goal', user=self.user)
+
+    def test_delete_goal(self):
+        response = self.client.post(reverse('goal_delete', args=[self.goal.id]))
+        self.assertEqual(response.status_code, 302)  # Redirect after successful delete
+        self.assertEqual(Goal.objects.count(), 0)

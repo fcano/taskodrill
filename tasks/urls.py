@@ -32,5 +32,11 @@ urlpatterns = [
     path('folder/<int:pk>/edit/', tasks_views.FolderUpdate.as_view(), name='folder_update'),
     path('folder/<int:pk>/delete/', tasks_views.FolderDelete.as_view(), name='folder_delete'),
     path('folders/folder-autocomplete/', tasks_views.FolderAutocomplete.as_view(), name='folder-autocomplete'),
+    path('goal/', tasks_views.GoalList.as_view(), name='goal_list'),
+    path('goal/<int:pk>/', tasks_views.GoalDetail.as_view(), name='goal_detail'),
+    path('goal/add/', tasks_views.GoalCreate.as_view(), name='goal_add'),
+    path('goal/<int:pk>/edit/', tasks_views.GoalUpdate.as_view(), name='goal_update'),
+    path('goal/<int:pk>/delete/', tasks_views.GoalDelete.as_view(), name='goal_delete'),
+    path('goals/goal-autocomplete/', tasks_views.GoalAutocomplete.as_view(), name='goal-autocomplete'),    
     path('dashboard/', tasks_views.DashboardDetail.as_view(), name='dashboard_detail'),
 ]

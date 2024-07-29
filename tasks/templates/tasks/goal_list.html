@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <p>
+      <a id="new_goal_button" class="btn btn-primary" href="{% url 'goal_add' %}">New goal</a>
+    </p>
+    {% if goal_list %}
+    <table class="table table-hover table-sm">
+      <tr>
+        <th>Name</th>
+        <th></th>
+      </tr>
+      {% for goal in goal_list %}
+      <tr id="goal_row_{{ goal.id }}">
+        <td><a href="{{ goal.get_absolute_url }}">{{ goal.name }}</a> ({{ goal.total_task_length }})</td>
+        <td><a href="{% url 'goal_delete' goal.pk %}" class="confirm-delete"><img src="/static/tasks/trash-2.svg" /></a></td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+      <p>There are no goals.</p>
+    {% endif %}       
+{% endblock %}

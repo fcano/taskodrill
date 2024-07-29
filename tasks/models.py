@@ -4,12 +4,20 @@ import datetime
 from django.db import models
 from django.urls import reverse
 from django.conf import settings
-from django.db.models import Q
+from django.db.models import Q, Sum
 
 import holidays
 
 ONE_DAY = datetime.timedelta(days=1)
 HOLIDAYS_ES_VC = holidays.CountryHoliday('ES', prov='VC')
+
+
+def weekdays_between(start_date, end_date):
+    # Generate the range of dates
+    day_generator = (start_date + datetime.timedelta(days=x) for x in range((end_date - start_date).days + 1))
+    # Count the weekdays
+    return sum(1 for day in day_generator if day.weekday() < 5)
+
 
 class Task(models.Model):
     NO = 0
@@ -106,6 +114,8 @@ class Task(models.Model):
         'Context', related_name="tasks", blank=True)
     folder = models.ForeignKey(
         'Folder', related_name="tasks", on_delete=models.SET_NULL, blank=True, null=True)
+    goal = models.ForeignKey(
+        'Goal', related_name="tasks", on_delete=models.SET_NULL, blank=True, null=True)
     blocked_by = models.ForeignKey('Task', on_delete=models.SET_NULL, blank=True, null=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL,
                              on_delete=models.CASCADE)
@@ -163,7 +173,7 @@ class Task(models.Model):
         if self.repeat == Task.DAILY:
             next_due_date = due_date_reference + datetime.timedelta(1)
         if self.repeat == Task.DAILYBD:
-            next_due_date = Task.next_business_day(due_date_reference)            
+            next_due_date = Task.next_business_day(due_date_reference)
         elif self.repeat == Task.WEEKLY:
             next_due_date = due_date_reference + datetime.timedelta(7)
         elif self.repeat == Task.MONTHLY:
@@ -177,8 +187,9 @@ class Task(models.Model):
     def get_absolute_url(self):
         return reverse('task_detail', kwargs={'pk': self.pk})
 
-    def save(self, *args, **kwargs):
-        ''' On creation, set ready_time '''
+    def save(self, *args, update_related=True, **kwargs):
+
+        ### On creation, set ready_time
         if self._state.adding:
             self.ready_datetime = timezone.now()
             if self.project is not None:
@@ -189,7 +200,9 @@ class Task(models.Model):
                         self.due_date = self.project.due_date
                     elif self.project.due_date < self.due_date:
                         self.due_date = self.project.due_date
+
         super().save(*args, **kwargs)
+
 
     def update_ready_datetime(self):
         self.ready_datetime = timezone.now()
@@ -199,6 +212,18 @@ class Task(models.Model):
         self.start_date = self.next_start_date
         self.due_date = self.next_due_date
         self.save()
+
+    @property
+    def is_time_constrained(self):
+        if self.goal:
+            if self.goal.is_time_constrained:
+                return True
+
+        if not self.length or not self.due_date:
+            return False
+        else: # self.length or self.due_date are null
+            return (self.length / 60) > weekdays_between(datetime.datetime.today().date(), self.due_date)
+
 
     class Meta:
         ordering = ['ready_datetime']
@@ -281,7 +306,7 @@ class Context(models.Model):
         q3 = Q(start_date__lt=datetime.date.today())
         q4 = Q(start_date__isnull=True)
         in_the_future = q1 | q2 | q3 | q4
-        
+
         tasks_wo_project = self.tasks.filter(
             project__isnull=True,
             status=Task.PENDING,
@@ -293,7 +318,7 @@ class Context(models.Model):
             project__isnull=False,
             project__status=Project.OPEN
         ).order_by('project_id', 'project_order').distinct('project_id')
-        
+
         last_task_from_each_project = Task.objects.filter(pk__in=last_task_from_each_project)
 
         return tasks_wo_project.union(last_task_from_each_project).order_by('due_date', 'ready_datetime')
@@ -304,7 +329,7 @@ class Context(models.Model):
         q3 = Q(start_date__lt=datetime.date.today())
         q4 = Q(start_date__isnull=True)
         in_the_future = q1 | q2 | q3 | q4
-        
+
         q5 = Q(tasklist=Task.NEXT_ACTION)
         active_task = in_the_future & q5
 
@@ -319,7 +344,7 @@ class Context(models.Model):
             project__isnull=False,
             project__status=Project.OPEN
         ).order_by('project_id', 'project_order').distinct('project_id')
-        
+
         last_task_from_each_project = Task.objects.filter(pk__in=last_task_from_each_project).filter(active_task)
 
         return tasks_wo_project.union(last_task_from_each_project).order_by('due_date', 'ready_datetime')
@@ -346,7 +371,7 @@ class Folder(models.Model):
         q3 = Q(start_date__lt=datetime.date.today())
         q4 = Q(start_date__isnull=True)
         in_the_future = q1 | q2 | q3 | q4
-        
+
         tasks_wo_project = self.tasks.filter(
             project__isnull=True,
             status=Task.PENDING,
@@ -358,10 +383,77 @@ class Folder(models.Model):
             project__isnull=False,
             project__status=Project.OPEN
         ).order_by('project_id', 'project_order').distinct('project_id')
-        
+
         last_task_from_each_project = Task.objects.filter(pk__in=last_task_from_each_project)
 
         return tasks_wo_project.union(last_task_from_each_project).order_by('due_date', 'ready_datetime')
+
+    class Meta:
+        ordering = ["name"]
+        unique_together = (("name", "user"),)
+
+
+class Goal(models.Model):
+    name = models.CharField(max_length=100)
+    due_date = models.DateField(blank=True, null=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
+
+    def get_absolute_url(self):
+        return reverse("goal_detail", kwargs={"pk": self.pk})
+
+    @classmethod
+    def weekdays_between(cls, start_date, end_date):
+        # Generate the range of dates
+        if not isinstance(end_date, datetime.date):
+            return 0
+        day_generator = (start_date + datetime.timedelta(days=x) for x in range((end_date - start_date).days + 1))
+        # Count the weekdays
+        return sum(1 for day in day_generator if day.weekday() < 5)
+
+    def pending_tasks(self):
+        q1 = Q(start_date=datetime.date.today()) & Q(start_time__lte=datetime.datetime.now())
+        q2 = Q(start_date=datetime.date.today()) & Q(start_time__isnull=True)
+        q3 = Q(start_date__lt=datetime.date.today())
+        q4 = Q(start_date__isnull=True)
+        in_the_future = q1 | q2 | q3 | q4
+
+        tasks_wo_project = self.tasks.filter(
+            project__isnull=True,
+            status=Task.PENDING,
+            tasklist=Task.NEXT_ACTION,
+        )
+
+        last_task_from_each_project = self.tasks.filter(
+            status=Task.PENDING,
+            project__isnull=False,
+            project__status=Project.OPEN
+        ).order_by('project_id', 'project_order').distinct('project_id')
+
+        last_task_from_each_project = Task.objects.filter(pk__in=last_task_from_each_project)
+
+        return tasks_wo_project.union(last_task_from_each_project).order_by('due_date', 'ready_datetime')
+
+    @property
+    def total_task_length(self):
+        #return self.tasks.aggregate(total_length=models.Sum('length'))['total_length'] or 0
+        #return self.pending_tasks().sum('length')
+        #return self.pending_tasks().aggregate(Sum('length'))
+        total_length = 0
+        for task in self.pending_tasks():
+            if task.length:
+                total_length += task.length
+        return total_length
+
+    @property
+    def is_time_constrained(self):
+        total_length = 0
+        for task in self.pending_tasks().all():
+            if task.length:
+                total_length += task.length
+        return (total_length / 60) > weekdays_between(datetime.datetime.today().date(), self.due_date)
 
     class Meta:
         ordering = ["name"]
