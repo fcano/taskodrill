@@ -1,5 +1,6 @@
 from django.utils import timezone
 import datetime
+import math
 
 from django.db import models
 from django.urls import reverse
@@ -446,6 +447,10 @@ class Goal(models.Model):
             if task.length:
                 total_length += task.length
         return total_length
+
+    @property
+    def speed_req(self):
+        return math.ceil(self.total_task_length / 60 / Goal.weekdays_between(datetime.datetime.today().date(), self.due_date))
 
     @property
     def is_time_constrained(self):

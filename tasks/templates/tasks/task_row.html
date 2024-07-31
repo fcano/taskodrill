@@ -1,8 +1,8 @@
 <tr id="tasks_row_{{ task.id }}" class="{% if task.is_time_constrained %}row-time-constrained{% endif %}">
   <td><input class="checkbox align-middle" type="checkbox" id="checkbox_{{ task.id }}" value="{{ task.id }}"></td>
   <td>{{ task.name|urlizetrunc:50 }}</td>
-  {% if task.folder %}
-  <td><a href="{{ task.folder.get_absolute_url }}">{{ task.folder.name }}</a></td>
+  {% if task.goal %}
+  <td><a href="{{ task.goal.get_absolute_url }}">{{ task.goal.due_date }} ({{ task.goal.speed_req }}h/d)</a></td>
   {% else %}
     <td>none</td>
   {% endif %}
