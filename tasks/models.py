@@ -450,7 +450,10 @@ class Goal(models.Model):
 
     @property
     def speed_req(self):
-        return math.ceil(self.total_task_length / 60 / Goal.weekdays_between(datetime.datetime.today().date(), self.due_date))
+        days_between = Goal.weekdays_between(datetime.datetime.today().date(), self.due_date)
+        if days_between == 0:
+            days_between = 1
+        return math.ceil(self.total_task_length / 60 / days_between)
 
     @property
     def is_time_constrained(self):

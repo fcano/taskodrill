@@ -2,7 +2,12 @@
   <td><input class="checkbox align-middle" type="checkbox" id="checkbox_{{ task.id }}" value="{{ task.id }}"></td>
   <td>{{ task.name|urlizetrunc:50 }}</td>
   {% if task.goal %}
-  <td><a href="{{ task.goal.get_absolute_url }}">{{ task.goal.due_date }} ({{ task.goal.speed_req }}h/d)</a></td>
+  <td><a href="{{ task.goal.get_absolute_url }}">{{ task.goal.name }}</a></td>
+  {% else %}
+    <td>none</td>
+  {% endif %}
+  {% if task.goal %}
+  <td>{{ task.goal.due_date }} ({{ task.goal.speed_req }}h/d)</td>
   {% else %}
     <td>none</td>
   {% endif %}
