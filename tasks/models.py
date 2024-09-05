@@ -222,8 +222,12 @@ class Task(models.Model):
 
         if not self.due_date:
             return False
-        elif (datetime.datetime.today().date() == self.due_date) or ((self.length / 60) > weekdays_between(datetime.datetime.today().date(), self.due_date)):
+        elif (datetime.datetime.today().date() == self.due_date):
             return True
+        else:
+            if not self.length:
+                self.length = 0
+            return ((self.length / 60) > weekdays_between(datetime.datetime.today().date(), self.due_date))
 
 
 
