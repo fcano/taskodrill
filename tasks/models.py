@@ -222,8 +222,8 @@ class Task(models.Model):
 
         if not self.length or not self.due_date:
             return False
-        else: # self.length or self.due_date are null
-            return (self.length / 60) > weekdays_between(datetime.datetime.today().date(), self.due_date)
+        elif (datetime.datetime.today().date() == self.due_date) or ((self.length / 60) > weekdays_between(datetime.datetime.today().date(), self.due_date)):
+            return True
 
 
     class Meta:
