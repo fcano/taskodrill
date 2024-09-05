@@ -220,10 +220,11 @@ class Task(models.Model):
             if self.goal.is_time_constrained:
                 return True
 
-        if not self.length or not self.due_date:
+        if not self.due_date:
             return False
         elif (datetime.datetime.today().date() == self.due_date) or ((self.length / 60) > weekdays_between(datetime.datetime.today().date(), self.due_date)):
             return True
+
 
 
     class Meta:
