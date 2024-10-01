@@ -529,6 +529,51 @@ class TaskListDone(LoginRequiredMixin, ListView):
 
         return Task.objects.filter(user=self.request.user).filter(search_filter).order_by('-modification_datetime')
 
+def get_quarter_start():
+    today = datetime.date.today()
+    current_quarter = (today.month - 1) // 3 + 1
+    first_day = datetime.date(today.year, 3 * current_quarter - 2, 1)
+    return first_day
+
+
+def get_quarter_end():
+    today = datetime.date.today()
+    quarter = (today.month - 1) // 3 + 1
+    last_month = quarter * 3
+    next_quarter_start = datetime.date(today.year, last_month, 1) + datetime.timedelta(days=31)
+    return next_quarter_start - datetime.timedelta(days=1)
+
+def previous_quarter_start():
+    date = datetime.date.today()
+
+    # Calculate the current quarter
+    current_quarter = (date.month - 1) // 3 + 1
+
+    # Calculate the year and quarter for the previous quarter
+    if current_quarter == 1:
+        year = date.year - 1
+        quarter = 4
+    else:
+        year = date.year
+        quarter = current_quarter - 1
+
+    # Calculate the first month of the previous quarter
+    month = (quarter - 1) * 3 + 1
+
+    # Create and return the datetime object for the first day of the previous quarter
+    return datetime.datetime(year, month, 1)
+
+
+def previous_quarter_end():
+    date = datetime.date.today()
+
+    current_quarter_start = datetime.datetime(date.year, 3 * ((date.month - 1) // 3) + 1, 1)
+
+    # Subtract one day to get the last day of the previous quarter
+    previous_quarter_end = current_quarter_start - datetime.timedelta(days=1)
+
+    return previous_quarter_end.date()
+
 
 class DashboardDetail(LoginRequiredMixin, View):
 
@@ -549,6 +594,10 @@ class DashboardDetail(LoginRequiredMixin, View):
         end_14 = end - datetime.timedelta(days=14)
         start_21 = start - datetime.timedelta(days=21)
         end_21 = end - datetime.timedelta(days=21)
+        start_of_q = get_quarter_start()
+        start_of_q_minus_1 = previous_quarter_start()
+        end_of_q = get_quarter_end()
+        end_of_q_minus_1 = previous_quarter_end()
 
         return TemplateResponse(request, 'tasks/dashboard.html', {
             'num_projects': num_projects,
@@ -565,7 +614,11 @@ class DashboardDetail(LoginRequiredMixin, View):
             'start_14': start_14.strftime("%Y-%m-%d"),
             'end_14': end_14.strftime("%Y-%m-%d"),
             'start_21': start_21.strftime("%Y-%m-%d"),
-            'end_21': end_21.strftime("%Y-%m-%d")
+            'end_21': end_21.strftime("%Y-%m-%d"),
+            'start_of_q': start_of_q.strftime("%Y-%m-%d"),
+            'start_of_q_minus_1': start_of_q_minus_1.strftime("%Y-%m-%d"),
+            'end_of_q': end_of_q.strftime("%Y-%m-%d"),
+            'end_of_q_minus_1': end_of_q_minus_1.strftime("%Y-%m-%d")
             })
 
 class ProjectCreate(LoginRequiredMixin, CreateView):

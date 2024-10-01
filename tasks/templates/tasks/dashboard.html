@@ -16,4 +16,9 @@
         <li><a href="{% url 'task_list_done' %}?from={{ start_14 }}&to={{ end_14 }}">{{start_14}} - {{end_14}}</a></li>
         <li><a href="{% url 'task_list_done' %}?from={{ start_21 }}&to={{ end_21 }}">{{start_21}} - {{end_21}}</a></li>
     </ul>
+    <h2>Tasks done per quarter</h2>
+    <ul>
+        <li><a href="{% url 'task_list_done' %}?from={{start_of_q}}&to={{end_of_q}}">{{start_of_q}} - {{end_of_q}}</a></li>
+        <li><a href="{% url 'task_list_done' %}?from={{start_of_q_minus_1}}&to={{end_of_q_minus_1}}">{{start_of_q_minus_1}} - {{end_of_q_minus_1}}</a></li>
+    </ul>
 {% endblock %}
