@@ -4,11 +4,13 @@
   <p>
     Tasks: <span id="tasks_count">{{ task_list.count }}</span>
   </p>
+  <ul>
   {% if task_list %}
     {% for task in task_list %}
-        {{ task.name }}<br />
+      <li>{{ task.name }}</li>
     {% endfor %}
   {% else %}
     <p>There are no tasks in this list.</p>
   {% endif %}
+  </ul>
 {% endblock %}
