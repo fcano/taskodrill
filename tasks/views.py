@@ -14,6 +14,7 @@ from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.http import HttpResponseRedirect
 from django.template.response import TemplateResponse
+from django.utils import timezone
 
 from .models import Task, Project, Context, Folder, Goal
 from .forms import TaskForm, ProjectForm, OrderingForm, GoalForm
@@ -427,7 +428,7 @@ class TaskMarkAsDone(LoginRequiredMixin, View):
             new_task.pk = None
             task = Task.objects.get(user=self.request.user, id=self.request.POST['id'])
             task.status = Task.DONE
-            task.done_datetime = datetime.datetime.now()
+            task.done_datetime = timezone.now()
             task.save()
 
             tasks_to_render = []

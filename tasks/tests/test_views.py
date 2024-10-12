@@ -110,21 +110,22 @@ class TaskPostponeViewTests(TestCase):
 
         time.sleep(1)
 
-        self.client.post(
+        response = self.client.post(
             reverse("task_postpone", kwargs={"pk": task_before.id, "ndays": 1}),
             {"id": task_before.id, "ndays": 1},
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
+        self.assertEqual(response.status_code, 200)
 
         task_after = Task.objects.get(id=task_before.id)
         self.assertEqual(task_after.start_date, datetime.date.today() + datetime.timedelta(1))
-        self.assertEqual(task_after.due_date, datetime.date.today() + datetime.timedelta(1))
+        self.assertEqual(task_after.due_date, None)
 
     @time_machine.travel(datetime.date(2021, 4, 9))
     def test_postpone_wo_due_date_today_is_friday(self):
         self.client.login(username="testuser", password="testpassword")
         user = MyUser.objects.get(username="testuser")
-      
+
         task_before = Task.objects.create(
             name="Project Task 1",
             tasklist=Task.NEXT_ACTION,
@@ -133,21 +134,22 @@ class TaskPostponeViewTests(TestCase):
 
         time.sleep(1)
 
-        self.client.post(
+        response = self.client.post(
             reverse("task_postpone", kwargs={"pk": task_before.id, "ndays": 1}),
             {"id": task_before.id, "ndays": 1},
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
+        self.assertEqual(response.status_code, 200)
 
         task_after = Task.objects.get(id=task_before.id)
         self.assertEqual(task_after.start_date, datetime.date.today() + datetime.timedelta(3))
-        self.assertEqual(task_after.due_date, datetime.date.today() + datetime.timedelta(3))
+        self.assertEqual(task_after.due_date, None)
 
     @time_machine.travel(datetime.date(2021, 4, 9))
     def test_postpone_w_due_date_in_future(self):
         self.client.login(username="testuser", password="testpassword")
         user = MyUser.objects.get(username="testuser")
-      
+
         task_before = Task.objects.create(
             name="Project Task 1",
             tasklist=Task.NEXT_ACTION,
@@ -171,7 +173,7 @@ class TaskPostponeViewTests(TestCase):
     def test_postpone_w_due_date_in_past(self):
         self.client.login(username="testuser", password="testpassword")
         user = MyUser.objects.get(username="testuser")
-      
+
         task_before = Task.objects.create(
             name="Project Task 1",
             tasklist=Task.NEXT_ACTION,
@@ -195,7 +197,7 @@ class TaskPostponeViewTests(TestCase):
     def test_postpone_w_start_and_due_date_in_past(self):
         self.client.login(username="testuser", password="testpassword")
         user = MyUser.objects.get(username="testuser")
-      
+
         task_before = Task.objects.create(
             name="Project Task 1",
             tasklist=Task.NEXT_ACTION,

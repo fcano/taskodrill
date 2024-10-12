@@ -1,11 +1,12 @@
 import datetime
 import uuid
 from django.urls import reverse
-from datetime import datetime, date, timedelta
+#from datetime import datetime, date, timedelta
 
 from django.test import TestCase
 from tasks.models import Task, Project, Context, Goal
 from myauth.models import MyUser
+from django.utils import timezone
 
 import time_machine
 
@@ -32,9 +33,9 @@ def create_task(user, *args, **kwargs):
     return Task.objects.create(
         name=name,
         start_date=datetime.date.today(),
-        start_time=datetime.datetime.now().time(),
+        start_time=timezone.now().time(),
         due_date=datetime.date.today() + datetime.timedelta(days=1),
-        due_time=datetime.datetime.now().time(),
+        due_time=timezone.now().time(),
         repeat=Task.NO,
         repeat_from=Task.DUE_DATE,
         length=15,
@@ -396,8 +397,9 @@ class GoalModelTests(TestCase):
             goal=self.goal,
             status=Task.PENDING,
             tasklist=Task.NEXT_ACTION,
-            start_date=date.today(),
-            start_time=datetime.now().time()
+            start_date=datetime.date.today(),
+            start_time=timezone.now().time(),
+            user = self.user
         )
 
         task2 = Task.objects.create(
@@ -405,8 +407,9 @@ class GoalModelTests(TestCase):
             goal=self.goal,
             status=Task.PENDING,
             tasklist=Task.NEXT_ACTION,
-            start_date=date.today(),
-            start_time=None
+            start_date=datetime.date.today(),
+            start_time=None,
+            user = self.user
         )
 
         task3 = Task.objects.create(
@@ -414,7 +417,8 @@ class GoalModelTests(TestCase):
             goal=self.goal,
             status=Task.PENDING,
             tasklist=Task.NEXT_ACTION,
-            start_date=date.today() - timedelta(days=1)
+            start_date=datetime.date.today() - datetime.timedelta(days=1),
+            user = self.user
         )
 
         task4 = Task.objects.create(
@@ -422,12 +426,14 @@ class GoalModelTests(TestCase):
             goal=self.goal,
             status=Task.PENDING,
             tasklist=Task.NEXT_ACTION,
-            start_date=None
+            start_date=None,
+            user = self.user
         )
 
         project = Project.objects.create(
             name='Project 1',
-            status=Project.OPEN
+            status=Project.OPEN,
+            user = self.user
         )
 
         task5 = Task.objects.create(
@@ -436,7 +442,8 @@ class GoalModelTests(TestCase):
             status=Task.PENDING,
             tasklist=Task.NEXT_ACTION,
             project=project,
-            project_order=1
+            project_order=1,
+            user = self.user
         )
 
         pending_tasks = self.goal.pending_tasks()
