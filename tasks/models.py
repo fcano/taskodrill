@@ -475,6 +475,8 @@ class Goal(models.Model):
         for task in self.pending_tasks().all():
             if task.length:
                 total_length += task.length
+        if not self.due_date:
+            return False
         return (total_length / 60) > weekdays_between(datetime.datetime.today().date(), self.due_date)
 
     class Meta:
