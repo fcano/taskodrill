@@ -69,7 +69,7 @@ class ProjectForm(forms.ModelForm):
 class GoalForm(forms.ModelForm):
     class Meta:
         model = Goal
-        fields = ['name', 'due_date']
+        fields = ['name', 'due_date', 'status']
         widgets = {
             'due_date': DateInput(),
             'name': forms.Textarea(attrs={'rows': 1, 'cols': 100})

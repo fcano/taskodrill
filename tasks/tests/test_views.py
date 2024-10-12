@@ -1610,7 +1610,7 @@ class GoalCreateTest(TestCase):
         self.client.login(username='testuser', password='12345')
 
     def test_create_goal(self):
-        response = self.client.post(reverse('goal_add'), {'name': 'Test Goal'})
+        response = self.client.post(reverse('goal_add'), {'name': 'Test Goal', 'status': Goal.OPEN})
         self.assertEqual(response.status_code, 302)  # Redirect after successful creation
         self.assertEqual(Goal.objects.count(), 1)
         self.assertEqual(Goal.objects.first().name, 'Test Goal')
@@ -1645,7 +1645,7 @@ class GoalUpdateTest(TestCase):
         self.goal = Goal.objects.create(name='Test Goal', user=self.user)
 
     def test_update_goal(self):
-        response = self.client.post(reverse('goal_update', args=[self.goal.id]), {'name': 'Updated Goal'})
+        response = self.client.post(reverse('goal_update', args=[self.goal.id]), {'name': 'Updated Goal', 'status': Goal.OPEN})
         self.assertEqual(response.status_code, 302)  # Redirect after successful update
         self.goal.refresh_from_db()
         self.assertEqual(self.goal.name, 'Updated Goal')

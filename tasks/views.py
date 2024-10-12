@@ -815,8 +815,20 @@ class GoalDetail(LoginRequiredMixin, DetailView):
 class GoalList(LoginRequiredMixin, ListView):
     model = Goal
 
+    def get_context_data(self, **kwargs):
+        context = super(GoalList, self).get_context_data(**kwargs)
+        context['filter'] = self.request.GET.get('filter')
+        return context
+
     def get_queryset(self):
-        return Goal.objects.filter(user=self.request.user)
+        filter = self.request.GET.get('filter')
+        if filter == "allgoals":
+            return Goal.objects.filter(user=self.request.user)
+        else:
+            return Goal.objects.filter(
+                user=self.request.user,
+                status=Goal.OPEN
+            )
 
 class GoalUpdate(LoginRequiredMixin,UpdateView):
     model = Goal

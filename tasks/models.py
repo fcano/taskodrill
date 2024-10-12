@@ -400,8 +400,17 @@ class Folder(models.Model):
 
 
 class Goal(models.Model):
+    OPEN = 1
+    CLOSED = 0
+
+    STATUS = (
+        (OPEN, 'OPEN'),
+        (CLOSED, 'CLOSED'),
+    )
+
     name = models.CharField(max_length=100)
     due_date = models.DateField(blank=True, null=True)
+    status = models.IntegerField(choices=STATUS, default=OPEN)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def __str__(self):
