@@ -97,6 +97,8 @@ class Task(models.Model):
     start_time = models.TimeField(blank=True, null=True)
     due_date = models.DateField(blank=True, null=True)
     due_time = models.TimeField(blank=True, null=True)
+    dep_due_date = models.DateField(blank=True, null=True)
+    dep_due_time = models.TimeField(blank=True, null=True)
     repeat = models.IntegerField(choices=REPEAT, default=NO)
     repeat_from = models.IntegerField(choices=REPEAT_FROM, default=DUE_DATE)
     length = models.IntegerField(blank=True, null=True)
@@ -118,6 +120,7 @@ class Task(models.Model):
     goal = models.ForeignKey(
         'Goal', related_name="tasks", on_delete=models.SET_NULL, blank=True, null=True)
     blocked_by = models.ForeignKey('Task', on_delete=models.SET_NULL, blank=True, null=True)
+    assignee = models.ForeignKey('Assignee', on_delete=models.CASCADE, blank=True, null=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL,
                              on_delete=models.CASCADE)
 
@@ -482,3 +485,20 @@ class Goal(models.Model):
     class Meta:
         ordering = ["name"]
         unique_together = (("name", "user"),)
+
+
+class Assignee(models.Model):
+    name = models.CharField(max_length=100)
+    creation_datetime = models.DateTimeField(auto_now_add=True)
+    modification_datetime = models.DateTimeField(auto_now=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
+
+    def get_absolute_url(self):
+        return reverse('assignee_detail', kwargs={'pk': self.pk})
+
+    class Meta:
+        ordering = ['name']
+        unique_together = (('name', 'user'),)

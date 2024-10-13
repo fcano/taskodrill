@@ -82,6 +82,9 @@
           <li class="nav-item {% if request.path == goallist and not request.GET.status %}active{% endif %}">
             <a class="nav-link" href="{% url 'goal_list' %}">Goals</a>
           </li>
+          <li class="nav-item {% if request.path == assigneelist and not request.GET.status %}active{% endif %}">
+            <a class="nav-link" href="{% url 'assignee_list'%}">Assignees</a>
+          </li>          
           <li class="nav-item {% if request.path == dashboard %}active{% endif %}">
             <a class="nav-link" href="{% url 'dashboard_detail'%}">Dashboard</a>
           </li>

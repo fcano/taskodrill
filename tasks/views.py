@@ -16,7 +16,7 @@ from django.http import HttpResponseRedirect
 from django.template.response import TemplateResponse
 from django.utils import timezone
 
-from .models import Task, Project, Context, Folder, Goal
+from .models import Task, Project, Context, Folder, Goal, Assignee
 from .forms import TaskForm, ProjectForm, OrderingForm, GoalForm
 
 import datetime
@@ -850,3 +850,43 @@ class GoalAutocomplete(autocomplete.Select2QuerySetView):
             qs = qs.filter(name__icontains=self.q)
 
         return qs
+
+
+class AssigneeCreate(LoginRequiredMixin, CreateView):
+    model = Assignee
+    fields = ['name']
+
+    success_url = reverse_lazy('assignee_list')
+
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        return super().form_valid(form)
+
+
+class AssigneeDetail(LoginRequiredMixin, DetailView):
+    model = Assignee
+
+    def get_context_data(self, **kwargs):
+        context = super(AssigneeDetail, self).get_context_data(**kwargs)
+        context['next'] = self.object.get_absolute_url()
+        return context
+
+    def get_queryset(self):
+        if self.request.user.is_authenticated:
+            return Assignee.objects.filter(user=self.request.user)
+        else:
+            return Assignee.objects.none()
+
+class AssigneeList(LoginRequiredMixin, ListView):
+    model = Assignee
+
+    def get_queryset(self):
+        return Assignee.objects.filter(user=self.request.user)
+
+class AssigneeUpdate(LoginRequiredMixin,UpdateView):
+    model = Assignee
+    fields = ['name']
+
+class AssigneeDelete(LoginRequiredMixin,DeleteView):
+    model = Assignee
+    success_url = reverse_lazy('assignee_list')

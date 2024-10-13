@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <p>
+      <a id="new_assignee_button" class="btn btn-primary" href="{% url 'assignee_add' %}">New assignee</a>
+    </p>
+    {% if assignee_list %}
+    <table class="table table-sm">
+      <tr>
+        <th>Name</th>
+        <th></th>
+      </tr>
+      {% for assignee in assignee_list %}
+      <tr id="assignee_row_{{ assignee.id }}">
+        <td><a href="{{ assignee.get_absolute_url }}">{{ assignee.name }}</a></td>
+        <td><a href="{% url 'assignee_delete' assignee.pk %}" class="confirm-delete"><img src="/static/tasks/trash-2.svg" /></a></td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+      <p>There are no assignees.</p>
+    {% endif %}       
+{% endblock %}

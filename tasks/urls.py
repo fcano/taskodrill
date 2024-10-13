@@ -39,4 +39,9 @@ urlpatterns = [
     path('goal/<int:pk>/delete/', tasks_views.GoalDelete.as_view(), name='goal_delete'),
     path('goals/goal-autocomplete/', tasks_views.GoalAutocomplete.as_view(), name='goal-autocomplete'),    
     path('dashboard/', tasks_views.DashboardDetail.as_view(), name='dashboard_detail'),
+    path('assignee/', tasks_views.AssigneeList.as_view(), name='assignee_list'),
+    path('assignee/<int:pk>/', tasks_views.AssigneeDetail.as_view(), name='assignee_detail'),
+    path('assignee/add/', tasks_views.AssigneeCreate.as_view(), name='assignee_add'),
+    path('assignee/<int:pk>/edit/', tasks_views.AssigneeUpdate.as_view(), name='assignee_update'),
+    path('assignee/<int:pk>/delete/', tasks_views.AssigneeDelete.as_view(), name='assignee_delete'),
 ]

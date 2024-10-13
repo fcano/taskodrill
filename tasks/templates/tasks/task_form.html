@@ -63,7 +63,7 @@
             {{ form.blocked_by.errors }}
             <label class="col-form-label-sm" for="{{ form.blocked_by.id_for_label }}">Blocked by</label> <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='The task will not be shown in the Next Actions list until the blocking task is done' />
             {{ form.blocked_by }}
-        </div>        
+        </div>
         <div class="form-group mr-2 fieldWrapper">
             {{ form.tasklist.errors }}
             <label class="col-form-label-sm" for="{{ form.tasklist.id_for_label }}">Tasklist</label> <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='Task list where you want to put the task. The Next Action list is the actionable and main list.' />
@@ -78,7 +78,12 @@
             {{ form.goal.errors }}
             <label class="col-form-label-sm" for="{{ form.goal.id_for_label }}">Goal</label> <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='Goal this task belongs to.' />
             {{ form.goal }}
-        </div>        
+        </div>
+        <div class="form-group mr-2 fieldWrapper">
+            {{ form.assignee.errors }}
+            <label class="col-form-label-sm" for="{{ form.assignee.id_for_label }}">Assignee</label> <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='Assignee assigned to this task.' />
+            {{ form.assignee }}
+        </div>
     </div>
     <div class="form-row">
         <fieldset class="form-group mr-2 fieldWrapper">
@@ -95,7 +100,7 @@
             <label class="col-form-label-sm" for="{{ form.note.id_for_label }}">Note</label> <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='Additional information about the task.' />
             {{ form.note }}
         </div>
-    </div>  
+    </div>
     <input type="hidden" id="next" name="next" value="{{ next }}">
     <div id="submit_div">
         <input type="submit" id="submit_button" value="Submit" />

@@ -31,7 +31,7 @@ class TaskForm(forms.ModelForm):
         if self.folder_id:
             self.fields['folder'].initial = self.folder_id
         if self.goal_id:
-            self.fields['goal'].initial = self.goal_id            
+            self.fields['goal'].initial = self.goal_id
         for visible in self.visible_fields():
             visible.field.widget.attrs['class'] = 'form-control form-control-sm'
         self.fields['contexts'].widget.attrs['class'] = 'form-check-input'
@@ -41,7 +41,7 @@ class TaskForm(forms.ModelForm):
     class Meta:
         model = Task
         fields = ['name', 'start_date', 'start_time', 'due_date', 'due_time', 'repeat',
-                  'repeat_from', 'length', 'priority', 'note', 'contexts', 'project', 'folder', 'goal', 'blocked_by', 'tasklist']
+                  'repeat_from', 'length', 'priority', 'note', 'contexts', 'project', 'folder', 'goal', 'blocked_by', 'tasklist', 'assignee']
         widgets = {
             'start_date': DateInput(),
             'due_date': DateInput(),
