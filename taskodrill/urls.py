@@ -17,6 +17,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 
+from django.contrib.auth import views as auth_views
 from pages import views as pages_views
 
 urlpatterns = [
@@ -25,7 +26,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("django.contrib.auth.urls")),
     path("features/", pages_views.FeaturesPage.as_view(), name="features"),
-    path("", pages_views.HomePage.as_view(), name="home"),
+    #path("", pages_views.HomePage.as_view(), name="home"),
+    path('', auth_views.LoginView.as_view(), name='home')
 ]
 
 if settings.DEBUG:
