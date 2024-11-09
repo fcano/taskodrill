@@ -3,4 +3,7 @@ from django.db.models import Q
 from django.db.models import Count
 
 class MyUser(AbstractUser):
-    pass
+
+    def task_count(self):
+        return self.task_set.count()
+    task_count.short_description = 'Number of Tasks'
