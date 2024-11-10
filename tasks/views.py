@@ -275,7 +275,7 @@ class TaskList(LoginRequiredMixin, ListView):
             tasks = tasks_wo_project.union(last_task_from_each_project).order_by('overdue', 'first_field', '-second_field', 'due_date', '-priority', 'ready_datetime')
 
             task_list = list(tasks)
-            task_list.sort(key=lambda x: not x.is_time_constrained)
+            #task_list.sort(key=lambda x: not x.is_time_constrained)
 
             sorted_ids = [obj.id for obj in task_list]
 
@@ -288,6 +288,7 @@ class TaskList(LoginRequiredMixin, ListView):
             # Create a QuerySet ordered by the custom Case expression
             tasks = Task.objects.filter(id__in=sorted_ids).order_by(preserved_order)
 
+            # Scheduler
             if not available_time:
                 return tasks
             else:
