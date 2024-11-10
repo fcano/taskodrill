@@ -225,7 +225,7 @@ class Task(models.Model):
 
         if not self.due_date:
             return False
-        elif (datetime.datetime.today().date() == self.due_date):
+        elif (datetime.datetime.today().date() >= self.due_date):
             return True
         else:
             if not self.length:
