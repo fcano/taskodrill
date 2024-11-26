@@ -101,7 +101,7 @@ class Task(models.Model):
     dep_due_time = models.TimeField(blank=True, null=True)
     repeat = models.IntegerField(choices=REPEAT, default=NO)
     repeat_from = models.IntegerField(choices=REPEAT_FROM, default=DUE_DATE)
-    length = models.IntegerField(blank=True, null=True)
+    length = models.DecimalField(max_digits=5, decimal_places=1, blank=True, null=True)
     priority = models.IntegerField(choices=PRIORITY, default=NORMAL)
     tasklist = models.IntegerField(choices=TASK_LIST, default=NEXT_ACTION)
     status = models.IntegerField(choices=STATUS, default=PENDING)
