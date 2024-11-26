@@ -845,7 +845,7 @@ class GoalAutocomplete(autocomplete.Select2QuerySetView):
         if not self.request.user.is_authenticated:
             return Task.objects.none()
 
-        qs = self.request.user.goal_set.all()
+        qs = self.request.user.goal_set.filter(status=Goal.OPEN)
 
         if self.q:
             qs = qs.filter(name__icontains=self.q)
