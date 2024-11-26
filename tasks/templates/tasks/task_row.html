@@ -11,6 +11,7 @@
   {% else %}
     <td>none</td>
   {% endif %}
+  <td>{{ task.next_in_goal }}</td>
   <td id="tasks_td_start_date_{{ task.id }}">{{ task.start_date | default_if_none:"no date"}}</td>
   <td id="tasks_td_start_time_{{ task.id }}">{{ task.start_time | default_if_none:"no time"}}</td>
   <td id="tasks_td_due_date_{{ task.id }}">{{ task.due_date | default_if_none:"no date"}}</td>

@@ -124,6 +124,18 @@ class Task(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL,
                              on_delete=models.CASCADE)
 
+
+    def next_in_goal(self):
+        if self.goal:
+            pending_tasks = self.goal.pending_tasks()
+            position = [i for i, task in enumerate(pending_tasks) if task == self][0]
+            if len(pending_tasks) > (position+1):
+                return pending_tasks[position+1]
+            else:
+                return None
+        else:
+            return None
+
     @classmethod
     def next_business_day(cls, reference_date=None):
         if not reference_date:
@@ -231,6 +243,7 @@ class Task(models.Model):
             if not self.length:
                 self.length = 0
             return ((self.length / 60) > weekdays_between(datetime.datetime.today().date(), self.due_date))
+
 
 
 
