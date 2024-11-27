@@ -105,7 +105,7 @@ class Task(models.Model):
     priority = models.IntegerField(choices=PRIORITY, default=NORMAL)
     tasklist = models.IntegerField(choices=TASK_LIST, default=NEXT_ACTION)
     status = models.IntegerField(choices=STATUS, default=PENDING)
-    note = models.TextField(blank=True, null=True)
+    note = models.TextField(blank=True)
     creation_datetime = models.DateTimeField(auto_now_add=True)
     modification_datetime = models.DateTimeField(auto_now=True)
     ready_datetime = models.DateTimeField(blank=True, null=True)
@@ -425,6 +425,7 @@ class Goal(models.Model):
     )
 
     name = models.CharField(max_length=100)
+    references = models.TextField(blank=True)
     due_date = models.DateField(blank=True, null=True)
     status = models.IntegerField(choices=STATUS, default=OPEN)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
