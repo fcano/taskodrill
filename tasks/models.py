@@ -455,7 +455,7 @@ class Goal(models.Model):
         tasks_wo_project = self.tasks.filter(
             project__isnull=True,
             status=Task.PENDING,
-            tasklist=Task.NEXT_ACTION,
+            #tasklist=Task.NEXT_ACTION,
         )
 
         last_task_from_each_project = self.tasks.filter(
