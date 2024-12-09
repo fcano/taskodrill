@@ -1398,13 +1398,22 @@ class ProjectListViewTests(TestCase):
             project=project,
             user=user,
         )
+        task3 = Task.objects.create(
+            name="Task 3 within Project 1",
+            project=project,
+            user=user,
+        )
         response = self.client.get(reverse("project_detail", args=(project.id,)))
         self.assertContains(response, "Task 1 within Project 1")
         self.assertContains(response, "Task 2 within Project 1")
 
         response = self.client.get(reverse("task_list_tasklist", args=("nextactions",)))
+        # Appears as next action
         self.assertContains(response, "Task 1 within Project 1")
-        self.assertNotContains(response, "Task 2 within Project 1")
+        # Appears as the action after the next action
+        self.assertContains(response, "Task 2 within Project 1")
+        # Does not appear
+        self.assertNotContains(response, "Task 3 within Project 1")
 
 
 class ProjectDetailViewTests(TestCase):

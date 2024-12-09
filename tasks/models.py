@@ -136,6 +136,19 @@ class Task(models.Model):
         else:
             return None
 
+
+    def next_in_project(self):
+        if self.project:
+            pending_tasks = self.project.pending_tasks()
+            position = [i for i, task in enumerate(pending_tasks) if task == self][0]
+            if len(pending_tasks) > (position+1):
+                return pending_tasks[position+1]
+            else:
+                return None
+        else:
+            return None
+
+
     @classmethod
     def next_business_day(cls, reference_date=None):
         if not reference_date:
@@ -291,7 +304,7 @@ class Project(models.Model):
         if len(next_tasks) >= 1:
             return next_tasks[0]
         else:
-            return "None"
+            return None
 
     def get_absolute_url(self):
         return reverse('project_detail', kwargs={'pk': self.pk})

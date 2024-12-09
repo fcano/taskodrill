@@ -1,25 +1,25 @@
 <tr id="tasks_row_{{ task.id }}" class="{% if task.is_time_constrained %}row-time-constrained{% endif %}">
   <td><input class="checkbox align-middle" type="checkbox" id="checkbox_{{ task.id }}" value="{{ task.id }}"></td>
   <td>{{ task.name|urlizetrunc:50 }}</td>
-  {% if task.goal %}
-  <td><a href="{{ task.goal.get_absolute_url }}">{{ task.goal.name }}</a> <a href="{% url 'goal_update' task.goal.pk %}"><img src="/static/tasks/edit.svg" width="16" /></a></td>
+  {% if task.project %}
+  <td><a href="{{ task.project.get_absolute_url }}">{{ task.project.name }}</a></td>
   {% else %}
     <td>none</td>
   {% endif %}
-  {% if task.goal %}
-  <td>{{ task.goal.due_date }} ({{ task.goal.speed_req }}h/d)</td>
+  {% if task.project %}
+  <td>{{ task.project.due_date }}</td>
   {% else %}
     <td>none</td>
   {% endif %}
-  {% with next_in_goal=task.next_in_goal %}
-    {% if next_in_goal is not None %}
-      <td>{{ next_in_goal }} <a href="{% url 'task_update' next_in_goal.pk %}"><img src="/static/tasks/edit.svg" width="16" /></a></td>
+  {% with next_task=task.next_in_project %}
+    {% if next_task is not None %}
+      <td>{{ next_task }} <a href="{% url 'task_update' next_task.pk %}"><img src="/static/tasks/edit.svg" width="16" /></a></td>
     {% else %}
       <td>none</td>
     {% endif %}
   {% endwith %}
-  {% if task.goal %}
-  <td>{{ task.goal.references|urlizetrunc:50 }}</td>
+  {% if task.project %}
+  <td>{{ task.project.description|urlizetrunc:50 }}</td>
   {% else %}
     <td></td>
   {% endif %}
