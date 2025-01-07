@@ -140,7 +140,7 @@ class Task(models.Model):
     def next_in_project(self):
         if self.project:
             pending_tasks = self.project.pending_tasks()
-            position = [i for i, task in enumerate(pending_tasks) if task == self][0]
+            position = list(pending_tasks).index(self)
             if len(pending_tasks) > (position+1):
                 return pending_tasks[position+1]
             else:
