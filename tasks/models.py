@@ -140,6 +140,8 @@ class Task(models.Model):
     def next_in_project(self):
         if self.project:
             pending_tasks = self.project.pending_tasks()
+            if not pending_tasks:
+                return None
             position = list(pending_tasks).index(self)
             if len(pending_tasks) > (position+1):
                 return pending_tasks[position+1]
@@ -289,7 +291,6 @@ class Project(models.Model):
         return self.name
 
     def pending_tasks(self):
-        #return self.task_set.filter(status=Task.PENDING).order_by('creation_datetime')
         return self.task_set.filter(status__in=[Task.PENDING, Task.BLOCKED]).order_by('creation_datetime')
 
     def next_task(self):
