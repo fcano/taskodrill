@@ -139,8 +139,8 @@ class Task(models.Model):
 
     def next_in_project(self):
         if self.project:
-            pending_tasks = self.project.pending_tasks()
-            if not pending_tasks:
+            pending_tasks = list(self.project.pending_tasks())
+            if not pending_tasks or self not in pending_tasks:
                 return None
             position = list(pending_tasks).index(self)
             if len(pending_tasks) > (position+1):
