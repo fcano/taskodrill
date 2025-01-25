@@ -1,6 +1,7 @@
 <tr id="tasks_row_{{ task.id }}" class="{% if task.is_time_constrained %}row-time-constrained{% endif %}">
   <td><input class="checkbox align-middle" type="checkbox" id="checkbox_{{ task.id }}" value="{{ task.id }}"></td>
   <td>{{ task.name|urlizetrunc:50 }}</td>
+  <td id="tasks_td_due_date_{{ task.id }}">{{ task.due_date | default_if_none:"no date"}}</td>
   {% if task.project %}
   <td><a href="{{ task.project.get_absolute_url }}">{{ task.project.name }}</a></td>
   {% else %}
@@ -11,21 +12,27 @@
   {% else %}
     <td>none</td>
   {% endif %}
-  {% with next_task=task.next_in_project %}
-    {% if next_task is not None %}
-      <td>{{ next_task }} <a href="{% url 'task_update' next_task.pk %}"><img src="/static/tasks/edit.svg" width="16" /></a></td>
-    {% else %}
-      <td>none</td>
-    {% endif %}
-  {% endwith %}
+  {% if task.goal %}
+  <td><a href="{{ task.goal.get_absolute_url }}">{{ task.goal.name }}</a></td>
+  {% else %}
+    <td>none</td>
+  {% endif %}
+  {% if task.goal %}
+  <td>{{ task.goal.due_date }}</td>
+  {% else %}
+    <td>none</td>
+  {% endif %}
   {% if task.project %}
   <td>{{ task.project.description|urlizetrunc:50 }}</td>
   {% else %}
-    <td></td>
+    {% if task.goal %}
+      <td>{{ task.goal.references|urlizetrunc:50 }}</td>
+    {% else %}
+      <td></td>
+    {% endif %}
   {% endif %}
   <td id="tasks_td_start_date_{{ task.id }}">{{ task.start_date | default_if_none:"no date"}}</td>
   <td id="tasks_td_start_time_{{ task.id }}">{{ task.start_time | default_if_none:"no time"}}</td>
-  <td id="tasks_td_due_date_{{ task.id }}">{{ task.due_date | default_if_none:"no date"}}</td>
   <td>{{ task.get_repeat_display | default_if_none:"none" }}</td>
   <td>{{ task.get_priority_display | default_if_none:"none" }}</td>
   <td>{{ task.length | default_if_none:"none" }}</td>
