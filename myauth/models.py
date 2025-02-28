@@ -1,6 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from backports import zoneinfo
+import zoneinfo
 from django.urls import reverse
 
 class MyUser(AbstractUser):
@@ -8,6 +8,17 @@ class MyUser(AbstractUser):
     def task_count(self):
         return self.task_set.count()
     task_count.short_description = 'Number of Tasks'
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        if not hasattr(self, 'myuserprofile'):
+            MyUserProfile.objects.create(
+                timezone = "Europe/Madrid",
+                work_hours_start = '09:00:00',
+                work_hours_end = '17:00:00',
+                user=self
+            )
 
 class MyUserProfile(models.Model):
     TIMEZONE_CHOICES = [(tz, tz) for tz in zoneinfo.available_timezones()]
