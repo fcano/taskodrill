@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block content %}
+	<h1>{{ myuserprofile.user.username }}</h1>
+    <p><a href="{% url 'myuserprofile_update' myuserprofile.pk %}">Edit</a>
+    <div>
+        Work hours start: {{ myuserprofile.work_hours_start }} <br />
+        Work hours end: {{ myuserprofile.work_hours_end }}<br />
+        Timezone: {{ myuserprofile.timezone }}<br />
+    </div>
+{% endblock %}
