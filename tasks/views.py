@@ -176,7 +176,7 @@ class TaskList(LoginRequiredMixin, ListView):
 
 
         if 'available_time' in  self.request.GET.keys():
-            available_time = int(self.request.GET.get('available_time'))
+            available_time = float(self.request.GET.get('available_time'))
         else:
             available_time = None
 
@@ -296,7 +296,7 @@ class TaskList(LoginRequiredMixin, ListView):
 
                 total_required_time = 0
                 for task in tasks:
-                    task_length = task.length or 60
+                    task_length = task.length or 1
                     if total_required_time + task_length <= available_time:
                         selected_task_ids.append(task.id)
                         total_required_time += task_length
