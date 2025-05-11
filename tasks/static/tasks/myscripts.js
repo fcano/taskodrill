@@ -46,22 +46,25 @@ $('#tasks_body').on('click', 'input[type="checkbox"]', function () {
         url: "/tasks/mark_as_done/",
         data: data,
         success: function (response) {
-            task_row_str = '#tasks_row_' + data.id;
-            $(task_row_str).remove();
-            tasks_count = tasks_count - 1;
-            tasks_due_date_count = tasks_due_date_count - 1;
-            for (next_task_tr_html of response.tasks_to_render) {
-                tasks_count = tasks_count + 1;
-                $('#tasks_table tr:last').after(next_task_tr_html);
-            }
-            $('#tasks_count').text(tasks_count);
-            $('#tasks_due_date_count').text(tasks_due_date_count);
-            // next_task_tr_html = response.next_task_tr;
-            // if (next_task_tr_html != "") {
+            checkbox_str = '#checkbox_' + data.id;
+            $(checkbox_str).prop('checked', false);
+            location.reload();
+            // task_row_str = '#tasks_row_' + data.id;
+            // $(task_row_str).remove();
+            // tasks_count = tasks_count - 1;
+            // tasks_due_date_count = tasks_due_date_count - 1;
+            // for (next_task_tr_html of response.tasks_to_render) {
+            //     tasks_count = tasks_count + 1;
             //     $('#tasks_table tr:last').after(next_task_tr_html);
-            // } else {
-            //     $('#tasks_count').text(tasks_count - 1);
             // }
+            // $('#tasks_count').text(tasks_count);
+            // $('#tasks_due_date_count').text(tasks_due_date_count);
+            // // next_task_tr_html = response.next_task_tr;
+            // // if (next_task_tr_html != "") {
+            // //     $('#tasks_table tr:last').after(next_task_tr_html);
+            // // } else {
+            // //     $('#tasks_count').text(tasks_count - 1);
+            // // }
         }
     }).done(function (data) {
         console.log(data);
