@@ -212,7 +212,6 @@ $(document).on('click', 'a.confirm-delete', function (event) {
 
 $(document).on('click', 'a.remove-deadline-prio', function (event) {
     event.preventDefault();
-    alert("hello");
 
     var data = {};
     href = $(this).attr('href');
