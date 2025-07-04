@@ -210,6 +210,31 @@ $(document).on('click', 'a.confirm-delete', function (event) {
 });
 
 
+$(document).on('click', 'a.remove-deadline-prio', function (event) {
+    event.preventDefault();
+    alert("hello");
+
+    var data = {};
+    href = $(this).attr('href');
+    href_elems = href.split('/');
+    data.id = href_elems[2];
+    object_type = href_elems[1];
+
+    $.ajax({
+        type: "POST",
+        url: "/" + object_type + "/" + data.id + "/remove_deadline_prio/",
+        data: data,
+        success: function (json) {
+            /* If the result is to reload the page, AJAX is not needed */
+            /* Pending: remove AJAX */
+            window.location.reload();
+        }
+    }).done(function (data) {
+        console.log(data);
+    });
+});
+
+
 $(document).on('click', 'a.remove-deadline', function (event) {
     event.preventDefault();
 
@@ -232,6 +257,9 @@ $(document).on('click', 'a.remove-deadline', function (event) {
         console.log(data);
     });
 });
+
+
+
 
 
 $('#hide_future_tasks').click(function () {

@@ -9,6 +9,7 @@ urlpatterns = [
     path('tasks/<int:pk>/edit/', tasks_views.TaskUpdate.as_view(), name='task_update'),
     path('tasks/<int:pk>/delete/', tasks_views.TaskDelete.as_view(), name='task_delete'),
     path('tasks/<int:pk>/remove_deadline/', tasks_views.TaskRemoveDeadline.as_view(), name='task_remove_deadline'),
+    path('tasks/<int:pk>/remove_deadline_prio/', tasks_views.TaskRemoveDeadlinePrio.as_view(), name='task_remove_deadline_prio'),
     path('tasks/<int:pk>/postpone/<int:ndays>/', tasks_views.TaskPostpone.as_view(), name='task_postpone'),
     path('tasks/mark_as_done/', tasks_views.TaskMarkAsDone.as_view(), name='task_mark_as_done'),
     path('tasks/change-tasklist/', tasks_views.TaskChangeTasklist.as_view(), name='task_change_tasklist'),
