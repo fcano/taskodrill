@@ -253,18 +253,23 @@ class Task(models.Model):
 
     @property
     def is_time_constrained(self):
-        if self.goal:
-            if self.goal.is_time_constrained:
-                return True
-
-        if not self.due_date:
-            return False
-        elif (datetime.datetime.today().date() >= self.due_date):
+        if self.due_date and self.planned_end_date > self.due_date:
             return True
         else:
-            if not self.length:
-                self.length = 0
-            return ((self.length / 60) > weekdays_between(datetime.datetime.today().date(), self.due_date))
+            return False
+
+        # if self.goal:
+        #     if self.goal.is_time_constrained:
+        #         return True
+
+        # if not self.due_date:
+        #     return False
+        # elif (datetime.datetime.today().date() >= self.due_date):
+        #     return True
+        # else:
+        #     if not self.length:
+        #         self.length = 0
+        #     return ((self.length / 60) > weekdays_between(datetime.datetime.today().date(), self.due_date))
 
 
 

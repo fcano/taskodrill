@@ -288,8 +288,7 @@ class TaskList(LoginRequiredMixin, ListView):
             # Create a QuerySet ordered by the custom Case expression
             tasks = Task.objects.filter(id__in=sorted_ids).order_by(preserved_order)
 
-            #tasks = list(Task.objects.filter(id__in=sorted_ids).order_by(preserved_order))
-
+            # Calculate planned date for each group of tasks
             groups = []
             current_group = []
             group_sum = 0
