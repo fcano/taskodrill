@@ -116,18 +116,12 @@ class TaskCreate(LoginRequiredMixin, CreateView):
             m = re.search('(\[(\w+)-(\w+)\])', form.instance.name)
             first_value = int(m.group(2))
             last_value = int(m.group(3))
-            prev_task = ''
             for i in range(first_value, last_value+1):
                 t = form.save(commit=False)
                 t.pk = None
-                print(task)
                 t.name = re.sub(r"\[\w+-\w+\]", str(i), task)
-                if prev_task:
-                    t.blocked_by = prev_task
-                    t.status = Task.BLOCKED
                 t.save()
                 t.contexts.set(form.cleaned_data['contexts'])
-                prev_task = Task.objects.get(pk=t.id)
             return HttpResponseRedirect(self.get_success_url())
 
         return super().form_valid(form)
