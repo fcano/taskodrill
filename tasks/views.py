@@ -15,6 +15,7 @@ from django.template.loader import render_to_string
 from django.http import HttpResponseRedirect
 from django.template.response import TemplateResponse
 from django.utils import timezone
+import pytz
 
 from .models import Task, Project, Context, Folder, Goal, Assignee
 from .forms import TaskForm, ProjectForm, OrderingForm, GoalForm
@@ -289,7 +290,8 @@ class TaskList(LoginRequiredMixin, ListView):
             current_group = []
             group_sum = 0
 
-            now = datetime.datetime.now()
+            madrid_tz = pytz.timezone('Europe/Madrid')
+            now = timezone.localtime(timezone.now(), madrid_tz)
             today_six_pm = now.replace(hour=18, minute=0, second=0, microsecond=0)
 
             # If it's already past 18:00, the result will be negative
