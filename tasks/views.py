@@ -305,12 +305,12 @@ class TaskList(LoginRequiredMixin, ListView):
 
             for task in tasks:
                 if first_group:
-                    available_time = delta.total_seconds() / 3600
+                    working_time_available_time = 4 #delta.total_seconds() / 3600
                 else:
-                    available_time = 8
+                    working_time_available_time = 8
 
                 task_length = task.length or 1
-                if float(group_sum) + float(task_length) > available_time:
+                if float(group_sum) + float(task_length) > working_time_available_time:
                     groups.append(current_group)
                     current_group = [task]
                     group_sum = float(task_length)
