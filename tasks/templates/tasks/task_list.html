@@ -11,6 +11,7 @@
   <p>
     Tasks: <span id="tasks_count">{{ task_list.count }}</span> | 
     Tasks with due date < today: <span id="tasks_due_date_count">{{ num_tasks_due_date }}</span> | 
+    Late tasks: <span id="tasks_late_count">{{ num_late_tasks }}</span> |
     {% for c in contexts %}<a href="{{ c.get_absolute_url }}">{{ c.name }}</a> ({{ c.num_tasks }}) | {% endfor %}
   </p>
   {% if task_list %}

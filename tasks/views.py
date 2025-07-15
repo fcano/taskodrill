@@ -157,6 +157,7 @@ class TaskList(LoginRequiredMixin, ListView):
         # Add in a QuerySet of all the books
         context['form'] = TaskForm(user=self.request.user)
         context['num_tasks_due_date'] = 0
+        context['num_late_tasks'] = 0
         task_list = self.get_queryset()
         task_ids = task_list.values_list('id', flat=True)
         #context['contexts'] = contexts_related_to_tasks.filter(user=self.request.user).annotate(num_tasks=models.Count('tasks', filter=models.Q(tasks__status=Task.PENDING))).order_by('-num_tasks')[:5]
@@ -165,7 +166,8 @@ class TaskList(LoginRequiredMixin, ListView):
         for task in context['task_list']:
             if task.due_date and task.due_date <= datetime.date.today():
                 context['num_tasks_due_date'] += 1
-
+            if task.due_date and task.planned_end_date > task.due_date:
+                context['num_late_tasks'] += 1
         return context
 
     def get_queryset(self):
