@@ -2,6 +2,7 @@
   <td><input class="checkbox align-middle" type="checkbox" id="checkbox_{{ task.id }}" value="{{ task.id }}"></td>
   <td>{{ task.name|urlizetrunc:50 }}</td>
   <td id="tasks_td_due_date_{{ task.id }}">{{ task.due_date | default_if_none:"no date"}}</td>
+  <td id="tasks_td_planned_end_date_{{ task.id }}">{{ task.planned_end_date | default_if_none:"no date"}}</td>
   {% if task.project %}
   <td><a href="{{ task.project.get_absolute_url }}">{{ task.project.name }}</a></td>
   {% else %}

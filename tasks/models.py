@@ -97,6 +97,7 @@ class Task(models.Model):
     start_time = models.TimeField(blank=True, null=True)
     due_date = models.DateField(blank=True, null=True)
     due_time = models.TimeField(blank=True, null=True)
+    planned_end_date = models.DateField(blank=True, null=True)
     dep_due_date = models.DateField(blank=True, null=True)
     dep_due_time = models.TimeField(blank=True, null=True)
     repeat = models.IntegerField(choices=REPEAT, default=NO)
@@ -150,6 +151,12 @@ class Task(models.Model):
         else:
             return None
 
+
+    @classmethod
+    def is_working_day(cls, date):
+        if date.weekday() in holidays.WEEKEND or date in HOLIDAYS_ES_VC:
+            return False
+        return True
 
     @classmethod
     def next_business_day(cls, reference_date=None):

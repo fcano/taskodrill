@@ -288,6 +288,36 @@ class TaskList(LoginRequiredMixin, ListView):
             # Create a QuerySet ordered by the custom Case expression
             tasks = Task.objects.filter(id__in=sorted_ids).order_by(preserved_order)
 
+            #tasks = list(Task.objects.filter(id__in=sorted_ids).order_by(preserved_order))
+
+            groups = []
+            current_group = []
+            group_sum = 0
+
+            for task in tasks:
+                task_length = task.length or 1
+                if float(group_sum) + float(task_length) > 8:
+                    groups.append(current_group)
+                    current_group = [task]
+                    group_sum = float(task_length)
+                else:
+                    current_group.append(task)
+                    group_sum += float(task_length)
+
+            if current_group:
+                groups.append(current_group)
+
+            # Start planning from today (or first working day if today is not one)
+            plan_date = datetime.date.today()
+            if not Task.is_working_day(plan_date):
+                plan_date = Task.next_business_day(plan_date)
+
+            for group in groups:
+                for task in group:
+                    task.planned_end_date = plan_date
+                    task.save(update_fields=['planned_end_date'])
+                plan_date = Task.next_business_day(plan_date)
+
             # Scheduler
             if not available_time:
                 return tasks
@@ -303,6 +333,7 @@ class TaskList(LoginRequiredMixin, ListView):
 
                 selected_tasks = Task.objects.filter(id__in=selected_task_ids)
                 return selected_tasks
+
 
 
 class TaskUpdate(LoginRequiredMixin, UpdateView):
