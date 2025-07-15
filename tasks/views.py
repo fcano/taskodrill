@@ -293,12 +293,27 @@ class TaskList(LoginRequiredMixin, ListView):
             current_group = []
             group_sum = 0
 
+            now = datetime.datetime.now()
+            today_six_pm = now.replace(hour=18, minute=0, second=0, microsecond=0)
+
+            # If it's already past 18:00, the result will be negative
+            delta = today_six_pm - now
+            if delta < datetime.timedelta(0):
+                delta = datetime.timedelta(0)
+
+            first_group = True
+
             for task in tasks:
+                if first_group:
+                    available_time = delta.total_seconds() / 3600
+                else:
+                    available_time = 8
                 task_length = task.length or 1
-                if float(group_sum) + float(task_length) > 8:
+                if float(group_sum) + float(task_length) > available_time:
                     groups.append(current_group)
                     current_group = [task]
                     group_sum = float(task_length)
+                    first_group = False
                 else:
                     current_group.append(task)
                     group_sum += float(task_length)
