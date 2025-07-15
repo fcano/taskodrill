@@ -253,7 +253,7 @@ class Task(models.Model):
 
     @property
     def is_time_constrained(self):
-        if self.due_date and self.planned_end_date > self.due_date:
+        if self.due_date and (self.planned_end_date > self.due_date):
             return True
         else:
             return False
