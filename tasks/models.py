@@ -153,6 +153,175 @@ class Task(models.Model):
 
 
     @classmethod
+    def get_task_plan(cls, tasklist_slug, available_time, status, start_date, user):
+        from django.db.models import Q, F, Case, When, IntegerField, DateTimeField
+
+        if status:
+            search_key = 'status'
+            search_value = getattr(cls, status.upper())
+            search_filter = Q(**{search_key: search_value})
+        else:
+            search_filter = Q(status=cls.PENDING) | Q(status=cls.BLOCKED)
+
+        if start_date and start_date == 'ignore':
+            query = Q()
+        else:
+            q1 = Q(start_date=datetime.date.today()) & Q(start_time__lte=datetime.datetime.now())
+            q2 = Q(start_date=datetime.date.today()) & Q(start_time__isnull=True)
+            q3 = Q(start_date__lt=datetime.date.today())
+            q4 = Q(start_date__isnull=True)
+            query = q1 | q2 | q3 | q4
+
+        if (tasklist_slug is None) or (tasklist_slug not in ['nextactions', 'somedaymaybe', 'notthisweek']):
+            return cls.objects.filter(user=user).filter(search_filter).order_by('-modification_datetime')
+        else:
+            if tasklist_slug == 'nextactions':
+                tasklist = cls.NEXT_ACTION
+            elif tasklist_slug == 'notthisweek':
+                tasklist = cls.NOT_THIS_WEEK
+            else:
+                tasklist = cls.SOMEDAY_MAYBE
+
+            tasks_wo_project = cls.objects.filter(
+                            user=user,
+                            tasklist=tasklist,
+                            status=cls.PENDING,
+                            project__isnull=True).filter(query).annotate(
+                                overdue=Case(
+                                        When(due_date__lte=datetime.datetime.now(), then=1),
+                                        default=2,
+                                        output_field=IntegerField()
+                                    ),
+                                first_field=
+                                    Case(
+                                        When(due_date__lte=datetime.datetime.now(), then=None),
+                                        default=F('due_date'),
+                                        output_field=DateTimeField()
+                                    ),
+                                second_field=
+                                    Case(
+                                        When(due_date__lte=datetime.datetime.now(), then=F('priority')),
+                                        default=None,
+                                        output_field=IntegerField()
+                                    )
+                                )
+
+            last_task_from_each_project = cls.objects.filter(
+                user=user,
+                status=cls.PENDING,
+                project__isnull=False,
+                project__status=Project.OPEN,
+            ).order_by('project_id', 'project_order').distinct('project_id')
+
+            q5 = Q(tasklist=tasklist)
+            query = query & q5
+
+            last_task_from_each_project = cls.objects.filter(pk__in=last_task_from_each_project).filter(query).annotate(
+                                overdue=Case(
+                                        When(due_date__lte=datetime.datetime.now(), then=1),
+                                        default=2,
+                                        output_field=IntegerField()
+                                    ),
+                                first_field=
+                                    Case(
+                                        When(due_date__lte=datetime.datetime.now(), then=None),
+                                        default=F('due_date'),
+                                        output_field=DateTimeField()
+                                    ),
+                                second_field=
+                                    Case(
+                                        When(due_date__lte=datetime.datetime.now(), then=F('priority')),
+                                        default=None,
+                                        output_field=IntegerField()
+                                    )
+                                )
+
+            tasks = tasks_wo_project.union(last_task_from_each_project).order_by('overdue', 'first_field', '-second_field', 'due_date', '-priority', 'ready_datetime')
+
+            task_list = list(tasks)
+
+            sorted_ids = [obj.id for obj in task_list]
+
+            # Create a Case expression for custom ordering
+            preserved_order = Case(
+                *[When(id=pk, then=pos) for pos, pk in enumerate(sorted_ids)],
+                output_field=IntegerField()
+            )
+
+            # Create a QuerySet ordered by the custom Case expression
+            tasks = cls.objects.filter(id__in=sorted_ids).order_by(preserved_order)
+
+            Task.update_planned_end_date(tasks)
+
+            # Scheduler
+            if not available_time:
+                return tasks
+            else:
+                selected_task_ids = []
+
+                total_required_time = 0
+                for task in tasks:
+                    task_length = task.length or 1
+                    if total_required_time + task_length <= available_time:
+                        selected_task_ids.append(task.id)
+                        total_required_time += task_length
+
+                selected_tasks = cls.objects.filter(id__in=selected_task_ids)
+                return selected_tasks
+
+    @classmethod
+    def update_planned_end_date(cls, tasks):
+        import pytz
+        import datetime
+
+        # Calculate planned date for each group of tasks
+        groups = []
+        current_group = []
+        group_sum = 0
+
+        madrid_tz = pytz.timezone('Europe/Madrid')
+        now = timezone.localtime(timezone.now(), madrid_tz)
+        today_six_pm = now.replace(hour=18, minute=0, second=0, microsecond=0)
+
+        # If it's already past 18:00, the result will be negative
+        delta = today_six_pm - now
+        if delta < datetime.timedelta(0):
+            delta = datetime.timedelta(0)
+
+        first_group = True
+
+        for task in tasks:
+            if first_group:
+                working_time_available_time = delta.total_seconds() / 3600
+            else:
+                working_time_available_time = 8
+
+            task_length = task.length or 1
+            if float(group_sum) + float(task_length) > working_time_available_time:
+                groups.append(current_group)
+                current_group = [task]
+                group_sum = float(task_length)
+                first_group = False
+            else:
+                current_group.append(task)
+                group_sum += float(task_length)
+
+        if current_group:
+            groups.append(current_group)
+
+        # Start planning from today (or first working day if today is not one)
+        plan_date = datetime.date.today()
+        if not cls.is_working_day(plan_date):
+            plan_date = cls.next_business_day(plan_date)
+
+        for group in groups:
+            for task in group:
+                task.planned_end_date = plan_date
+                task.save(update_fields=['planned_end_date'])
+            plan_date = cls.next_business_day(plan_date)
+
+
+    @classmethod
     def is_working_day(cls, date):
         if date.weekday() in holidays.WEEKEND or date in HOLIDAYS_ES_VC:
             return False
@@ -253,7 +422,7 @@ class Task(models.Model):
 
     @property
     def is_time_constrained(self):
-        if self.due_date and (self.planned_end_date > self.due_date):
+        if self.due_date and self.planned_end_date and (self.planned_end_date > self.due_date):
             return True
         else:
             return False

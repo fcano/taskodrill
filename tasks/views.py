@@ -161,7 +161,7 @@ class TaskList(LoginRequiredMixin, ListView):
         for task in context['task_list']:
             if task.due_date and task.due_date <= datetime.date.today():
                 context['num_tasks_due_date'] += 1
-            if task.due_date and task.planned_end_date > task.due_date:
+            if task.due_date and task.planned_end_date and task.planned_end_date > task.due_date:
                 context['num_late_tasks'] += 1
         return context
 
@@ -177,176 +177,12 @@ class TaskList(LoginRequiredMixin, ListView):
         else:
             available_time = None
 
+        status = self.request.GET.get('status')
+        start_date = self.request.GET.get('start_date')
 
-#        (start_date=today AND start_time=noworpast) OR (start_time_today AND start_time=null) OR (start_date=past) OR (start_date=null)
+        task_list = Task.get_task_plan(tasklist_slug, available_time, status, start_date, self.request.user)
 
-        if 'status' in self.request.GET.keys():
-            search_key = 'status'
-            search_value_string = self.request.GET.get('status')
-            search_value = getattr(Task, search_value_string.upper())
-            search_filter = Q(**{search_key: search_value})
-        else:
-            search_filter = Q(status=Task.PENDING) | Q(status=Task.BLOCKED)
-
-        # Task with datetime in the future
-        if 'start_date' in self.request.GET.keys() and self.request.GET.get('start_date') == 'ignore':
-            query = Q()
-        else:
-            q1 = Q(start_date=datetime.date.today()) & Q(start_time__lte=datetime.datetime.now())
-            q2 = Q(start_date=datetime.date.today()) & Q(start_time__isnull=True)
-            q3 = Q(start_date__lt=datetime.date.today())
-            q4 = Q(start_date__isnull=True)
-            query = q1 | q2 | q3 | q4
-
-        # query = Q(start_date=datetime.date.today())
-        # query.add(Q(start_time__lte=datetime.datetime.now()), Q.AND)
-        # query.add(Q(start_date__lt=datetime.date.today()), Q.OR)
-        # query.add(Q(start_date__isnull=True), Q.OR)
-
-        if (tasklist_slug is None) or (tasklist_slug not in ['nextactions', 'somedaymaybe', 'notthisweek']):
-            return Task.objects.filter(user=self.request.user).filter(search_filter).order_by('-modification_datetime')
-        else:
-            if tasklist_slug == 'nextactions':
-                tasklist = Task.NEXT_ACTION
-            elif tasklist_slug == 'notthisweek':
-                tasklist = Task.NOT_THIS_WEEK
-            else:
-                tasklist = Task.SOMEDAY_MAYBE
-
-            tasks_wo_project = Task.objects.filter(
-                            user=self.request.user,
-                            tasklist=tasklist,
-                            status=Task.PENDING,
-                            project__isnull=True).filter(query).annotate(
-                                overdue=Case(
-                                        When(due_date__lte=datetime.datetime.now(), then=1),
-                                        default=2,
-                                        output_field=IntegerField()
-                                    ),
-                                first_field=
-                                    Case(
-                                        When(due_date__lte=datetime.datetime.now(), then=None),
-                                        default=F('due_date'),
-                                        output_field=DateTimeField()
-                                    ),
-                                second_field=
-                                    Case(
-                                        When(due_date__lte=datetime.datetime.now(), then=F('priority')),
-                                        default=None,
-                                        output_field=IntegerField()
-                                    )
-                                )
-
-            last_task_from_each_project = Task.objects.filter(
-                user=self.request.user,
-                status=Task.PENDING,
-                project__isnull=False,
-                project__status=Project.OPEN,
-            ).order_by('project_id', 'project_order').distinct('project_id')
-
-            q5 = Q(tasklist=tasklist)
-            query = query & q5
-
-            last_task_from_each_project = Task.objects.filter(pk__in=last_task_from_each_project).filter(query).annotate(
-                                overdue=Case(
-                                        When(due_date__lte=datetime.datetime.now(), then=1),
-                                        default=2,
-                                        output_field=IntegerField()
-                                    ),
-                                first_field=
-                                    Case(
-                                        When(due_date__lte=datetime.datetime.now(), then=None),
-                                        default=F('due_date'),
-                                        output_field=DateTimeField()
-                                    ),
-                                second_field=
-                                    Case(
-                                        When(due_date__lte=datetime.datetime.now(), then=F('priority')),
-                                        default=None,
-                                        output_field=IntegerField()
-                                    )
-                                )
-
-            #tasks_wo_project.annotate(time_constrained=ExpressionWrapper(Goal.weekdays_between(datetime.datetime.today(), F('due_date')), output_field=BooleanField()))
-            #last_task_from_each_project.annotate(time_constrained=ExpressionWrapper(Goal.weekdays_between(datetime.datetime.today(), F('due_date')), output_field=BooleanField()))
-            tasks = tasks_wo_project.union(last_task_from_each_project).order_by('overdue', 'first_field', '-second_field', 'due_date', '-priority', 'ready_datetime')
-
-            task_list = list(tasks)
-            #task_list.sort(key=lambda x: not x.is_time_constrained)
-
-            sorted_ids = [obj.id for obj in task_list]
-
-            # Create a Case expression for custom ordering
-            preserved_order = Case(
-                *[When(id=pk, then=pos) for pos, pk in enumerate(sorted_ids)],
-                output_field=IntegerField()
-            )
-
-            # Create a QuerySet ordered by the custom Case expression
-            tasks = Task.objects.filter(id__in=sorted_ids).order_by(preserved_order)
-
-            # Calculate planned date for each group of tasks
-            groups = []
-            current_group = []
-            group_sum = 0
-
-            madrid_tz = pytz.timezone('Europe/Madrid')
-            now = timezone.localtime(timezone.now(), madrid_tz)
-            today_six_pm = now.replace(hour=18, minute=0, second=0, microsecond=0)
-
-            # If it's already past 18:00, the result will be negative
-            delta = today_six_pm - now
-            if delta < datetime.timedelta(0):
-                delta = datetime.timedelta(0)
-
-            first_group = True
-
-            for task in tasks:
-                if first_group:
-                    working_time_available_time = delta.total_seconds() / 3600
-                else:
-                    working_time_available_time = 8
-
-                task_length = task.length or 1
-                if float(group_sum) + float(task_length) > working_time_available_time:
-                    groups.append(current_group)
-                    current_group = [task]
-                    group_sum = float(task_length)
-                    first_group = False
-                else:
-                    current_group.append(task)
-                    group_sum += float(task_length)
-
-            if current_group:
-                groups.append(current_group)
-
-            # Start planning from today (or first working day if today is not one)
-            plan_date = datetime.date.today()
-            if not Task.is_working_day(plan_date):
-                plan_date = Task.next_business_day(plan_date)
-
-            for group in groups:
-                for task in group:
-                    task.planned_end_date = plan_date
-                    task.save(update_fields=['planned_end_date'])
-                plan_date = Task.next_business_day(plan_date)
-
-            # Scheduler
-            if not available_time:
-                return tasks
-            else:
-                selected_task_ids = []
-
-                total_required_time = 0
-                for task in tasks:
-                    task_length = task.length or 1
-                    if total_required_time + task_length <= available_time:
-                        selected_task_ids.append(task.id)
-                        total_required_time += task_length
-
-                selected_tasks = Task.objects.filter(id__in=selected_task_ids)
-                return selected_tasks
-
+        return task_list
 
 
 class TaskUpdate(LoginRequiredMixin, UpdateView):
