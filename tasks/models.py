@@ -394,13 +394,12 @@ class Task(models.Model):
     def get_absolute_url(self):
         return reverse('task_detail', kwargs={'pk': self.pk})
 
-    def save(self, *args, update_related=True, **kwargs):
+    def save(self, *args, **kwargs):
 
         ### On creation, set ready_time
         if self._state.adding:
             self.ready_datetime = timezone.now()
             if self.project is not None:
-                # self.project_order = Project.objects.get(self.project).task_set.count() + 1
                 self.project_order = self.project.task_set.count() + 1
                 if self.project.due_date is not None:
                     if self.due_date is None:
@@ -409,6 +408,32 @@ class Task(models.Model):
                         self.due_date = self.project.due_date
 
         super().save(*args, **kwargs)
+
+        # Avoid infinite loop: only update other tasks if this is not a due_date-only update
+        # We check if only 'due_date' is being updated to prevent recursion
+        # If 'update_fields' is present and only 'due_date' is being updated, skip this block
+        update_fields = kwargs.get('update_fields', None)
+        if update_fields is not None and update_fields == ['due_date']:
+            return
+
+        if self.goal and self.goal.due_date:
+            tasks = self.goal.pending_tasks()
+
+            working_days = Goal.weekdays_between(datetime.date.today(), self.goal.due_date)
+            if working_days <= 0:
+                working_days_per_task = 0
+            else:
+                working_days_per_task = working_days / len(tasks)
+
+            task_num = 1
+            for task in tasks:
+                due_date = datetime.date.today() + (task_num * datetime.timedelta(days=working_days_per_task))
+                # Only update due_date if it has changed to avoid unnecessary saves
+                if task.due_date != due_date:
+                    # Pass update_fields to avoid triggering the full save logic again
+                    task.due_date = due_date
+                    task.save(update_fields=['due_date'])
+                task_num += 1
 
 
     def update_ready_datetime(self):
@@ -501,6 +526,7 @@ class Project(models.Model):
                 elif self.due_date < task.due_date:
                     task.due_date = self.due_date
                     task.save()
+
         super().save(*args, **kwargs)
 
     class Meta:

@@ -76,6 +76,7 @@ class TaskCreate(LoginRequiredMixin, CreateView):
             form.instance.status = Task.BLOCKED
         if '|' in form.instance.name:
             tasks = [task.strip() for task in form.instance.name.split('|')]
+
             for task in tasks:
                 t = form.save(commit=False)
                 t.pk = None
