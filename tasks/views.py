@@ -115,13 +115,15 @@ class TaskCreate(LoginRequiredMixin, CreateView):
         #elif re.match('(\[(\w+)-(\w+)\])', form.instance.name):
         elif '[' in form.instance.name:
             task = form.instance.name[:]
-            m = re.search('(\[(\w+)-(\w+)\])', form.instance.name)
-            first_value = int(m.group(2))
-            last_value = int(m.group(3))
-            for i in range(first_value, last_value+1):
+            m = re.search(r'\[(\d+):(\d+)(:(\d+))?\]', form.instance.name)
+            first_value = int(m.group(1))
+            last_value = int(m.group(2))
+            interval = int(m.group(4)) if m.group(4) is not None else 1
+
+            for i in range(first_value, last_value+interval, interval):
                 t = form.save(commit=False)
                 t.pk = None
-                t.name = re.sub(r"\[\w+-\w+\]", str(i), task)
+                t.name = re.sub(r"\[(\d+):(\d+)(:(\d+))?\]", str(i), task)
                 t.save()
                 t.contexts.set(form.cleaned_data['contexts'])
             return HttpResponseRedirect(self.get_success_url())
