@@ -14,6 +14,7 @@ urlpatterns = [
     path('tasks/mark_as_done/', tasks_views.TaskMarkAsDone.as_view(), name='task_mark_as_done'),
     path('tasks/change-tasklist/', tasks_views.TaskChangeTasklist.as_view(), name='task_change_tasklist'),
     path('tasks/save-task-ordering/', tasks_views.SaveNewOrdering.as_view(), name='save-task-oldering'),
+    path('tasks/save-task-ordering-goal/', tasks_views.SaveNewOrderingGoal.as_view(), name='save-task-oldering-goal'),
     path('tasks/task-autocomplete/', tasks_views.TaskAutocomplete.as_view(), name='task-autocomplete'),
     path('tasks/<slug:tasklist_slug>/', tasks_views.TaskList.as_view(), name='task_list_tasklist'),
     path('projects/', tasks_views.ProjectList.as_view(), name='project_list'),

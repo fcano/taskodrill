@@ -410,6 +410,23 @@ class SaveNewOrdering(LoginRequiredMixin, View):
         #return HttpResponseRedirect(reverse('project_list'))
         return HttpResponseRedirect(task.project.get_absolute_url())
 
+class SaveNewOrderingGoal(LoginRequiredMixin, View):
+
+    def post(self, request, *args, **kwargs):
+        form = OrderingForm(request.POST)
+
+        if form.is_valid():
+            ordered_ids = form.cleaned_data["ordering"].split(',')
+
+            with transaction.atomic():
+                current_order = 1
+                for cur_id in ordered_ids:
+                    task = Task.objects.get(id__exact=cur_id)
+                    task.goal_position = current_order
+                    task.save()
+                    current_order += 1
+
+        return HttpResponseRedirect(task.goal.get_absolute_url())
 
 class TaskListDone(LoginRequiredMixin, ListView):
     #model = Task

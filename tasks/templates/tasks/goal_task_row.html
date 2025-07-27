@@ -1,0 +1,14 @@
+<tr data-lookup="{{ task.id }}" id="tasks_row_{{ task.id }}">
+    <td><span class="handle"></span></td>
+    <td><input class="checkbox align-middle" type="checkbox" id="checkbox_{{ task.id }}" value="{{ task.id }}"></td>
+    <td><a href="{{ task.get_absolute_url }}">{{ task.name }}</a></td>
+    <td>{{ task.goal.name }}</td>
+    <td>{{ task.get_tasklist_display }}</td>
+    <td>{{ task.start_date | default_if_none:"no date"}}</td>
+    <td>{{ task.start_time | default_if_none:"no time"}}</td>
+    <td>{{ task.due_date | default_if_none:"no date"}}</td>
+    <td>{{ task.get_repeat_display | default_if_none:"none" }}</td>
+    <td>{{ task.length | default_if_none:"none" }}</td>
+    <td><a href="{% url 'task_update' task.pk %}?next={{ next }}"><img src="/static/tasks/edit.svg" /></a></td>
+    <td><a href="{% url 'task_delete' task.pk %}" class="confirm-delete"><img src="/static/tasks/trash-2.svg" /></a></td>
+  </tr>

@@ -114,6 +114,7 @@ class Task(models.Model):
     project = models.ForeignKey(
         'Project', on_delete=models.CASCADE, blank=True, null=True)
     project_order = models.IntegerField(default=DEFAULT_PROJECT_ORDER)
+    goal_position = models.IntegerField(default=0)
     contexts = models.ManyToManyField(
         'Context', related_name="tasks", blank=True)
     folder = models.ForeignKey(
@@ -236,7 +237,9 @@ class Task(models.Model):
                                     )
                                 )
 
-            tasks = tasks_wo_project.union(last_task_from_each_project).order_by('overdue', 'first_field', '-second_field', 'due_date', '-priority', 'ready_datetime')
+            tasks = tasks_wo_project.union(last_task_from_each_project).order_by(
+                'overdue', 'first_field', '-second_field', 'due_date', '-priority', 'goal_position', 'ready_datetime'
+            )
 
             task_list = list(tasks)
 
@@ -406,6 +409,8 @@ class Task(models.Model):
                         self.due_date = self.project.due_date
                     elif self.project.due_date < self.due_date:
                         self.due_date = self.project.due_date
+            if self.goal is not None:
+                self.goal_position = self.goal.tasks.count() + 1
 
         super().save(*args, **kwargs)
 
