@@ -422,7 +422,7 @@ class Task(models.Model):
             return
 
         if self.goal and self.goal.due_date:
-            tasks = self.goal.pending_tasks()
+            tasks = self.goal.pending_tasks_wo_order()
 
             working_days = Goal.weekdays_between(datetime.date.today(), self.goal.due_date)
             if working_days <= 0:
@@ -693,7 +693,30 @@ class Goal(models.Model):
 
         last_task_from_each_project = Task.objects.filter(pk__in=last_task_from_each_project)
 
-        return tasks_wo_project.union(last_task_from_each_project).order_by('due_date', 'ready_datetime')
+        return tasks_wo_project.union(last_task_from_each_project).order_by('due_date', 'goal_position', 'ready_datetime')
+
+    def pending_tasks_wo_order(self):
+        q1 = Q(start_date=datetime.date.today()) & Q(start_time__lte=datetime.datetime.now())
+        q2 = Q(start_date=datetime.date.today()) & Q(start_time__isnull=True)
+        q3 = Q(start_date__lt=datetime.date.today())
+        q4 = Q(start_date__isnull=True)
+        in_the_future = q1 | q2 | q3 | q4
+
+        tasks_wo_project = self.tasks.filter(
+            project__isnull=True,
+            status=Task.PENDING,
+            #tasklist=Task.NEXT_ACTION,
+        )
+
+        last_task_from_each_project = self.tasks.filter(
+            status=Task.PENDING,
+            project__isnull=False,
+            project__status=Project.OPEN
+        ).order_by('project_id', 'project_order').distinct('project_id')
+
+        last_task_from_each_project = Task.objects.filter(pk__in=last_task_from_each_project)
+
+        return tasks_wo_project.union(last_task_from_each_project).order_by('goal_position', 'ready_datetime')
 
     @property
     def total_task_length(self):
