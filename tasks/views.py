@@ -501,8 +501,14 @@ class DashboardDetail(LoginRequiredMixin, View):
         num_next_actions_in_projects = self.request.user.task_set.filter(Q(status=Task.PENDING) | Q(status=Task.BLOCKED)).filter(project__isnull=False).count()
         num_someday_maybe_items = self.request.user.task_set.filter((Q(status=Task.PENDING) | Q(status=Task.BLOCKED)) & Q(tasklist=Task.SOMEDAY_MAYBE)).count()
         num_contexts = self.request.user.context_set.count()
-        avg_nas_per_proj = num_next_actions_in_projects/num_projects
-        avg_nas_per_con = num_next_actions/num_contexts
+        if num_projects > 0:
+            avg_nas_per_proj = num_next_actions_in_projects/num_projects
+        else:
+            avg_nas_per_proj = 0
+        if num_contexts > 0:
+            avg_nas_per_con = num_next_actions/num_contexts
+        else:
+            avg_nas_per_con = 0
         today = datetime.date.today()
         start = today - datetime.timedelta(days=today.weekday())
         end = start + datetime.timedelta(days=6)
