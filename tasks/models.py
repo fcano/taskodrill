@@ -326,7 +326,7 @@ class Task(models.Model):
 
     @classmethod
     def is_working_day(cls, date):
-        if date.weekday() in holidays.WEEKEND or date in HOLIDAYS_ES_VC:
+        if date.weekday() in holidays.WEEKEND or date in HOLIDAYS_ES_VC or HolidayPeriod.objects.filter(start_date__lte=date, end_date__gte=date).exists():
             return False
         return True
 
@@ -335,7 +335,7 @@ class Task(models.Model):
         if not reference_date:
             reference_date = datetime.date.today()
         next_day = reference_date + ONE_DAY
-        while next_day.weekday() in holidays.WEEKEND or next_day in HOLIDAYS_ES_VC:
+        while next_day.weekday() in holidays.WEEKEND or next_day in HOLIDAYS_ES_VC or HolidayPeriod.objects.filter(start_date__lte=next_day, end_date__gte=next_day).exists():
             next_day = next_day + ONE_DAY
         return next_day
 
@@ -770,8 +770,8 @@ class Assignee(models.Model):
 
 class HolidayPeriod(models.Model):
     name = models.CharField(max_length=100)
-    start_date = models.DateField()
-    end_date = models.DateField()
+    start_date = models.DateField(db_index=True)
+    end_date = models.DateField(db_index=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def __str__(self):
