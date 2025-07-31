@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+	<h1>Holiday periods</h1>
+	<a href="{% url 'holidayperiod_add' %}">New</a>
+	{% if holidayperiod_list %}
+	<table border="1">
+  	<tr>
+    	<th>Name</th>
+    	<th>Start date</th>
+    	<th>End date</th>
+    	<th></th>
+  	</tr>
+  	{% for holidayperiod in holidayperiod_list %}
+  	<tr>
+    	<td><a href="{{ holidayperiod.get_absolute_url }}">{{ holidayperiod.name }}</a></td>
+    	<td>{{ holidayperiod.start_date | default_if_none:"No date"}}</td>
+    	<td>{{ holidayperiod.end_date | default_if_none:"No date"}}</td>
+    	<td><a href="{% url 'holidayperiod_delete' holidayperiod.pk %}">Delete</a></td>
+  	</tr>
+  	{% endfor %}
+	</table>
+	{% else %}
+  	<p>There are no holiday periods.</p>
+	{% endif %}  	 
+{% endblock %}

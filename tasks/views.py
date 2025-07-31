@@ -1,5 +1,4 @@
 import datetime
-from email.encoders import encode_7or8bit
 from dal import autocomplete
 import re
 
@@ -7,9 +6,9 @@ from django.views.generic import ListView, View
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Q, ExpressionWrapper, F, Case, Value, When, IntegerField, DateTimeField, BooleanField
+from django.db.models import Q
 from django.db import transaction, models
-from django.urls import reverse_lazy, reverse
+from django.urls import reverse_lazy
 from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.http import HttpResponseRedirect
@@ -17,8 +16,8 @@ from django.template.response import TemplateResponse
 from django.utils import timezone
 import pytz
 
-from .models import Task, Project, Context, Folder, Goal, Assignee
-from .forms import TaskForm, ProjectForm, OrderingForm, GoalForm
+from .models import Task, Project, Context, Folder, Goal, Assignee, HolidayPeriod
+from .forms import TaskForm, ProjectForm, OrderingForm, GoalForm, HolidayPeriodForm
 
 import datetime
 import holidays
@@ -813,3 +812,39 @@ class AssigneeUpdate(LoginRequiredMixin,UpdateView):
 class AssigneeDelete(LoginRequiredMixin,DeleteView):
     model = Assignee
     success_url = reverse_lazy('assignee_list')
+
+
+class HolidayPeriodCreate(LoginRequiredMixin, CreateView):
+    model = HolidayPeriod
+    form_class = HolidayPeriodForm
+
+    success_url = reverse_lazy('holidayperiod_list')
+
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        return super().form_valid(form)
+
+class HolidayPeriodDetail(LoginRequiredMixin, DetailView):
+    model = HolidayPeriod
+
+    def get_context_data(self, **kwargs):
+        context = super(HolidayPeriodDetail, self).get_context_data(**kwargs)
+        context['next'] = self.object.get_absolute_url()
+        return context
+
+    def get_queryset(self):
+        return HolidayPeriod.objects.filter(user=self.request.user)
+
+class HolidayPeriodList(LoginRequiredMixin, ListView):
+    model = HolidayPeriod
+
+    def get_queryset(self):
+        return HolidayPeriod.objects.filter(user=self.request.user)
+
+class HolidayPeriodUpdate(LoginRequiredMixin, UpdateView):
+    model = HolidayPeriod
+    form_class = HolidayPeriodForm
+
+class HolidayPeriodDelete(LoginRequiredMixin, DeleteView):
+    model = HolidayPeriod
+    success_url = reverse_lazy('holidayperiod_list')

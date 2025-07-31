@@ -766,3 +766,20 @@ class Assignee(models.Model):
     class Meta:
         ordering = ['name']
         unique_together = (('name', 'user'),)
+
+
+class HolidayPeriod(models.Model):
+    name = models.CharField(max_length=100)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
+
+    def get_absolute_url(self):
+        return reverse('holidayperiod_detail', kwargs={'pk': self.pk})
+
+    class Meta:
+        ordering = ['start_date']
+        unique_together = (('name', 'user'),)

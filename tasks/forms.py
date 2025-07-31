@@ -1,7 +1,7 @@
 from django import forms
 from dal import autocomplete
 
-from .models import Task, Context, Project, Goal
+from .models import Task, Context, Project, Goal, HolidayPeriod
 
 class DateInput(forms.DateInput):
     input_type = 'date'
@@ -73,4 +73,14 @@ class GoalForm(forms.ModelForm):
         widgets = {
             'due_date': DateInput(),
             'name': forms.Textarea(attrs={'rows': 1, 'cols': 100})
+        }
+
+
+class HolidayPeriodForm(forms.ModelForm):
+    class Meta:
+        model = HolidayPeriod
+        fields = ['name', 'start_date', 'end_date']
+        widgets = {
+            'start_date': DateInput(),
+            'end_date': DateInput(),
         }

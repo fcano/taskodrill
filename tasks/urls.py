@@ -1,4 +1,4 @@
-from django.urls import path, re_path
+from django.urls import path
 from tasks import views as tasks_views
 
 urlpatterns = [
@@ -46,4 +46,9 @@ urlpatterns = [
     path('assignee/add/', tasks_views.AssigneeCreate.as_view(), name='assignee_add'),
     path('assignee/<int:pk>/edit/', tasks_views.AssigneeUpdate.as_view(), name='assignee_update'),
     path('assignee/<int:pk>/delete/', tasks_views.AssigneeDelete.as_view(), name='assignee_delete'),
+    path('holiday-periods/', tasks_views.HolidayPeriodList.as_view(), name='holidayperiod_list'),
+    path('holiday-periods/<int:pk>/', tasks_views.HolidayPeriodDetail.as_view(), name='holidayperiod_detail'),
+    path('holiday-periods/add/', tasks_views.HolidayPeriodCreate.as_view(), name='holidayperiod_add'),
+    path('holiday-periods/<int:pk>/edit/', tasks_views.HolidayPeriodUpdate.as_view(), name='holidayperiod_update'),
+    path('holiday-periods/<int:pk>/delete/', tasks_views.HolidayPeriodDelete.as_view(), name='holidayperiod_delete'),
 ]

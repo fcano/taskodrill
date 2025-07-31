@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+
+{% block content %}
+	<h1>{{ holidayperiod.name }}</h1>
+	<p><a href="{% url 'holidayperiod_update' holidayperiod.pk %}">Edit</a></p>
+	<p>{{ holidayperiod.start_date }} - {{ holidayperiod.end_date }}</p>
+{% endblock %}
