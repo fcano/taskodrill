@@ -313,29 +313,34 @@ class Task(models.Model):
             groups.append(current_group)
 
         # Start planning from today (or first working day if today is not one)
+        holiday_ranges = list(HolidayPeriod.objects.values_list('start_date', 'end_date'))
         plan_date = datetime.date.today()
-        if not cls.is_working_day(plan_date):
-            plan_date = cls.next_business_day(plan_date)
+        if not cls.is_working_day(plan_date, holiday_ranges):
+            plan_date = cls.next_business_day(plan_date, holiday_ranges)
 
         for group in groups:
             for task in group:
                 task.planned_end_date = plan_date
                 task.save(update_fields=['planned_end_date'])
-            plan_date = cls.next_business_day(plan_date)
+            plan_date = cls.next_business_day(plan_date, holiday_ranges)
 
 
     @classmethod
-    def is_working_day(cls, date):
-        if date.weekday() in holidays.WEEKEND or date in HOLIDAYS_ES_VC or HolidayPeriod.objects.filter(start_date__lte=date, end_date__gte=date).exists():
+    def is_working_day(cls, date, holiday_ranges=[]):
+        if not holiday_ranges:
+            holiday_ranges = list(HolidayPeriod.objects.values_list('start_date', 'end_date'))
+        if date.weekday() in holidays.WEEKEND or date in HOLIDAYS_ES_VC or any(date >= start_date and date <= end_date for start_date, end_date in holiday_ranges):
             return False
         return True
 
     @classmethod
-    def next_business_day(cls, reference_date=None):
+    def next_business_day(cls, reference_date=None, holiday_ranges=[]):
+        if not holiday_ranges:
+            holiday_ranges = list(HolidayPeriod.objects.values_list('start_date', 'end_date'))
         if not reference_date:
             reference_date = datetime.date.today()
         next_day = reference_date + ONE_DAY
-        while next_day.weekday() in holidays.WEEKEND or next_day in HOLIDAYS_ES_VC or HolidayPeriod.objects.filter(start_date__lte=next_day, end_date__gte=next_day).exists():
+        while next_day.weekday() in holidays.WEEKEND or next_day in HOLIDAYS_ES_VC or any(next_day >= start_date and next_day <= end_date for start_date, end_date in holiday_ranges):
             next_day = next_day + ONE_DAY
         return next_day
 
@@ -424,21 +429,24 @@ class Task(models.Model):
         if self.goal and self.goal.due_date:
             tasks = self.goal.pending_tasks_wo_order()
 
-            working_days = Goal.weekdays_between(datetime.date.today(), self.goal.due_date)
-            if working_days <= 0:
+            holiday_ranges = list(HolidayPeriod.objects.values_list('start_date', 'end_date'))
+
+            num_working_days = Goal.weekdays_between(datetime.date.today(), self.goal.due_date, holiday_ranges)
+            if num_working_days <= 0:
                 working_days_per_task = 0
             else:
-                working_days_per_task = working_days / len(tasks)
+                # Calculate the number of working days per task, rounding down to the nearest integer
+                working_days_per_task = num_working_days // len(tasks)
 
-            task_num = 1
+            due_date = datetime.date.today()
             for task in tasks:
-                due_date = datetime.date.today() + (task_num * datetime.timedelta(days=working_days_per_task))
+                # Substract one day because next_business_day() never return the current day
+                due_date = Task.next_business_day(due_date + datetime.timedelta(days=working_days_per_task) - datetime.timedelta(days=1), holiday_ranges)
                 # Only update due_date if it has changed to avoid unnecessary saves
                 if task.due_date != due_date:
                     # Pass update_fields to avoid triggering the full save logic again
                     task.due_date = due_date
                     task.save(update_fields=['due_date'])
-                task_num += 1
 
 
     def update_ready_datetime(self):
@@ -664,13 +672,13 @@ class Goal(models.Model):
         return reverse("goal_detail", kwargs={"pk": self.pk})
 
     @classmethod
-    def weekdays_between(cls, start_date, end_date):
+    def weekdays_between(cls, start_date, end_date, holiday_ranges=[]):
         # Generate the range of dates
         if not isinstance(end_date, datetime.date):
             return 0
         day_generator = (start_date + datetime.timedelta(days=x) for x in range((end_date - start_date).days + 1))
         # Count the weekdays
-        return sum(1 for day in day_generator if day.weekday() < 5)
+        return sum(1 for day in day_generator if day.weekday() < 5 and not any(start_date <= day <= end_date for start_date, end_date in holiday_ranges))
 
     def pending_tasks(self):
         q1 = Q(start_date=datetime.date.today()) & Q(start_time__lte=datetime.datetime.now())
