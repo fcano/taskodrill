@@ -6,6 +6,7 @@ from django.db import models
 from django.urls import reverse
 from django.conf import settings
 from django.db.models import Q, Sum
+from django.core.cache import cache
 
 import holidays
 
@@ -313,7 +314,7 @@ class Task(models.Model):
             groups.append(current_group)
 
         # Start planning from today (or first working day if today is not one)
-        holiday_ranges = list(HolidayPeriod.objects.values_list('start_date', 'end_date'))
+        holiday_ranges = HolidayPeriod.get_holiday_ranges()
         plan_date = datetime.date.today()
         if not cls.is_working_day(plan_date, holiday_ranges):
             plan_date = cls.next_business_day(plan_date, holiday_ranges)
@@ -328,7 +329,7 @@ class Task(models.Model):
     @classmethod
     def is_working_day(cls, date, holiday_ranges=[]):
         if not holiday_ranges:
-            holiday_ranges = list(HolidayPeriod.objects.values_list('start_date', 'end_date'))
+            holiday_ranges = HolidayPeriod.get_holiday_ranges()
         if date.weekday() in holidays.WEEKEND or date in HOLIDAYS_ES_VC or any(date >= start_date and date <= end_date for start_date, end_date in holiday_ranges):
             return False
         return True
@@ -336,7 +337,7 @@ class Task(models.Model):
     @classmethod
     def next_business_day(cls, reference_date=None, holiday_ranges=[]):
         if not holiday_ranges:
-            holiday_ranges = list(HolidayPeriod.objects.values_list('start_date', 'end_date'))
+            holiday_ranges = HolidayPeriod.get_holiday_ranges()
         if not reference_date:
             reference_date = datetime.date.today()
         next_day = reference_date + ONE_DAY
@@ -429,24 +430,39 @@ class Task(models.Model):
         if self.goal and self.goal.due_date:
             tasks = self.goal.pending_tasks_wo_order()
 
-            holiday_ranges = list(HolidayPeriod.objects.values_list('start_date', 'end_date'))
+            holiday_ranges = HolidayPeriod.get_holiday_ranges()
 
             num_working_days = Goal.weekdays_between(datetime.date.today(), self.goal.due_date, holiday_ranges)
             if num_working_days <= 0:
                 working_days_per_task = 0
             else:
-                # Calculate the number of working days per task, rounding down to the nearest integer
-                working_days_per_task = num_working_days // len(tasks)
+                if num_working_days >= len(tasks):
+                    # Calculate the number of working days per task, rounding down to the nearest integer
+                    working_days_per_task = num_working_days // len(tasks)
+                else:
+                    working_days_per_task = num_working_days / len(tasks)
+                    tasks_per_day = math.ceil(1 / working_days_per_task)
 
             due_date = datetime.date.today()
-            for task in tasks:
-                # Substract one day because next_business_day() never return the current day
-                due_date = Task.next_business_day(due_date + datetime.timedelta(days=working_days_per_task) - datetime.timedelta(days=1), holiday_ranges)
-                # Only update due_date if it has changed to avoid unnecessary saves
-                if task.due_date != due_date:
-                    # Pass update_fields to avoid triggering the full save logic again
-                    task.due_date = due_date
-                    task.save(update_fields=['due_date'])
+            if working_days_per_task >= 1 or working_days_per_task == 0:
+                for task in tasks:
+                    # Substract one day because next_business_day() never return the current day
+                    due_date = Task.next_business_day(due_date + datetime.timedelta(days=working_days_per_task) - datetime.timedelta(days=1), holiday_ranges)
+                    # Only update due_date if it has changed to avoid unnecessary saves
+                    if task.due_date != due_date:
+                        # Pass update_fields to avoid triggering the full save logic again
+                        task.due_date = due_date
+                        task.save(update_fields=['due_date'])
+            else:
+                due_date = Task.next_business_day(due_date, holiday_ranges)
+                for i in range(0, len(tasks), tasks_per_day):
+                    chunk = tasks[i:i+tasks_per_day]
+                    for task in chunk:
+                        if task.due_date != due_date:
+                            task.due_date = due_date
+                            task.save(update_fields=['due_date'])
+                    due_date = Task.next_business_day(due_date, holiday_ranges)
+
 
 
     def update_ready_datetime(self):
@@ -791,3 +807,19 @@ class HolidayPeriod(models.Model):
     class Meta:
         ordering = ['start_date']
         unique_together = (('name', 'user'),)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        cache.delete('holiday_ranges')
+
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+        cache.delete('holiday_ranges')
+
+    @classmethod
+    def get_holiday_ranges(cls):
+        holiday_ranges = cache.get('holiday_ranges')
+        if not holiday_ranges:
+            holiday_ranges = list(HolidayPeriod.objects.values_list('start_date', 'end_date'))
+            cache.set('holiday_ranges', holiday_ranges, timeout=3600) # 1 hour
+        return holiday_ranges
