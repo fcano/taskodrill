@@ -26,13 +26,6 @@ ONE_DAY = datetime.timedelta(days=1)
 HOLIDAYS_ES_VC = holidays.CountryHoliday('ES', prov='VC')
 
 
-def weekdays_between(start_date, end_date):
-    # Generate the range of dates
-    day_generator = (start_date + datetime.timedelta(days=x) for x in range((end_date - start_date).days + 1))
-    # Count the weekdays
-    return sum(1 for day in day_generator if day.weekday() < 5)
-
-
 class TaskCreate(LoginRequiredMixin, CreateView):
     form_class = TaskForm
     template_name = 'tasks/task_form.html'

@@ -1142,6 +1142,13 @@ class TaskCreateViewTests(TestCase):
             target_status_code=200,
         )
 
+    def test_task_create_view_context_next(self):
+        self.client.login(username="testuser", password="testpassword")
+        response = self.client.get(reverse("task_add") + "?next=/some/next/url/")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("next", response.context)
+        self.assertEqual(response.context["next"], "/some/next/url/")
+
     def test_task_create_with_block(self):
         self.client.login(username="testuser", password="testpassword")
 
@@ -1358,6 +1365,18 @@ class TaskCreateViewTests(TestCase):
         difference = (task.ready_datetime - task.creation_datetime).total_seconds()
         self.assertLess(difference, 1)
 
+    def test_task_create_view_form_kwargs(self):
+        self.client.login(username="testuser", password="testpassword")
+        response = self.client.get(
+            reverse("task_add") + "?context_id=42&project_id=99&folder_id=7&goal_id=5"
+        )
+        self.assertEqual(response.status_code, 200)
+        form = response.context["form"]
+        self.assertEqual(form.user.username, "testuser")
+        self.assertEqual(form.context_id, "42")
+        self.assertEqual(form.project_id, "99")
+        self.assertEqual(form.folder_id, "7")
+        self.assertEqual(form.goal_id, "5")
 
 class ProjectListViewTests(TestCase):
     def setUp(self):
