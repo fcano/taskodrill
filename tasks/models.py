@@ -419,8 +419,8 @@ class Task(models.Model):
                         self.due_date = self.project.due_date
                     elif self.project.due_date < self.due_date:
                         self.due_date = self.project.due_date
-        if self.goal is not None:
-            self.goal_position = self.goal.tasks.count() + 1
+            if self.goal is not None:
+                self.goal_position = self.goal.tasks.count() + 1
 
 
         super().save(*args, **kwargs)

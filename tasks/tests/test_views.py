@@ -843,6 +843,35 @@ class TestSaveNewOrdering(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertQuerysetEqual(response.context["task_list"], ["<Task: Second Task>"])
 
+class TestSaveNewOrderingGoal(TestCase):
+    def setUp(self):
+        self.user = MyUser.objects.create_user(username="testuser", password="testpassword")
+        self.client.login(username="testuser", password="testpassword")
+        self.goal = Goal.objects.create(name="Test Goal", user=self.user)
+        # Create 3 tasks for this goal
+        self.task1 = Task.objects.create(name="Task 1", goal=self.goal, user=self.user, goal_position=1)
+        self.task2 = Task.objects.create(name="Task 2", goal=self.goal, user=self.user, goal_position=2)
+        self.task3 = Task.objects.create(name="Task 3", goal=self.goal, user=self.user, goal_position=3)
+
+    def test_save_new_ordering_goal(self):
+        # New order: task3, task1, task2
+        new_order = f"{self.task3.id},{self.task1.id},{self.task2.id}"
+        response = self.client.post(
+            reverse("save_task_ordering_goal"),
+            {"ordering": new_order}
+        )
+        # Should redirect to the goal's detail page
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, self.goal.get_absolute_url())
+
+        # Refresh from DB and check new positions
+        self.task1.refresh_from_db()
+        self.task2.refresh_from_db()
+        self.task3.refresh_from_db()
+        self.assertEqual(self.task3.goal_position, 1)
+        self.assertEqual(self.task1.goal_position, 2)
+        self.assertEqual(self.task2.goal_position, 3)
+
 
 class TaskUpdateTests(TestCase):
     def setUp(self):

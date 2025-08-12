@@ -115,6 +115,7 @@ class TaskCreate(LoginRequiredMixin, CreateView):
             for i in range(first_value, last_value+interval, interval):
                 t = form.save(commit=False)
                 t.pk = None
+                t._state.adding = True
                 t.name = re.sub(r"\[(\d+):(\d+)(:(\d+))?\]", str(i), task)
                 t.save()
                 t.contexts.set(form.cleaned_data['contexts'])
