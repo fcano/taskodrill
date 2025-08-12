@@ -121,7 +121,7 @@ class Task(models.Model):
     folder = models.ForeignKey(
         'Folder', related_name="tasks", on_delete=models.CASCADE, blank=True, null=True)
     goal = models.ForeignKey(
-        'Goal', related_name="tasks", on_delete=models.SET_NULL, blank=True, null=True)
+        'Goal', related_name="tasks", on_delete=models.CASCADE, blank=True, null=True)
     blocked_by = models.ForeignKey('Task', on_delete=models.SET_NULL, blank=True, null=True)
     assignee = models.ForeignKey('Assignee', on_delete=models.CASCADE, blank=True, null=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL,
