@@ -142,9 +142,7 @@ class TaskList(LoginRequiredMixin, ListView):
     model = Task
 
     def get_context_data(self, **kwargs):
-        # Call the base implementation first to get a context
         context = super(TaskList, self).get_context_data(**kwargs)
-        # Add in a QuerySet of all the books
         context['form'] = TaskForm(user=self.request.user)
         context['num_tasks_due_date'] = 0
         context['num_late_tasks'] = 0

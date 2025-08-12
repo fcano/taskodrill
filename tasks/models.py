@@ -319,11 +319,16 @@ class Task(models.Model):
         if not cls.is_working_day(plan_date, holiday_ranges):
             plan_date = cls.next_business_day(plan_date, holiday_ranges)
 
+        tasks_to_update = []
         for group in groups:
             for task in group:
-                task.planned_end_date = plan_date
-                task.save(update_fields=['planned_end_date'])
+                if task.planned_end_date != plan_date:
+                    task.planned_end_date = plan_date
+                    tasks_to_update.append(task)
             plan_date = cls.next_business_day(plan_date, holiday_ranges)
+
+        if tasks_to_update:
+            cls.objects.bulk_update(tasks_to_update, ['planned_end_date'])
 
 
     @classmethod

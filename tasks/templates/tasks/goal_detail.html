@@ -7,7 +7,9 @@
         Weekdays until deadline: {{ weekdays_until_deadline }}<br />
         Status: {{ goal.get_status_display }}
     </p>
-    <p><a href="{% url 'goal_update' goal.pk %}">Edit</a>
+    <p><a href="{% url 'goal_update' goal.pk %}">Edit</a><br />
+    <a href="{% url 'goal_delete' goal.pk %}">Delete</a>
+    </p>
     <p>
         <a id="new_task_button" class="btn btn-primary" href="{% url 'task_add' %}?goal_id={{ goal.id }}&next={{ goal.get_absolute_url }}">New task</a>
     </p>
