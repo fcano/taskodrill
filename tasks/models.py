@@ -119,7 +119,7 @@ class Task(models.Model):
     contexts = models.ManyToManyField(
         'Context', related_name="tasks", blank=True)
     folder = models.ForeignKey(
-        'Folder', related_name="tasks", on_delete=models.SET_NULL, blank=True, null=True)
+        'Folder', related_name="tasks", on_delete=models.CASCADE, blank=True, null=True)
     goal = models.ForeignKey(
         'Goal', related_name="tasks", on_delete=models.SET_NULL, blank=True, null=True)
     blocked_by = models.ForeignKey('Task', on_delete=models.SET_NULL, blank=True, null=True)
