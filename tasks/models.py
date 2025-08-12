@@ -409,7 +409,6 @@ class Task(models.Model):
         return reverse('task_detail', kwargs={'pk': self.pk})
 
     def save(self, *args, **kwargs):
-
         ### On creation, set ready_time
         if self._state.adding:
             self.ready_datetime = timezone.now()
@@ -420,8 +419,9 @@ class Task(models.Model):
                         self.due_date = self.project.due_date
                     elif self.project.due_date < self.due_date:
                         self.due_date = self.project.due_date
-            if self.goal is not None:
-                self.goal_position = self.goal.tasks.count() + 1
+        if self.goal is not None:
+            self.goal_position = self.goal.tasks.count() + 1
+
 
         super().save(*args, **kwargs)
 
