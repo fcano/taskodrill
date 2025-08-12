@@ -449,6 +449,7 @@ class Task(models.Model):
                     tasks_per_day = math.ceil(1 / working_days_per_task)
 
             due_date = datetime.date.today()
+            tasks_to_update = []
             if working_days_per_task >= 1 or working_days_per_task == 0:
                 for task in tasks:
                     # Substract one day because next_business_day() never return the current day
@@ -457,7 +458,7 @@ class Task(models.Model):
                     if task.due_date != due_date:
                         # Pass update_fields to avoid triggering the full save logic again
                         task.due_date = due_date
-                        task.save(update_fields=['due_date'])
+                        tasks_to_update.append(task)
             else:
                 due_date = Task.next_business_day(due_date, holiday_ranges)
                 for i in range(0, len(tasks), tasks_per_day):
@@ -465,8 +466,11 @@ class Task(models.Model):
                     for task in chunk:
                         if task.due_date != due_date:
                             task.due_date = due_date
-                            task.save(update_fields=['due_date'])
+                            tasks_to_update.append(task)
                     due_date = Task.next_business_day(due_date, holiday_ranges)
+
+            if tasks_to_update:
+                Task.objects.bulk_update(tasks_to_update, ['due_date'])
 
 
 
