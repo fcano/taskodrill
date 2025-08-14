@@ -294,8 +294,14 @@ class Task(models.Model):
 
         first_group = True
 
+        # Start planning from today (or first working day if today is not one)
+        holiday_ranges = HolidayPeriod.get_holiday_ranges()
+        plan_date = datetime.date.today()
+        if not cls.is_working_day(plan_date, holiday_ranges):
+            plan_date = cls.next_business_day(plan_date, holiday_ranges)
+
         for task in tasks:
-            if first_group:
+            if first_group and plan_date == datetime.date.today():
                 working_time_available_time = delta.total_seconds() / 3600
             else:
                 working_time_available_time = 8
@@ -312,12 +318,6 @@ class Task(models.Model):
 
         if current_group:
             groups.append(current_group)
-
-        # Start planning from today (or first working day if today is not one)
-        holiday_ranges = HolidayPeriod.get_holiday_ranges()
-        plan_date = datetime.date.today()
-        if not cls.is_working_day(plan_date, holiday_ranges):
-            plan_date = cls.next_business_day(plan_date, holiday_ranges)
 
         tasks_to_update = []
         for group in groups:
