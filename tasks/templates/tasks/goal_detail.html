@@ -5,7 +5,8 @@
     <p>
         Deadline: {{ goal.due_date }}<br />
         Weekdays until deadline: {{ weekdays_until_deadline }}<br />
-        Status: {{ goal.get_status_display }}
+        Status: {{ goal.get_status_display }}<br />
+        References: {{ goal.references | urlizetrunc:50 }}
     </p>
     <p><a href="{% url 'goal_update' goal.pk %}">Edit</a><br />
     <a href="{% url 'goal_delete' goal.pk %}">Delete</a>
