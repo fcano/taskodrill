@@ -21,7 +21,7 @@
       </tr>
       {% for goal in goal_list %}
       <tr id="goal_row_{{ goal.id }}">
-        <td><a href="{{ goal.get_absolute_url }}">{{ goal.name }}</a> ({{ goal.pending_tasks.count }})</td>
+        <td><a href="{{ goal.get_absolute_url }}">{{ goal.name }}</a> ({{ goal.due_date }}) ({{ goal.pending_tasks.count }})</td>
         <td>{{ goal.get_status_display }}</td>
         <td><a href="{% url 'goal_delete' goal.pk %}" class="confirm-delete"><img src="/static/tasks/trash-2.svg" /></a></td>
       </tr>
