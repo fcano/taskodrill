@@ -737,12 +737,12 @@ class GoalList(LoginRequiredMixin, ListView):
     def get_queryset(self):
         filter = self.request.GET.get('filter')
         if filter == "allgoals":
-            return Goal.objects.filter(user=self.request.user).order_by('-due_date')
+            return Goal.objects.filter(user=self.request.user).order_by('due_date')
         else:
             return Goal.objects.filter(
                 user=self.request.user,
                 status=Goal.OPEN
-            ).order_by('-due_date')
+            ).order_by('due_date')
 
 class GoalUpdate(LoginRequiredMixin,UpdateView):
     model = Goal
