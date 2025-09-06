@@ -742,7 +742,7 @@ class GoalList(LoginRequiredMixin, ListView):
             return Goal.objects.filter(
                 user=self.request.user,
                 status=Goal.OPEN
-            )
+            ).order_by('-due_date')
 
 class GoalUpdate(LoginRequiredMixin,UpdateView):
     model = Goal
