@@ -120,7 +120,25 @@ class TaskCreate(LoginRequiredMixin, CreateView):
                 t.save()
                 t.contexts.set(form.cleaned_data['contexts'])
             return HttpResponseRedirect(self.get_success_url())
-
+        elif form.instance.repeat and form.instance.goal and form.instance.goal.due_date:
+            repeat_interval = form.instance.repeat
+            current_date = datetime.date.today()
+            if not Task.is_working_day(current_date):
+                current_date = Task.next_business_day(current_date)
+            while current_date <= form.instance.goal.due_date:
+                t = form.save(commit=False)
+                t.pk = None
+                t._state.adding = True
+                t.name = form.instance.name
+                t.due_date = current_date
+                t.repeat = Task.NO
+                t.save()
+                t.contexts.set(form.cleaned_data['contexts'])
+                current_date = current_date + datetime.timedelta(days=repeat_interval)
+                if not Task.is_working_day(current_date):
+                    current_date = Task.next_business_day(current_date)
+            return HttpResponseRedirect(self.get_success_url())
+        
         return super().form_valid(form)
 
 class TaskDetail(LoginRequiredMixin, DetailView):
