@@ -465,8 +465,12 @@ class Task(models.Model):
                 working_days_per_task = 0
             else:
                 if num_working_days >= len(tasks):
-                    # Calculate the number of working days per task, rounding down to the nearest integer
-                    working_days_per_task = math.ceil(num_working_days / len(tasks))
+                    # One day is rested from the amount of tasks because the first day does not count
+                    if len(tasks) == 1:
+                        amount_of_tasks = 1
+                    else:
+                        amount_of_tasks = len(tasks)-1
+                    working_days_per_task = math.floor(num_working_days / amount_of_tasks)
                 else:
                     working_days_per_task = num_working_days / len(tasks)
                     tasks_per_day = math.ceil(1 / working_days_per_task)
@@ -480,10 +484,7 @@ class Task(models.Model):
                     if task.due_date != due_date:
                         task.due_date = due_date
                         tasks_to_update.append(task)
-                    next_potential_due_date = due_date + datetime.timedelta(days=working_days_per_task)
-                    if not Task.is_working_day(next_potential_due_date):
-                        next_potential_due_date = Task.next_business_day(next_potential_due_date, holiday_ranges)
-                    due_date = next_potential_due_date
+                    due_date = due_date + datetime.timedelta(days=working_days_per_task)
             else:
                 due_date = Task.next_business_day(due_date, holiday_ranges)
                 for i in range(0, len(tasks), tasks_per_day):

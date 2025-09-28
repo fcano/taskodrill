@@ -125,7 +125,9 @@ class TaskCreate(LoginRequiredMixin, CreateView):
             current_date = datetime.date.today()
             if not Task.is_working_day(current_date):
                 current_date = Task.next_business_day(current_date)
-            while current_date <= form.instance.goal.due_date:
+            max_tasks_to_create = Goal.weekdays_between(datetime.date.today(), form.instance.goal.due_date, HolidayPeriod.get_holiday_ranges()) // repeat_interval
+            num_tasks_created = 0
+            while current_date <= form.instance.goal.due_date and num_tasks_created < max_tasks_to_create+1:
                 t = form.save(commit=False)
                 t.pk = None
                 t._state.adding = True
@@ -137,6 +139,7 @@ class TaskCreate(LoginRequiredMixin, CreateView):
                 current_date = current_date + datetime.timedelta(days=repeat_interval)
                 if not Task.is_working_day(current_date):
                     current_date = Task.next_business_day(current_date)
+                num_tasks_created += 1
             return HttpResponseRedirect(self.get_success_url())
         
         return super().form_valid(form)
