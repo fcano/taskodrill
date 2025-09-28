@@ -366,8 +366,15 @@ class TaskTests(TestCase):
     @time_machine.travel(datetime.date(2021, 4, 8))
     def test_next_business_day_monday(self):
         date = Task.next_business_day()
-        
+
         self.assertEqual(date, datetime.date.today()+datetime.timedelta(days=1))
+
+    @time_machine.travel(datetime.date(2025, 9, 28))
+    def test_next_business_day_sunday(self):
+        current_date = datetime.date.today()
+        next_day = Task.next_business_day(current_date)
+
+        self.assertEqual(next_day, datetime.date(2025, 9, 29))
 
 
 class GoalModelTests(TestCase):

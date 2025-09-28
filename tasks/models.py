@@ -25,6 +25,7 @@ class Task(models.Model):
     NO = 0
     DAILY = 1
     DAILYBD = 2
+    EVERY_OTHER_DAY = 3
     WEEKLY = 7
     BIWEEKLY = 15
     MONTHLY = 30
@@ -38,6 +39,7 @@ class Task(models.Model):
         (NO, 'No'),
         (DAILY, 'Daily'),
         (DAILYBD, 'Daily (BD)'),
+        (EVERY_OTHER_DAY, 'Every Other Day'),
         (WEEKLY, 'Weekly'),
         (BIWEEKLY, 'Biweekly'),
         (MONTHLY, 'Monthly'),
@@ -46,6 +48,19 @@ class Task(models.Model):
         (SEMIANNUALLY, 'Semiannually'),
         (YEARLY, 'Yearly'),
     )
+
+    REPEAT_TO_DAYS = {
+        DAILY: 1,
+        DAILYBD: 1,
+        EVERY_OTHER_DAY: 2,
+        WEEKLY: 7,
+        BIWEEKLY: 14,
+        MONTHLY: 30,
+        BIMONTHLY: 60,
+        QUATERLY: 90,
+        SEMIANNUALLY: 180,
+        YEARLY: 360,
+    }
 
     DUE_DATE = 0
     COMPLETION_DATE = 1
@@ -374,6 +389,10 @@ class Task(models.Model):
             next_start_date = start_date_reference + datetime.timedelta(1)
         if self.repeat == Task.DAILYBD:
             next_start_date = Task.next_business_day(start_date_reference)
+        elif self.repeat == Task.EVERY_OTHER_DAY:
+            next_start_date = start_date_reference + datetime.timedelta(2)
+            if not Task.is_working_day(next_start_date):
+                next_start_date = Task.next_business_day(next_start_date)
         elif self.repeat == Task.WEEKLY:
             next_start_date = start_date_reference + datetime.timedelta(7)
         elif self.repeat == Task.MONTHLY:
@@ -395,6 +414,10 @@ class Task(models.Model):
             next_due_date = due_date_reference + datetime.timedelta(1)
         if self.repeat == Task.DAILYBD:
             next_due_date = Task.next_business_day(due_date_reference)
+        elif self.repeat == Task.EVERY_OTHER_DAY:
+            next_due_date = due_date_reference + datetime.timedelta(2)
+            if not Task.is_working_day(next_due_date):
+                next_due_date = Task.next_business_day(next_due_date)
         elif self.repeat == Task.WEEKLY:
             next_due_date = due_date_reference + datetime.timedelta(7)
         elif self.repeat == Task.MONTHLY:
@@ -443,7 +466,7 @@ class Task(models.Model):
             else:
                 if num_working_days >= len(tasks):
                     # Calculate the number of working days per task, rounding down to the nearest integer
-                    working_days_per_task = num_working_days // len(tasks)
+                    working_days_per_task = math.ceil(num_working_days / len(tasks))
                 else:
                     working_days_per_task = num_working_days / len(tasks)
                     tasks_per_day = math.ceil(1 / working_days_per_task)
@@ -452,13 +475,15 @@ class Task(models.Model):
             tasks_to_update = []
             if working_days_per_task >= 1 or working_days_per_task == 0:
                 for task in tasks:
-                    # Substract one day because next_business_day() never return the current day
-                    due_date = Task.next_business_day(due_date + datetime.timedelta(days=working_days_per_task) - datetime.timedelta(days=1), holiday_ranges)
-                    # Only update due_date if it has changed to avoid unnecessary saves
+                    if not Task.is_working_day(due_date):
+                        due_date = Task.next_business_day(due_date, holiday_ranges)
                     if task.due_date != due_date:
-                        # Pass update_fields to avoid triggering the full save logic again
                         task.due_date = due_date
                         tasks_to_update.append(task)
+                    next_potential_due_date = due_date + datetime.timedelta(days=working_days_per_task)
+                    if not Task.is_working_day(next_potential_due_date):
+                        next_potential_due_date = Task.next_business_day(next_potential_due_date, holiday_ranges)
+                    due_date = next_potential_due_date
             else:
                 due_date = Task.next_business_day(due_date, holiday_ranges)
                 for i in range(0, len(tasks), tasks_per_day):

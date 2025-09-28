@@ -121,7 +121,7 @@ class TaskCreate(LoginRequiredMixin, CreateView):
                 t.contexts.set(form.cleaned_data['contexts'])
             return HttpResponseRedirect(self.get_success_url())
         elif form.instance.repeat and form.instance.goal and form.instance.goal.due_date:
-            repeat_interval = form.instance.repeat
+            repeat_interval = Task.REPEAT_TO_DAYS[form.instance.repeat]
             current_date = datetime.date.today()
             if not Task.is_working_day(current_date):
                 current_date = Task.next_business_day(current_date)

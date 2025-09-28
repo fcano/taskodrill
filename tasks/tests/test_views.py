@@ -14,7 +14,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import time_machine
 
 from myauth.models import MyUser
-from tasks.models import Task, Project, Context, Goal
+from tasks.models import Task, Project, Context, Goal, HolidayPeriod
 
 
 def mylogin(the_test):
@@ -1463,6 +1463,44 @@ class TaskCreateViewTests(TestCase):
 
         self.assertEqual([t.goal_position for t in all_tasks], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
         self.assertTrue(all(due_dates[i] <= due_dates[i+1] for i in range(9)), due_dates)
+
+    @time_machine.travel(datetime.date(2025, 9, 28))
+    def test_task_create_repeat_w_goal_and_due_date(self):
+        self.client.login(username="testuser", password="testpassword")
+        user = MyUser.objects.get(username="testuser")
+
+        HolidayPeriod.objects.create(
+            name="Holiday Period 1",
+            start_date=datetime.date(2025, 10, 9),
+            end_date=datetime.date(2025, 10, 9),
+            user=user,
+        )
+
+        goal1 = Goal.objects.create(
+            name="Goal 1",
+            user=user,
+            due_date=datetime.date(2025, 10, 12),
+        )
+
+        response = self.client.post(
+            reverse("task_add"),
+            {
+                "name": "Write 1000 words",
+                "tasklist": Task.NEXT_ACTION,
+                "priority": Task.NORMAL,
+                "repeat": Task.EVERY_OTHER_DAY,
+                "repeat_from": Task.DUE_DATE,
+                "length": 1,
+                "user": user.id,
+                "goal": goal1.id,
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        tasks = Task.objects.filter(goal=goal1).order_by('goal_position')
+        self.assertEqual([t.name for t in tasks], ["Write 1000 words"] * 6)
+        self.assertEqual([t.due_date for t in tasks], [datetime.date(2025, 9, 29), datetime.date(2025, 10, 1), datetime.date(2025, 10, 3), datetime.date(2025, 10, 6), datetime.date(2025, 10, 8), datetime.date(2025, 10, 10)])
+
 
 class ProjectListViewTests(TestCase):
     def setUp(self):
