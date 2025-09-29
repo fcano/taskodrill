@@ -1573,6 +1573,59 @@ class TaskCreateViewTests(TestCase):
         self.assertLessEqual(tasks.last().due_date, datetime.date(2025, 12, 31))
 
 
+    @time_machine.travel(datetime.date(2025, 9, 29))
+    def test_mark_task_as_done_should_not_move_tasks_to_today(self):
+        self.client.login(username="testuser", password="testpassword")
+        user = MyUser.objects.get(username="testuser")
+
+        goal1 = Goal.objects.create(
+            name="Goal 1",
+            user=user,
+            due_date=datetime.date(2025, 10, 13),
+        )
+
+        response = self.client.post(
+            reverse("task_add"),
+            {
+                "name": "Write 1000 words",
+                "tasklist": Task.NEXT_ACTION,
+                "priority": Task.NORMAL,
+                "repeat": Task.EVERY_OTHER_DAY,
+                "repeat_from": Task.DUE_DATE,
+                "length": 1,
+                "user": user.id,
+                "goal": goal1.id,
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        tasks = Task.objects.filter(goal=goal1).order_by('goal_position')
+        self.assertEqual(len(tasks), 6)
+        self.assertEqual(tasks[0].due_date, datetime.date(2025, 9, 30))
+        self.assertEqual(tasks[1].due_date, datetime.date(2025, 10, 2))
+        self.assertEqual(tasks[2].due_date, datetime.date(2025, 10, 6))
+        self.assertEqual(tasks[3].due_date, datetime.date(2025, 10, 8))
+        self.assertEqual(tasks[4].due_date, datetime.date(2025, 10, 10))
+        # 13th of October is not a working day
+        self.assertEqual(tasks[5].due_date, datetime.date(2025, 10, 14))
+
+        self.client.post(
+            reverse("task_mark_as_done"),
+            {"id": tasks[0].id, "value": "1"},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        tasks = Task.objects.filter(goal=goal1).order_by('goal_position')
+        self.assertEqual(len(tasks), 6)
+        self.assertEqual(tasks[0].due_date, datetime.date(2025, 9, 30))
+        self.assertEqual(tasks[1].due_date, datetime.date(2025, 9, 30))
+        self.assertEqual(tasks[2].due_date, datetime.date(2025, 10, 2))
+        self.assertEqual(tasks[3].due_date, datetime.date(2025, 10, 6))
+        self.assertEqual(tasks[4].due_date, datetime.date(2025, 10, 8))
+        # 13th of October is not a working day
+        self.assertEqual(tasks[5].due_date, datetime.date(2025, 10, 10))
+
+
 class ProjectListViewTests(TestCase):
     def setUp(self):
         MyUser.objects.create_user(

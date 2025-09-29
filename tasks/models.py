@@ -475,7 +475,7 @@ class Task(models.Model):
                     working_days_per_task = num_working_days / len(tasks)
                     tasks_per_day = math.ceil(1 / working_days_per_task)
 
-            due_date = datetime.date.today()
+            due_date = datetime.date.today()+datetime.timedelta(1)
             tasks_to_update = []
             if working_days_per_task >= 1 or working_days_per_task == 0:
                 for task in tasks:
