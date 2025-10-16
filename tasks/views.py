@@ -12,6 +12,7 @@ from django.urls import reverse_lazy
 from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.http import HttpResponseRedirect
+from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.utils import timezone
 import pytz
@@ -122,10 +123,10 @@ class TaskCreate(LoginRequiredMixin, CreateView):
             return HttpResponseRedirect(self.get_success_url())
         elif form.instance.repeat and form.instance.goal and form.instance.goal.due_date:
             repeat_interval = Task.REPEAT_TO_DAYS[form.instance.repeat]
-            current_date = datetime.date.today()
+            current_date = datetime.date.today() + datetime.timedelta(1)
             if not Task.is_working_day(current_date):
                 current_date = Task.next_business_day(current_date)
-            max_tasks_to_create = Goal.weekdays_between(datetime.date.today(), form.instance.goal.due_date, HolidayPeriod.get_holiday_ranges()) // repeat_interval
+            max_tasks_to_create = Goal.weekdays_between(current_date, form.instance.goal.due_date, HolidayPeriod.get_holiday_ranges()) // repeat_interval
             num_tasks_created = 0
             while current_date <= form.instance.goal.due_date and num_tasks_created < max_tasks_to_create+1:
                 t = form.save(commit=False)
@@ -764,6 +765,14 @@ class GoalList(LoginRequiredMixin, ListView):
                 user=self.request.user,
                 status=Goal.OPEN
             ).order_by('due_date')
+
+class GoalUpdateDueDates(LoginRequiredMixin, View):
+
+    def post(self, request, *args, **kwargs):
+        goal = Goal.objects.get(pk=kwargs['pk'])
+        goal.update_goal_tasks_due_date()
+        
+        return redirect(goal.get_absolute_url())
 
 class GoalUpdate(LoginRequiredMixin,UpdateView):
     model = Goal

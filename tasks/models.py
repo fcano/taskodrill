@@ -448,55 +448,55 @@ class Task(models.Model):
 
         super().save(*args, **kwargs)
 
-        # Avoid infinite loop: only update other tasks if this is not a due_date-only update
-        # We check if only 'due_date' is being updated to prevent recursion
-        # If 'update_fields' is present and only 'due_date' is being updated, skip this block
-        update_fields = kwargs.get('update_fields', None)
-        if update_fields is not None and update_fields == ['due_date']:
-            return
+        # # Avoid infinite loop: only update other tasks if this is not a due_date-only update
+        # # We check if only 'due_date' is being updated to prevent recursion
+        # # If 'update_fields' is present and only 'due_date' is being updated, skip this block
+        # update_fields = kwargs.get('update_fields', None)
+        # if update_fields is not None and update_fields == ['due_date']:
+        #     return
 
-        if self.goal and self.goal.due_date:
-            tasks = self.goal.pending_tasks_wo_order()
+        # if self.goal and self.goal.due_date:
+        #     tasks = self.goal.pending_tasks_wo_order()
 
-            holiday_ranges = HolidayPeriod.get_holiday_ranges()
+        #     holiday_ranges = HolidayPeriod.get_holiday_ranges()
 
-            num_working_days = Goal.weekdays_between(datetime.date.today(), self.goal.due_date, holiday_ranges)
-            if num_working_days <= 0:
-                working_days_per_task = 0
-            else:
-                if num_working_days >= len(tasks):
-                    # One day is rested from the amount of tasks because the first day does not count
-                    if len(tasks) == 1:
-                        amount_of_tasks = 1
-                    else:
-                        amount_of_tasks = len(tasks)-1
-                    working_days_per_task = math.floor(num_working_days / amount_of_tasks)
-                else:
-                    working_days_per_task = num_working_days / len(tasks)
-                    tasks_per_day = math.ceil(1 / working_days_per_task)
+        #     num_working_days = Goal.weekdays_between(datetime.date.today(), self.goal.due_date, holiday_ranges)
+        #     if num_working_days <= 0:
+        #         working_days_per_task = 0
+        #     else:
+        #         if num_working_days >= len(tasks):
+        #             # One day is rested from the amount of tasks because the first day does not count
+        #             if len(tasks) == 1:
+        #                 amount_of_tasks = 1
+        #             else:
+        #                 amount_of_tasks = len(tasks)-1
+        #             working_days_per_task = math.floor(num_working_days / amount_of_tasks)
+        #         else:
+        #             working_days_per_task = num_working_days / len(tasks)
+        #             tasks_per_day = math.ceil(1 / working_days_per_task)
 
-            due_date = datetime.date.today()+datetime.timedelta(1)
-            tasks_to_update = []
-            if working_days_per_task >= 1 or working_days_per_task == 0:
-                for task in tasks:
-                    if not Task.is_working_day(due_date):
-                        due_date = Task.next_business_day(due_date, holiday_ranges)
-                    if task.due_date != due_date:
-                        task.due_date = due_date
-                        tasks_to_update.append(task)
-                    due_date = due_date + datetime.timedelta(days=working_days_per_task)
-            else:
-                due_date = Task.next_business_day(due_date, holiday_ranges)
-                for i in range(0, len(tasks), tasks_per_day):
-                    chunk = tasks[i:i+tasks_per_day]
-                    for task in chunk:
-                        if task.due_date != due_date:
-                            task.due_date = due_date
-                            tasks_to_update.append(task)
-                    due_date = Task.next_business_day(due_date, holiday_ranges)
+        #     due_date = datetime.date.today()+datetime.timedelta(1)
+        #     tasks_to_update = []
+        #     if working_days_per_task >= 1 or working_days_per_task == 0:
+        #         for task in tasks:
+        #             if not Task.is_working_day(due_date):
+        #                 due_date = Task.next_business_day(due_date, holiday_ranges)
+        #             if task.due_date != due_date:
+        #                 task.due_date = due_date
+        #                 tasks_to_update.append(task)
+        #             due_date = due_date + datetime.timedelta(days=working_days_per_task)
+        #     else:
+        #         due_date = Task.next_business_day(due_date, holiday_ranges)
+        #         for i in range(0, len(tasks), tasks_per_day):
+        #             chunk = tasks[i:i+tasks_per_day]
+        #             for task in chunk:
+        #                 if task.due_date != due_date:
+        #                     task.due_date = due_date
+        #                     tasks_to_update.append(task)
+        #             due_date = Task.next_business_day(due_date, holiday_ranges)
 
-            if tasks_to_update:
-                Task.objects.bulk_update(tasks_to_update, ['due_date'])
+        #     if tasks_to_update:
+        #         Task.objects.bulk_update(tasks_to_update, ['due_date'])
 
 
 
@@ -730,6 +730,59 @@ class Goal(models.Model):
         day_generator = (start_date + datetime.timedelta(days=x) for x in range((end_date - start_date).days + 1))
         # Count the weekdays
         return sum(1 for day in day_generator if day.weekday() < 5 and not any(start_date <= day <= end_date for start_date, end_date in holiday_ranges))
+
+    def update_goal_tasks_due_date(self):
+        tasks = self.pending_tasks_wo_order()
+        holiday_ranges = HolidayPeriod.get_holiday_ranges()
+
+        if self.due_date:
+            num_working_days = Goal.weekdays_between(datetime.date.today(), self.due_date, holiday_ranges)
+            if num_working_days <= 0:
+                working_days_per_task = 0
+            else:
+                if num_working_days >= len(tasks):
+                    # One day is rested from the amount of tasks because the first day does not count
+                    if len(tasks) == 1:
+                        amount_of_tasks = 1
+                    else:
+                        amount_of_tasks = len(tasks)-1
+                    working_days_per_task = math.floor(num_working_days / amount_of_tasks)
+                else:
+                    working_days_per_task = num_working_days / len(tasks)
+                    tasks_per_day = math.ceil(1 / working_days_per_task)
+
+            due_date = datetime.date.today() + datetime.timedelta(1)
+            tasks_to_update = []
+            if working_days_per_task >= 1 or working_days_per_task == 0:
+                for task in tasks:
+                    if not Task.is_working_day(due_date):
+                        due_date = Task.next_business_day(due_date, holiday_ranges)
+                    if task.due_date != due_date:
+                        task.due_date = due_date
+                        tasks_to_update.append(task)
+                    due_date = due_date + datetime.timedelta(days=working_days_per_task)
+            else:
+                due_date = Task.next_business_day(due_date, holiday_ranges)
+                for i in range(0, len(tasks), tasks_per_day):
+                    chunk = tasks[i:i+tasks_per_day]
+                    for task in chunk:
+                        if task.due_date != due_date:
+                            task.due_date = due_date
+                            tasks_to_update.append(task)
+                    due_date = Task.next_business_day(due_date, holiday_ranges)
+
+            if tasks_to_update:
+                Task.objects.bulk_update(tasks_to_update, ['due_date'])
+        else:
+            due_date = datetime.date.today() + datetime.timedelta(1)
+
+            if not Task.is_working_day(due_date):
+                due_date = Task.next_business_day(due_date, holiday_ranges)
+
+            for task in tasks:
+                task.due_date = due_date
+                task.save()
+                due_date = Task.next_business_day(due_date, holiday_ranges)
 
     def pending_tasks(self):
         q1 = Q(start_date=datetime.date.today()) & Q(start_time__lte=datetime.datetime.now())

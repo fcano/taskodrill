@@ -16,6 +16,10 @@
     </p>
 
     <h2>Tasks in goal</h2>
+    <form method="post" action="{% url 'goal_update_due_dates' goal.pk %}">
+        {% csrf_token %}
+        <button type="submit">Update Due Dates</button>
+    </form>
     {% if goal.task_set.count == 0 %}
     <p>This goal does not have tasks.</p>
     {% else %}

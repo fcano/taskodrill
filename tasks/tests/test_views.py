@@ -1407,63 +1407,6 @@ class TaskCreateViewTests(TestCase):
         self.assertEqual(form.folder_id, "7")
         self.assertEqual(form.goal_id, "5")
 
-    def test_task_create_goal_due_dates_and_ordering(self):
-        self.client.login(username="testuser", password="testpassword")
-        user = MyUser.objects.get(username="testuser")
-
-        goal1 = Goal.objects.create(
-            name="Goal 1",
-            user=user,
-            due_date=datetime.date.today() + datetime.timedelta(days=10),
-        )
-
-        # This creates 5 tasks in goal1, with names Task 1, Task 2, ..., Task 5
-        response = self.client.post(
-            reverse("task_add"),
-            {
-                "name": "Task [1:5:1]",
-                "tasklist": Task.NEXT_ACTION,
-                "priority": Task.NORMAL,
-                "repeat": Task.NO,
-                "repeat_from": Task.DUE_DATE,
-                "length": 1,
-                "user": user.id,
-                "goal": goal1.id,
-            },
-        )
-        self.assertEqual(response.status_code, 302)
-
-        tasks1_in_goal1 = Task.objects.filter(goal=goal1.id).order_by('goal_position')
-
-        due_dates1 = [t.due_date for t in tasks1_in_goal1]
-
-        self.assertEqual([t.goal_position for t in tasks1_in_goal1], [1, 2, 3, 4, 5])
-        self.assertTrue(all(due_dates1[i] < due_dates1[i+1] for i in range(4)))
-
-        # Create 5 more tasks in goal1, with names Task 6, Task 7, ..., Task 10
-        response = self.client.post(
-            reverse("task_add"),
-            {
-                "name": "Task [6:10:1]",
-                "tasklist": Task.NEXT_ACTION,
-                "priority": Task.NORMAL,
-                "repeat": Task.NO,
-                "repeat_from": Task.DUE_DATE,
-                "length": 1,
-                "user": user.id,
-                "goal": goal1.id,
-            },
-        )
-        self.assertEqual(response.status_code, 302)
-
-        all_tasks = Task.objects.filter(goal=goal1).order_by('goal_position')
-        self.assertEqual([t.name for t in all_tasks], [f"Task {i}" for i in range(1, 11)])
-
-        due_dates = [t.due_date for t in all_tasks]
-
-        self.assertEqual([t.goal_position for t in all_tasks], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-        self.assertTrue(all(due_dates[i] <= due_dates[i+1] for i in range(9)), due_dates)
-
     @time_machine.travel(datetime.date(2025, 9, 28))
     def test_task_create_repeat_w_goal_holiday_and_due_date(self):
         self.client.login(username="testuser", password="testpassword")
@@ -1600,14 +1543,12 @@ class TaskCreateViewTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         tasks = Task.objects.filter(goal=goal1).order_by('goal_position')
-        self.assertEqual(len(tasks), 6)
+        self.assertEqual(len(tasks), 5)
         self.assertEqual(tasks[0].due_date, datetime.date(2025, 9, 30))
         self.assertEqual(tasks[1].due_date, datetime.date(2025, 10, 2))
         self.assertEqual(tasks[2].due_date, datetime.date(2025, 10, 6))
         self.assertEqual(tasks[3].due_date, datetime.date(2025, 10, 8))
         self.assertEqual(tasks[4].due_date, datetime.date(2025, 10, 10))
-        # 13th of October is not a working day
-        self.assertEqual(tasks[5].due_date, datetime.date(2025, 10, 14))
 
         self.client.post(
             reverse("task_mark_as_done"),
@@ -1616,14 +1557,12 @@ class TaskCreateViewTests(TestCase):
         )
 
         tasks = Task.objects.filter(goal=goal1).order_by('goal_position')
-        self.assertEqual(len(tasks), 6)
+        self.assertEqual(len(tasks), 5)
         self.assertEqual(tasks[0].due_date, datetime.date(2025, 9, 30))
-        self.assertEqual(tasks[1].due_date, datetime.date(2025, 9, 30))
-        self.assertEqual(tasks[2].due_date, datetime.date(2025, 10, 2))
-        self.assertEqual(tasks[3].due_date, datetime.date(2025, 10, 6))
-        self.assertEqual(tasks[4].due_date, datetime.date(2025, 10, 8))
-        # 13th of October is not a working day
-        self.assertEqual(tasks[5].due_date, datetime.date(2025, 10, 10))
+        self.assertEqual(tasks[1].due_date, datetime.date(2025, 10, 2))
+        self.assertEqual(tasks[2].due_date, datetime.date(2025, 10, 6))
+        self.assertEqual(tasks[3].due_date, datetime.date(2025, 10, 8))
+        self.assertEqual(tasks[4].due_date, datetime.date(2025, 10, 10))
 
 
 class ProjectListViewTests(TestCase):
