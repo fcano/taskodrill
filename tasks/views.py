@@ -16,6 +16,7 @@ from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.utils import timezone
 import pytz
+import calendar
 
 from .models import Task, Project, Context, Folder, Goal, Assignee, HolidayPeriod
 from .forms import TaskForm, ProjectForm, OrderingForm, GoalForm, HolidayPeriodForm
@@ -535,6 +536,16 @@ class DashboardDetail(LoginRequiredMixin, View):
         start_of_q_minus_1 = previous_quarter_start()
         end_of_q = get_quarter_end()
         end_of_q_minus_1 = previous_quarter_end()
+        start_of_m = datetime.date(today.year, today.month, 1)
+        end_of_m = datetime.date(today.year, today.month, calendar.monthrange(today.year, today.month)[1])
+        if today.month == 1:
+            prev_month = 12
+            prev_year = today.year - 1
+        else:
+            prev_month = today.month - 1
+            prev_year = today.year
+        start_of_m_minus_1 = datetime.date(prev_year, prev_month, 1)
+        end_of_m_minus_1 = datetime.date(prev_year, prev_month, calendar.monthrange(prev_year, prev_month)[1])
 
         return TemplateResponse(request, 'tasks/dashboard.html', {
             'num_projects': num_projects,
@@ -555,7 +566,11 @@ class DashboardDetail(LoginRequiredMixin, View):
             'start_of_q': start_of_q.strftime("%Y-%m-%d"),
             'start_of_q_minus_1': start_of_q_minus_1.strftime("%Y-%m-%d"),
             'end_of_q': end_of_q.strftime("%Y-%m-%d"),
-            'end_of_q_minus_1': end_of_q_minus_1.strftime("%Y-%m-%d")
+            'end_of_q_minus_1': end_of_q_minus_1.strftime("%Y-%m-%d"),
+            'start_of_m': start_of_m.strftime("%Y-%m-%d"),
+            'end_of_m': end_of_m.strftime("%Y-%m-%d"),
+            'start_of_m_minus_1': start_of_m_minus_1.strftime("%Y-%m-%d"),
+            'end_of_m_minus_1': end_of_m_minus_1.strftime("%Y-%m-%d"),
             })
 
 class ProjectCreate(LoginRequiredMixin, CreateView):
