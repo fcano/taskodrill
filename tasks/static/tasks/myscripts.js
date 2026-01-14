@@ -183,6 +183,55 @@ $('#tasks_body').on('click', 'a.postpone2', function (event) {
     });
 });
 
+$('#project_tasks_body').on('click', 'a.postpone', function (event) {
+    event.preventDefault();
+
+    var data = {};
+    href = $(this).attr('href');
+    href_elems = href.split('/');
+    data.id = href_elems[2];
+    object_type = href_elems[1];
+    data.ndays = 1
+
+    tasks_due_date_count = parseInt($('#tasks_due_date_count').text());
+
+    $.ajax({
+        type: "POST",
+        url: "/tasks/" + data.id + "/postpone/" + data.ndays + "/",
+        data: data,
+        success: function (response) {
+            location.reload();
+        }
+    }).done(function (data) {
+        console.log(data);
+    });
+});
+
+
+$('#project_tasks_body').on('click', 'a.postpone2', function (event) {
+    event.preventDefault();
+
+    var data = {};
+    href = $(this).attr('href');
+    href_elems = href.split('/');
+    data.id = href_elems[2];
+    object_type = href_elems[1];
+    data.ndays = 2
+
+    tasks_due_date_count = parseInt($('#tasks_due_date_count').text());
+
+    $.ajax({
+        type: "POST",
+        url: "/tasks/" + data.id + "/postpone/" + data.ndays + "/",
+        data: data,
+        success: function (response) {
+            location.reload();
+        }
+    }).done(function (data) {
+        console.log(data);
+    });
+});
+
 $(document).on('click', 'a.confirm-delete', function (event) {
     event.preventDefault();
     confirm('Are you sure you want to delete this?');
