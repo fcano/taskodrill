@@ -148,7 +148,7 @@ class TaskCreate(LoginRequiredMixin, CreateView):
                     current_date = Task.next_business_day(current_date)
                 num_tasks_created += 1
             return HttpResponseRedirect(self.get_success_url())
-        
+
         return super().form_valid(form)
 
 class TaskDetail(LoginRequiredMixin, DetailView):
@@ -233,6 +233,11 @@ class TaskUpdate(LoginRequiredMixin, UpdateView):
         next_url = self.request.GET.get('next')
         if next_url:
             context['next'] = next_url
+        context['next_slack_day'] = Task.next_slack_day(self.request.user)
+        if context['next_slack_day']:
+            context['next_slack_day'] = context['next_slack_day'].strftime('%d/%m/%Y')
+        else:
+            context['next_slack_day'] = 'No slack day found'
         return context
 
     def get_success_url(self):
@@ -791,7 +796,7 @@ class GoalUpdateDueDates(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         goal = Goal.objects.get(pk=kwargs['pk'])
         goal.update_goal_tasks_due_date()
-        
+
         return redirect(goal.get_absolute_url())
 
 class GoalUpdate(LoginRequiredMixin,UpdateView):
