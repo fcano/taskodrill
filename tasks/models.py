@@ -398,6 +398,19 @@ class Task(models.Model):
             next_day = next_day + ONE_DAY
         return next_day
 
+    @classmethod
+    def add_business_days(cls, reference_date, num_days, holiday_ranges=[]):
+        """Add a specified number of business days to a date."""
+        if not holiday_ranges:
+            holiday_ranges = HolidayPeriod.get_holiday_ranges()
+        current_date = reference_date
+        days_added = 0
+        while days_added < num_days:
+            current_date = current_date + ONE_DAY
+            if cls.is_working_day(current_date, holiday_ranges):
+                days_added += 1
+        return current_date
+
     def __str__(self):
         return self.name
 
@@ -788,17 +801,25 @@ class Goal(models.Model):
             tasks_to_update = []
             if working_days_per_task >= 1 or working_days_per_task == 0:
                 for task in tasks:
-                    if not Task.is_working_day(due_date):
+                    if not Task.is_working_day(due_date, holiday_ranges):
                         due_date = Task.next_business_day(due_date, holiday_ranges)
+                    # Ensure task due_date doesn't exceed goal due_date
+                    if due_date > self.due_date:
+                        due_date = self.due_date
                     if task.due_date != due_date:
                         task.due_date = due_date
                         tasks_to_update.append(task)
-                    due_date = due_date + datetime.timedelta(days=working_days_per_task)
+                    # Add working days, not calendar days
+                    if working_days_per_task > 0:
+                        due_date = Task.add_business_days(due_date, working_days_per_task, holiday_ranges)
             else:
                 due_date = Task.next_business_day(due_date, holiday_ranges)
                 for i in range(0, len(tasks), tasks_per_day):
                     chunk = tasks[i:i+tasks_per_day]
                     for task in chunk:
+                        # Ensure task due_date doesn't exceed goal due_date
+                        if due_date > self.due_date:
+                            due_date = self.due_date
                         if task.due_date != due_date:
                             task.due_date = due_date
                             tasks_to_update.append(task)
@@ -809,7 +830,7 @@ class Goal(models.Model):
         else:
             due_date = datetime.date.today() + datetime.timedelta(1)
 
-            if not Task.is_working_day(due_date):
+            if not Task.is_working_day(due_date, holiday_ranges):
                 due_date = Task.next_business_day(due_date, holiday_ranges)
 
             for task in tasks:
