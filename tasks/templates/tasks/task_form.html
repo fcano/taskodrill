@@ -30,6 +30,10 @@
             {{ form.due_date }}
         </div>
         <div class="form-group mr-2 fieldWrapper">
+            <label class="col-form-label-sm">Next slack day</label>
+            <p>{{ next_slack_day }}</p>
+        </div>
+        <div class="form-group mr-2 fieldWrapper">
             {{ form.due_time.errors }}
             <label class="col-form-label-sm" for="{{ form.due_time.id_for_label }}">Due time</label> <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='It must be a real deadline. Used to sort the task in the Next Actions list.' />
             {{ form.due_time }}

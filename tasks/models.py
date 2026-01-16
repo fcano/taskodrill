@@ -168,6 +168,39 @@ class Task(models.Model):
         else:
             return None
 
+    @classmethod
+    def next_slack_day(cls, user):
+        """
+        Find the next working day where the sum of task hours is less than 8.
+
+        Args:
+            user: The user whose tasks to check
+
+        Returns:
+            datetime.date: The next slack day
+        """
+        holiday_ranges = HolidayPeriod.get_holiday_ranges()
+        current_date = datetime.date.today()
+
+        # Start from today
+        while True:
+            # Check if it's a working day
+            if cls.is_working_day(current_date, holiday_ranges):
+                # Sum the hours of pending tasks due on this date
+                total_hours = cls.objects.filter(
+                    user=user,
+                    status=cls.PENDING,
+                    due_date=current_date
+                ).aggregate(
+                    total=Sum('length')
+                )['total'] or 0
+
+                # If total hours is less than 8, this is a slack day
+                if total_hours < 8:
+                    return current_date
+
+            # Move to next day
+            current_date = current_date + ONE_DAY
 
     @classmethod
     def get_task_plan(cls, tasklist_slug, available_time, status, start_date, user):

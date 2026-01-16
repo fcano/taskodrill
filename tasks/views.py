@@ -41,6 +41,11 @@ class TaskCreate(LoginRequiredMixin, CreateView):
         next_url = self.request.GET.get('next')
         if next_url:
             context['next'] = next_url
+        context['next_slack_day'] = Task.next_slack_day(self.request.user)
+        if context['next_slack_day']:
+            context['next_slack_day'] = context['next_slack_day'].strftime('%d/%m/%Y')
+        else:
+            context['next_slack_day'] = 'No slack day found'
         return context
 
     def get_success_url(self):
