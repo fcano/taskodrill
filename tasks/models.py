@@ -180,9 +180,9 @@ class Task(models.Model):
             datetime.date: The next slack day
         """
         holiday_ranges = HolidayPeriod.get_holiday_ranges()
-        current_date = datetime.date.today()
+        current_date = datetime.date.today() + ONE_DAY
 
-        # Start from today
+        # Start from tomorrow
         while True:
             # Check if it's a working day
             if cls.is_working_day(current_date, holiday_ranges):
