@@ -7,6 +7,7 @@ dj-database-url==3.1.0
 Django==6.0.1
 django-autocomplete-light==3.12.1
 django-crispy-forms==2.5
+django-debug-toolbar==6.2.0
 django-heroku==0.3.1
 gunicorn==24.0.0
 h11==0.16.0
