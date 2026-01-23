@@ -184,9 +184,7 @@ class Task(models.Model):
 
         # Start from tomorrow
         while True:
-            # Check if it's a working day
             if cls.is_working_day(current_date, holiday_ranges):
-                # Sum the hours of pending tasks due on this date
                 total_hours = cls.objects.filter(
                     user=user,
                     status=cls.PENDING,
