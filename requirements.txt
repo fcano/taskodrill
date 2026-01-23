@@ -6,6 +6,7 @@ charset-normalizer==3.4.4
 Django==6.0.1
 django-autocomplete-light==3.12.1
 django-crispy-forms==2.5
+gunicorn==24.0.0
 h11==0.16.0
 holidays==0.89
 idna==3.11
