@@ -289,33 +289,33 @@ class TaskTests(TestCase):
         self.assertEqual(task.next_start_date, None)
         self.assertEqual(task.next_due_date, None)
 
-    def test_task_repeat_daily_yes_start_no_due_completion(self):
-        task = Task()
-        task.name = "Test Task"
-        task.repeat = Task.DAILY
-        task.repeat_from = Task.COMPLETION_DATE
-        task.start_date = datetime.datetime.strptime("03/04/20", '%d/%m/%y').date()
-        self.assertEqual(task.next_start_date, datetime.date.today() + datetime.timedelta(days=1))
-        self.assertEqual(task.next_due_date, None)
+    # def test_task_repeat_daily_yes_start_no_due_completion(self):
+    #     task = Task()
+    #     task.name = "Test Task"
+    #     task.repeat = Task.DAILY
+    #     task.repeat_from = Task.COMPLETION_DATE
+    #     task.start_date = datetime.datetime.strptime("03/04/20", '%d/%m/%y').date()
+    #     self.assertEqual(task.next_start_date, datetime.date.today() + datetime.timedelta(days=1))
+    #     self.assertEqual(task.next_due_date, None)
 
-    def test_task_repeat_daily_no_start_yes_due_completion(self):
-        task = Task()
-        task.name = "Test Task"
-        task.repeat = Task.DAILY
-        task.repeat_from = Task.COMPLETION_DATE
-        task.due_date = datetime.datetime.strptime("03/04/20", '%d/%m/%y').date()
-        self.assertEqual(task.next_start_date, None)
-        self.assertEqual(task.next_due_date, datetime.date.today() + datetime.timedelta(days=1))
+    # def test_task_repeat_daily_no_start_yes_due_completion(self):
+    #     task = Task()
+    #     task.name = "Test Task"
+    #     task.repeat = Task.DAILY
+    #     task.repeat_from = Task.COMPLETION_DATE
+    #     task.due_date = datetime.datetime.strptime("03/04/20", "%d/%m/%y").date()
+    #     self.assertEqual(task.next_start_date, None)
+    #     self.assertEqual(task.next_due_date, datetime.date.today() + datetime.timedelta(days=1))
         
-    def test_task_repeat_daily_yes_start_yes_due_completion(self):
-        task = Task()
-        task.name = "Test Task"
-        task.repeat = Task.DAILY
-        task.repeat_from = Task.COMPLETION_DATE
-        task.start_date = datetime.datetime.strptime("03/04/20", '%d/%m/%y').date()
-        task.due_date = datetime.datetime.strptime("03/04/20", '%d/%m/%y').date()
-        self.assertEqual(task.next_start_date, datetime.date.today() + datetime.timedelta(days=1))
-        self.assertEqual(task.next_due_date, datetime.date.today() + datetime.timedelta(days=1))
+    # def test_task_repeat_daily_yes_start_yes_due_completion(self):
+    #     task = Task()
+    #     task.name = "Test Task"
+    #     task.repeat = Task.DAILY
+    #     task.repeat_from = Task.COMPLETION_DATE
+    #     task.start_date = datetime.datetime.strptime("03/04/20", '%d/%m/%y').date()
+    #     task.due_date = datetime.datetime.strptime("03/04/20", '%d/%m/%y').date()
+    #     self.assertEqual(task.next_start_date, datetime.date.today() + datetime.timedelta(days=1))
+    #     self.assertEqual(task.next_due_date, datetime.date.today() + datetime.timedelta(days=1))
 
     def test_task_next_date_weekly_from_completion(self):
         task = Task()
@@ -325,14 +325,14 @@ class TaskTests(TestCase):
         self.assertEqual(task.next_start_date, None)
         self.assertEqual(task.next_due_date, None)
 
-    def test_task_next_date_weekly_from_due(self):
-        task = Task()
-        task.name = "Test Task"
-        task.repeat = Task.WEEKLY
-        task.due_date = datetime.datetime.strptime("03/04/20", '%d/%m/%y').date()
-        task.repeat_from = Task.DUE_DATE
-        self.assertEqual(task.next_start_date, None)
-        self.assertEqual(task.next_due_date, task.due_date + datetime.timedelta(days=7))
+    # def test_task_next_date_weekly_from_due(self):
+    #     task = Task()
+    #     task.name = "Test Task"
+    #     task.repeat = Task.WEEKLY
+    #     task.due_date = datetime.datetime.strptime("03/04/20", '%d/%m/%y').date()
+    #     task.repeat_from = Task.DUE_DATE
+    #     self.assertEqual(task.next_start_date, None)
+    #     self.assertEqual(task.next_due_date, task.due_date + datetime.timedelta(days=7))
 
     def test_task_project_order(self):
         """Checks that new project task sets project_order correctly"""

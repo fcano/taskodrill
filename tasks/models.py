@@ -626,16 +626,24 @@ class Project(models.Model):
         return reverse('project_detail', kwargs={'pk': self.pk})
 
     def save(self, *args, **kwargs):
-        if self.due_date is not None:
-            for task in self.task_set.filter(status=Task.PENDING):
-                if task.due_date is None:
-                    task.due_date = self.due_date
-                    task.save()
-                elif self.due_date < task.due_date:
-                    task.due_date = self.due_date
-                    task.save()
-
+        """
+        Persist the project first (so it has a PK), then ensure all pending tasks
+        within the project have a due_date that is <= the project due_date.
+        """
+        update_fields = kwargs.get("update_fields")
         super().save(*args, **kwargs)
+
+        # Only propagate if due_date is set and either we're doing a full save
+        # or due_date is explicitly being updated.
+        if self.due_date is None:
+            return
+        if update_fields is not None and "due_date" not in update_fields:
+            return
+
+        for task in self.task_set.filter(status=Task.PENDING):
+            if task.due_date is None or self.due_date < task.due_date:
+                task.due_date = self.due_date
+                task.save(update_fields=["due_date"])
 
     class Meta:
         ordering = ['name']

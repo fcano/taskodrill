@@ -45,7 +45,6 @@ INSTALLED_APPS = [
     'tasks.apps.TasksConfig',
     'pages.apps.PagesConfig',
     'crispy_forms',
-    'debug_toolbar',
 ]
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
@@ -53,7 +52,6 @@ CRISPY_TEMPLATE_PACK = 'bootstrap4'
 STATIC_URL = '/static/'
 
 MIDDLEWARE = [
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
