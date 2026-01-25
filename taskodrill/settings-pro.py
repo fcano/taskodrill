@@ -49,9 +49,21 @@ INSTALLED_APPS = [
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 STATIC_URL = '/static/'
+# Where `collectstatic` will gather all static assets for production.
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Django 4.2+ / 5+ prefers STORAGES over STATICFILES_STORAGE. WhiteNoise serves
+# from STATIC_ROOT and can use a compressed+hashed manifest for long-term caching.
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # Serve static files directly from the WSGI app in production (when DEBUG=False).
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
