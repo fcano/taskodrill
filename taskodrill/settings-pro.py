@@ -44,7 +44,8 @@ INSTALLED_APPS = [
     'tasks.apps.TasksConfig',
     'pages.apps.PagesConfig',
     'crispy_forms',
- ]
+    'crispy_bootstrap4',
+]
  
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
