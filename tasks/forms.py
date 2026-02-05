@@ -17,24 +17,19 @@ class TaskForm(forms.ModelForm):
         self.folder_id = kwargs.pop('folder_id', None)
         self.goal_id = kwargs.pop('goal_id', None)
         super(TaskForm, self).__init__(*args, **kwargs)
-        self.fields['contexts'].widget = forms.CheckboxSelectMultiple()
-        self.fields['contexts'].choices = Context.objects.filter(user=self.user).values_list('id', 'name')
+        # Filter contexts queryset by user for the autocomplete
+        if self.user:
+            self.fields['contexts'].queryset = Context.objects.filter(user=self.user)
         if self.context_id:
             self.fields['contexts'].initial = [self.context_id]
-        #self.fields['project'].choices = (('', '---------'),) + tuple(Project.objects.filter(user=self.user).values_list('id', 'name'))
         if self.project_id:
             self.fields['project'].initial = self.project_id
-        #self.fields['blocked_by'] = forms.ModelChoiceField(
-        #    queryset=Task.objects.all(),
-        #    widget=autocomplete.ModelSelect2(url='task-autocomplete')
-        #)
         if self.folder_id:
             self.fields['folder'].initial = self.folder_id
         if self.goal_id:
             self.fields['goal'].initial = self.goal_id
         for visible in self.visible_fields():
             visible.field.widget.attrs['class'] = 'form-control form-control-sm'
-        self.fields['contexts'].widget.attrs['class'] = 'form-check-input'
         self.fields['note'].widget.attrs.update(rows='3')
 
 
@@ -51,6 +46,9 @@ class TaskForm(forms.ModelForm):
             'project': autocomplete.ModelSelect2(url='project-autocomplete'),
             'folder': autocomplete.ModelSelect2(url='folder-autocomplete'),
             'goal': autocomplete.ModelSelect2(url='goal-autocomplete'),
+            'contexts': autocomplete.ModelSelect2Multiple(
+                url='context-autocomplete',
+            ),
         }
 
 class OrderingForm(forms.Form):

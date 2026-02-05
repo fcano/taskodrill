@@ -90,15 +90,11 @@
         </div>
     </div>
     <div class="form-row">
-        <fieldset class="form-group mr-2 fieldWrapper">
+        <div class="form-group mr-2 fieldWrapper" style="min-width: 300px;">
             {{ form.contexts.errors }}
-            <legend class="col-form-label-sm">Contexts <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='Assign the contexts where you want to see this task.' /></legend>
-            {% for checkbox in form.contexts %}
-            <div class="form-check float-left mr-3">
-                {{ checkbox.tag }}<label class="form-check-label" for="{{ checkbox.choice_label }}">{{ checkbox.choice_label }}</label>
-            </div>
-            {% endfor %}
-        </fieldset>
+            <label class="col-form-label-sm" for="{{ form.contexts.id_for_label }}">Contexts</label> <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='Assign the contexts where you want to see this task. Type to search or create new contexts.' />
+            {{ form.contexts }}
+        </div>
         <div class="form-group fieldWrapper">
             {{ form.note.errors }}
             <label class="col-form-label-sm" for="{{ form.note.id_for_label }}">Note</label> <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='Additional information about the task.' />

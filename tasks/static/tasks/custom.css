@@ -111,3 +111,82 @@ li.active {
 .row-time-constrained {
     background-color: red;
 }
+
+/* Styles for contexts autocomplete field */
+.select2-container--default .select2-selection--multiple {
+    min-height: 38px;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    padding: 4px 6px 4px 6px;
+    background-color: #fff;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__rendered {
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #007bff;
+    border: 1px solid #006fe6;
+    color: white;
+    padding: 3px 8px;
+    margin: 2px 4px 2px 0;
+    border-radius: 3px;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    position: relative;
+    top: 0;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: white;
+    margin-right: 5px;
+    border: none;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    color: #ffcccc;
+    background: none;
+}
+
+.select2-container--default .select2-search--inline .select2-search__field {
+    margin: 2px 0;
+    height: 24px;
+    line-height: 24px;
+}
+
+.select2-container--default .select2-search--inline {
+    display: inline-flex;
+    align-items: center;
+}
+
+.select2-container {
+    min-width: 250px;
+    width: 100% !important;
+}
+
+/* Style for the "Create" option in the dropdown */
+.select2-results__option--highlighted[aria-selected] {
+    background-color: #007bff;
+}
+
+/* Ensure the dropdown is visible */
+.select2-dropdown {
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+}
+
+/* Style for create new option */
+.select2-results__option[data-select2-tag="true"] {
+    font-style: italic;
+}

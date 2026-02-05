@@ -694,6 +694,29 @@ class ContextDelete(LoginRequiredMixin,DeleteView):
     success_url = reverse_lazy('context_list')
 
 
+class ContextAutocomplete(autocomplete.Select2QuerySetView):
+    create_field = 'name'
+
+    def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            return Context.objects.none()
+
+        qs = self.request.user.context_set.all().order_by('name')
+
+        if self.q:
+            qs = qs.filter(name__icontains=self.q)
+
+        return qs
+
+    def has_add_permission(self, request):
+        """Allow authenticated users to create new contexts."""
+        return request.user.is_authenticated
+
+    def create_object(self, text):
+        """Create a new context for the current user."""
+        return Context.objects.create(name=text, user=self.request.user)
+
+
 class FolderCreate(LoginRequiredMixin, CreateView):
     model = Folder
     fields = ['name']

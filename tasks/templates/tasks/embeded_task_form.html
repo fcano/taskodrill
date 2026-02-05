@@ -61,15 +61,11 @@
         </div>
     </div>
     <div class="form-row">
-        <fieldset class="form-group mr-2 fieldWrapper">
+        <div class="form-group mr-2 fieldWrapper" style="min-width: 300px;">
             {{ form.contexts.errors }}
-            <legend class="col-form-label-sm">Contexts</legend>
-            {% for checkbox in form.contexts %}
-            <div class="form-check">
-                {{ checkbox.tag }}<label class="col-form-label-sm for="{{ checkbox.choice_label }}">{{ checkbox.choice_label }}</label>
-            </div>
-            {% endfor %}
-        </fieldset>
+            <label class="col-form-label-sm" for="{{ form.contexts.id_for_label }}">Contexts</label>
+            {{ form.contexts }}
+        </div>
         <div class="form-group fieldWrapper">
             {{ form.note.errors }}
             <label class="col-form-label-sm" for="{{ form.note.id_for_label }}">Note</label>
