@@ -190,3 +190,12 @@ li.active {
 .select2-results__option[data-select2-tag="true"] {
     font-style: italic;
 }
+
+/* Done tasks styling */
+.done-tasks-table tbody tr {
+    opacity: 0.6;
+}
+
+.done-tasks-table tbody tr td:nth-child(2) {
+    text-decoration: line-through;
+}

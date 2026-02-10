@@ -671,6 +671,10 @@ class ContextDetail(LoginRequiredMixin, DetailView):
         if hide_future_tasks:
             context['hide_future_tasks'] = "true"
 
+        show_done_tasks = self.request.GET.get('show_done_tasks')
+        if show_done_tasks:
+            context['show_done_tasks'] = "true"
+
         return context
 
     def get_queryset(self):

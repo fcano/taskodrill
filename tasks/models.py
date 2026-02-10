@@ -709,6 +709,8 @@ class Context(models.Model):
 
         return tasks_wo_project.union(last_task_from_each_project).order_by('due_date', 'ready_datetime')
 
+    def done_tasks(self):
+        return self.tasks.filter(status=Task.DONE).order_by('-modification_datetime')
 
     class Meta:
         ordering = ['name']

@@ -310,15 +310,32 @@ $(document).on('click', 'a.remove-deadline', function (event) {
 
 
 
-$('#hide_future_tasks').click(function () {
-    checked = $('#hide_future_tasks').is(':checked');
-    href = window.location.href;
-    href = href.substring(0, href.indexOf('?'));
-    if (checked) {
-        window.location.href = href + "?hide_future_tasks=true";
+function refreshWithParams() {
+    var href = window.location.href;
+    var qIndex = href.indexOf('?');
+    if (qIndex !== -1) {
+        href = href.substring(0, qIndex);
+    }
+    var params = [];
+    if ($('#hide_future_tasks').is(':checked')) {
+        params.push('hide_future_tasks=true');
+    }
+    if ($('#show_done_tasks').is(':checked')) {
+        params.push('show_done_tasks=true');
+    }
+    if (params.length > 0) {
+        window.location.href = href + '?' + params.join('&');
     } else {
         window.location.href = href;
     }
+}
+
+$('#hide_future_tasks').click(function () {
+    refreshWithParams();
+});
+
+$('#show_done_tasks').click(function () {
+    refreshWithParams();
 });
 
 $('[data-toggle="tooltip"]').tooltip();

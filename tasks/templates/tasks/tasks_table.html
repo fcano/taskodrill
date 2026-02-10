@@ -1,4 +1,4 @@
-<table id="tasks_table" class="table table-sm">
+<table id="{% if done %}done_tasks_table{% else %}tasks_table{% endif %}" class="table table-sm{% if done %} done-tasks-table{% endif %}">
   <thead class="thead-light">
     <tr>
       <th scope="col"></th>
