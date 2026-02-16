@@ -857,6 +857,23 @@ class Goal(models.Model):
                 task.save()
                 due_date = Task.next_business_day(due_date, holiday_ranges)
 
+    def assign_slack_days(self):
+        """
+        Assign each pending task to the next day with slack (< 8 hours scheduled),
+        using Task.next_slack_day to find available days sequentially.
+        Each task is saved before finding the next slack day so the updated
+        totals are reflected in subsequent lookups.
+        """
+        tasks = list(self.pending_tasks_wo_order())
+        if not tasks:
+            return
+
+        for task in tasks:
+            slack_day = Task.next_slack_day(self.user)
+            if task.due_date != slack_day:
+                task.due_date = slack_day
+                task.save(update_fields=['due_date'])
+
     def pending_tasks(self):
         q1 = Q(start_date=datetime.date.today()) & Q(start_time__lte=datetime.datetime.now())
         q2 = Q(start_date=datetime.date.today()) & Q(start_time__isnull=True)

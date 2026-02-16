@@ -826,6 +826,14 @@ class GoalUpdateDueDates(LoginRequiredMixin, View):
 
         return redirect(goal.get_absolute_url())
 
+class GoalAssignSlackDays(LoginRequiredMixin, View):
+
+    def post(self, request, *args, **kwargs):
+        goal = Goal.objects.get(pk=kwargs['pk'])
+        goal.assign_slack_days()
+
+        return redirect(goal.get_absolute_url())
+
 class GoalUpdate(LoginRequiredMixin,UpdateView):
     model = Goal
     form_class = GoalForm

@@ -16,9 +16,13 @@
     </p>
 
     <h2>Tasks in goal</h2>
-    <form method="post" action="{% url 'goal_update_due_dates' goal.pk %}">
+    <form method="post" action="{% url 'goal_update_due_dates' goal.pk %}" style="display:inline;">
         {% csrf_token %}
         <button type="submit">Update Due Dates</button>
+    </form>
+    <form method="post" action="{% url 'goal_assign_slack_days' goal.pk %}" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit">Assign Slack Days</button>
     </form>
     {% if goal.task_set.count == 0 %}
     <p>This goal does not have tasks.</p>
