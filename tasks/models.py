@@ -169,20 +169,25 @@ class Task(models.Model):
             return None
 
     @classmethod
-    def next_slack_day(cls, user):
+    def next_slack_day(cls, user, after_date=None):
         """
         Find the next working day where the sum of task hours is less than 8.
 
         Args:
             user: The user whose tasks to check
+            after_date: If provided, search starts the day after this date
+                        instead of tomorrow.
 
         Returns:
             datetime.date: The next slack day
         """
         holiday_ranges = HolidayPeriod.get_holiday_ranges()
-        current_date = datetime.date.today() + ONE_DAY
+        if after_date:
+            current_date = after_date + ONE_DAY
+        else:
+            current_date = datetime.date.today() + ONE_DAY
 
-        # Start from tomorrow
+        # Start searching
         while True:
             if cls.is_working_day(current_date, holiday_ranges):
                 total_hours = cls.objects.filter(
@@ -859,17 +864,20 @@ class Goal(models.Model):
 
     def assign_slack_days(self):
         """
-        Assign each pending task to the next day with slack (< 8 hours scheduled),
+        Assign each pending task to a unique slack day (< 8 hours scheduled),
         using Task.next_slack_day to find available days sequentially.
-        Each task is saved before finding the next slack day so the updated
-        totals are reflected in subsequent lookups.
+        No two tasks from this goal will share the same slack day; each
+        subsequent task is assigned to the next available slack day after
+        the previous one.
         """
         tasks = list(self.pending_tasks_wo_order())
         if not tasks:
             return
 
+        last_assigned = None
         for task in tasks:
-            slack_day = Task.next_slack_day(self.user)
+            slack_day = Task.next_slack_day(self.user, after_date=last_assigned)
+            last_assigned = slack_day
             if task.due_date != slack_day:
                 task.due_date = slack_day
                 task.save(update_fields=['due_date'])
