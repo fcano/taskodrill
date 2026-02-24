@@ -29,13 +29,14 @@ class TaskForm(forms.ModelForm):
         if self.goal_id:
             self.fields['goal'].initial = self.goal_id
         for visible in self.visible_fields():
-            visible.field.widget.attrs['class'] = 'form-control form-control-sm'
+            if not isinstance(visible.field.widget, forms.CheckboxInput):
+                visible.field.widget.attrs['class'] = 'form-control form-control-sm'
         self.fields['note'].widget.attrs.update(rows='3')
 
 
     class Meta:
         model = Task
-        fields = ['name', 'start_date', 'start_time', 'due_date', 'due_time', 'repeat',
+        fields = ['name', 'start_date', 'start_time', 'due_date', 'due_time', 'flexible_due_date', 'repeat',
                   'repeat_from', 'length', 'priority', 'note', 'contexts', 'project', 'folder', 'goal', 'blocked_by', 'tasklist', 'assignee']
         widgets = {
             'start_date': DateInput(),

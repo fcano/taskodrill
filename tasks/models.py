@@ -116,6 +116,7 @@ class Task(models.Model):
     planned_end_date = models.DateField(blank=True, null=True)
     dep_due_date = models.DateField(blank=True, null=True)
     dep_due_time = models.TimeField(blank=True, null=True)
+    flexible_due_date = models.BooleanField(default=False)
     repeat = models.IntegerField(choices=REPEAT, default=NO)
     repeat_from = models.IntegerField(choices=REPEAT_FROM, default=DUE_DATE)
     length = models.DecimalField(max_digits=5, decimal_places=1, blank=True, null=True)
