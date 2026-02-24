@@ -192,6 +192,19 @@ li.active {
 }
 
 /* Done tasks styling */
+.action-icons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+    max-width: 160px;
+}
+
+.action-icons a,
+.action-icons .btn-group {
+    flex: 0 0 auto;
+}
+
 .done-tasks-table tbody tr {
     opacity: 0.6;
 }

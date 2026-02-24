@@ -11,6 +11,7 @@ urlpatterns = [
     path('tasks/<int:pk>/remove_deadline/', tasks_views.TaskRemoveDeadline.as_view(), name='task_remove_deadline'),
     path('tasks/<int:pk>/remove_deadline_prio/', tasks_views.TaskRemoveDeadlinePrio.as_view(), name='task_remove_deadline_prio'),
     path('tasks/<int:pk>/postpone/<int:ndays>/', tasks_views.TaskPostpone.as_view(), name='task_postpone'),
+    path('tasks/<int:pk>/mark_flexible/', tasks_views.TaskMarkFlexibleDueDate.as_view(), name='task_mark_flexible'),
     path('tasks/mark_as_done/', tasks_views.TaskMarkAsDone.as_view(), name='task_mark_as_done'),
     path('tasks/change-tasklist/', tasks_views.TaskChangeTasklist.as_view(), name='task_change_tasklist'),
     path('tasks/save-task-ordering/', tasks_views.SaveNewOrdering.as_view(), name='save_task_ordering'),

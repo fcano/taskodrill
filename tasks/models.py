@@ -415,6 +415,69 @@ class Task(models.Model):
                 days_added += 1
         return current_date
 
+    @classmethod
+    def reschedule_flexible_tasks(cls, user):
+        """
+        Ensure no pending flexible-due-date task has a due_date on or before
+        any late non-flexible task.  A task is "late" when its
+        planned_end_date > due_date.
+
+        Moves flexible tasks one at a time (earliest due_date first),
+        recalculating planned dates after each move so that the freed
+        capacity may resolve the lateness of remaining non-flexible tasks.
+        Stops as soon as no late non-flexible tasks remain.
+        """
+        holiday_ranges = HolidayPeriod.get_holiday_ranges()
+
+        late_non_flexible_q = Q(
+            flexible_due_date=False,
+            planned_end_date__isnull=False,
+            planned_end_date__gt=models.F('due_date'),
+        )
+
+        cls.get_task_plan('nextactions', None, None, None, user)
+
+        for _ in range(50):
+            max_late_date = cls.objects.filter(
+                late_non_flexible_q,
+                user=user,
+                status=cls.PENDING,
+                due_date__isnull=False,
+            ).aggregate(max_date=models.Max('due_date'))['max_date']
+
+            if max_late_date is None:
+                break
+
+            flex_task = cls.objects.filter(
+                user=user,
+                status=cls.PENDING,
+                flexible_due_date=True,
+                due_date__isnull=False,
+                due_date__lte=max_late_date,
+            ).order_by('due_date').first()
+
+            if flex_task is None:
+                break
+
+            candidate = max_late_date
+            for _ in range(365):
+                candidate = cls.next_business_day(candidate, holiday_ranges)
+                has_conflict = cls.objects.filter(
+                    late_non_flexible_q,
+                    user=user,
+                    status=cls.PENDING,
+                    due_date=candidate,
+                ).exists()
+                if not has_conflict:
+                    break
+
+            if flex_task.due_date == candidate:
+                break
+
+            cls.objects.filter(pk=flex_task.pk).update(due_date=candidate)
+
+            cls.get_task_plan('nextactions', None, None, None, user)
+
     def __str__(self):
         return self.name
 
@@ -497,6 +560,8 @@ class Task(models.Model):
 
 
         super().save(*args, **kwargs)
+
+        Task.reschedule_flexible_tasks(self.user)
 
         # # Avoid infinite loop: only update other tasks if this is not a due_date-only update
         # # We check if only 'due_date' is being updated to prevent recursion

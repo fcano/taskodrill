@@ -320,6 +320,16 @@ class TaskRemoveDeadlinePrio(LoginRequiredMixin, View):
             data = {'success': 'OK'}
             return JsonResponse(data)
 
+class TaskMarkFlexibleDueDate(LoginRequiredMixin, View):
+
+    def post(self, request, *args, **kwargs):
+        if self.request.user.is_authenticated:
+            task = Task.objects.get(user=self.request.user, id=self.request.POST['id'])
+            task.flexible_due_date = True
+            task.save()
+            data = {'success': 'OK'}
+            return JsonResponse(data)
+
 class TaskPostpone(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):

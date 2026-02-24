@@ -37,24 +37,27 @@
   <td>{{ task.get_repeat_display | default_if_none:"none" }}</td>
   <td>{{ task.get_priority_display | default_if_none:"none" }}</td>
   <td>{{ task.length | default_if_none:"none" }}</td>
-  <td><a href="{% url 'task_remove_deadline' task.pk %}" class="remove-deadline"><img src="/static/tasks/empty.svg" width="18" /></a></td>
-  <td><a href="{% url 'task_remove_deadline_prio' task.pk %}" class="remove-deadline-prio"><img src="/static/tasks/down-arrow.svg" width="18" /></a></td>
-  <td><a href="{{ task.get_absolute_url }}"><img src="/static/tasks/eye.svg" width="18" /></a></td>
-  {% if next %}
-    <td><a href="{% url 'task_update' task.pk %}?next={{ next }}"><img src="/static/tasks/edit.svg" width="18" /></a></td>
-  {% else %}
-    <td><a href="{% url 'task_update' task.pk %}"><img src="/static/tasks/edit.svg" width="18" /></a></td>
-  {% endif %}
-  <td><a href="{% url 'task_delete' task.pk %}" class="confirm-delete"><img src="/static/tasks/trash-2.svg" width="18" /></a></td>
-  <td><a href="{% url 'task_postpone' pk=task.pk ndays=1 %}" class="postpone"><img src="/static/tasks/skip-forward.svg" data-toggle='tooltip' title='Postpone to NBD.' width="18" /></a></td>
-  <td><a href="{% url 'task_postpone' pk=task.pk ndays=2 %}" class="postpone2"><img src="/static/tasks/fast-forward.svg" data-toggle='tooltip' title='Postpone to 48h+NBD.' width="18" /></a></td>
   <td>
-    <div class="btn-group dropleft">
-      <img class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-reference="parent" src="/static/tasks/chevron-down.svg" width="18" />
-      <div class="dropdown-menu move-to-tasklist" aria-labelledby="dropdownMenuReference">
-        <button class="dropdown-item" type="button" value="notthisweek_{{ task.id }}">Not This Week</button>
-        <button class="dropdown-item" type="button" value="nextaction_{{ task.id }}">Next Action</button>
-        <button class="dropdown-item" type="button" value="someday_{{ task.id }}">Someday/Maybe</button>
+    <div class="action-icons">
+      <a href="{% url 'task_remove_deadline' task.pk %}" class="remove-deadline"><img src="/static/tasks/empty.svg" width="18" /></a>
+      <a href="{% url 'task_remove_deadline_prio' task.pk %}" class="remove-deadline-prio"><img src="/static/tasks/down-arrow.svg" width="18" /></a>
+      <a href="{{ task.get_absolute_url }}"><img src="/static/tasks/eye.svg" width="18" /></a>
+      {% if next %}
+        <a href="{% url 'task_update' task.pk %}?next={{ next }}"><img src="/static/tasks/edit.svg" width="18" /></a>
+      {% else %}
+        <a href="{% url 'task_update' task.pk %}"><img src="/static/tasks/edit.svg" width="18" /></a>
+      {% endif %}
+      <a href="{% url 'task_delete' task.pk %}" class="confirm-delete"><img src="/static/tasks/trash-2.svg" width="18" /></a>
+      <a href="{% url 'task_postpone' pk=task.pk ndays=1 %}" class="postpone"><img src="/static/tasks/skip-forward.svg" data-toggle='tooltip' title='Postpone to NBD.' width="18" /></a>
+      <a href="{% url 'task_postpone' pk=task.pk ndays=2 %}" class="postpone2"><img src="/static/tasks/fast-forward.svg" data-toggle='tooltip' title='Postpone to 48h+NBD.' width="18" /></a>
+      <a href="{% url 'task_mark_flexible' task.pk %}" class="mark-flexible"><img src="/static/tasks/toggle-flexible.svg" data-toggle='tooltip' title='Mark due date as flexible.' width="18" /></a>
+      <div class="btn-group dropleft">
+        <img class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-reference="parent" src="/static/tasks/chevron-down.svg" width="18" />
+        <div class="dropdown-menu move-to-tasklist" aria-labelledby="dropdownMenuReference">
+          <button class="dropdown-item" type="button" value="notthisweek_{{ task.id }}">Not This Week</button>
+          <button class="dropdown-item" type="button" value="nextaction_{{ task.id }}">Next Action</button>
+          <button class="dropdown-item" type="button" value="someday_{{ task.id }}">Someday/Maybe</button>
+        </div>
       </div>
     </div>
   </td>
