@@ -75,6 +75,29 @@ class GoalForm(forms.ModelForm):
         }
 
 
+FLEXIBLE_CHOICES = [
+    ('', '-- No change --'),
+    ('true', 'Yes'),
+    ('false', 'No'),
+]
+
+class GoalMassEditForm(forms.Form):
+    due_date = forms.DateField(required=False, widget=DateInput(attrs={'class': 'form-control form-control-sm'}))
+    start_date = forms.DateField(required=False, widget=DateInput(attrs={'class': 'form-control form-control-sm'}))
+    planned_end_date = forms.DateField(required=False, widget=DateInput(attrs={'class': 'form-control form-control-sm'}))
+    flexible_due_date = forms.ChoiceField(
+        required=False,
+        choices=FLEXIBLE_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control form-control-sm'}),
+    )
+    length = forms.DecimalField(
+        required=False,
+        max_digits=5,
+        decimal_places=1,
+        widget=forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.1'}),
+    )
+
+
 class HolidayPeriodForm(forms.ModelForm):
     class Meta:
         model = HolidayPeriod

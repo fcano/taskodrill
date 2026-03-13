@@ -19,7 +19,7 @@ import pytz
 import calendar
 
 from .models import Task, Project, Context, Folder, Goal, Assignee, HolidayPeriod
-from .forms import TaskForm, ProjectForm, OrderingForm, GoalForm, HolidayPeriodForm
+from .forms import TaskForm, ProjectForm, OrderingForm, GoalForm, GoalMassEditForm, HolidayPeriodForm
 
 import datetime
 import holidays
@@ -802,6 +802,7 @@ class GoalDetail(LoginRequiredMixin, DetailView):
         context = super(GoalDetail, self).get_context_data(**kwargs)
         context['next'] = self.object.get_absolute_url()
         context['weekdays_until_deadline'] = Goal.weekdays_between(datetime.datetime.today().date(), self.object.due_date)
+        context['mass_edit_form'] = GoalMassEditForm()
         return context
 
     def get_queryset(self):
@@ -843,6 +844,35 @@ class GoalAssignSlackDays(LoginRequiredMixin, View):
         goal.assign_slack_days()
 
         return redirect(goal.get_absolute_url())
+
+class GoalMassEditTasks(LoginRequiredMixin, View):
+
+    def post(self, request, *args, **kwargs):
+        goal = Goal.objects.get(pk=kwargs['pk'], user=request.user)
+        form = GoalMassEditForm(request.POST)
+        if form.is_valid():
+            tasks = list(goal.pending_tasks())
+            update_fields = []
+
+            for field_name in ('due_date', 'start_date', 'planned_end_date', 'length'):
+                value = form.cleaned_data.get(field_name)
+                if value is not None:
+                    update_fields.append(field_name)
+                    for task in tasks:
+                        setattr(task, field_name, value)
+
+            flexible_value = form.cleaned_data.get('flexible_due_date')
+            if flexible_value != '':
+                update_fields.append('flexible_due_date')
+                bool_val = flexible_value == 'true'
+                for task in tasks:
+                    task.flexible_due_date = bool_val
+
+            if update_fields:
+                Task.objects.bulk_update(tasks, update_fields)
+
+        return redirect(goal.get_absolute_url())
+
 
 class GoalUpdate(LoginRequiredMixin,UpdateView):
     model = Goal
