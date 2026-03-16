@@ -468,7 +468,14 @@ class Task(models.Model):
                     status=cls.PENDING,
                     due_date=candidate,
                 ).exists()
-                if not has_conflict:
+                if has_conflict:
+                    continue
+                total_hours = cls.objects.filter(
+                    user=user,
+                    status=cls.PENDING,
+                    due_date=candidate,
+                ).aggregate(total=Sum('length'))['total'] or 0
+                if total_hours < 8:
                     break
 
             if flex_task.due_date == candidate:

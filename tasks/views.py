@@ -348,6 +348,8 @@ class TaskPostpone(LoginRequiredMixin, View):
             # The reason is that although we might want to postpone the task,
             # we don't necessarily want to set a due_date or change it.
             if task.due_date and task.due_date <= datetime.date.today():
+                if task.flexible_due_date:
+                    next_day = Task.next_slack_day(self.request.user, after_date=next_day - datetime.timedelta(days=1))
                 task.due_date = next_day
             task.save()
             data = {'success': 'OK'}
