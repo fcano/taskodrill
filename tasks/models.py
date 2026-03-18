@@ -140,6 +140,7 @@ class Task(models.Model):
         'Goal', related_name="tasks", on_delete=models.CASCADE, blank=True, null=True)
     blocked_by = models.ForeignKey('Task', on_delete=models.SET_NULL, blank=True, null=True)
     assignee = models.ForeignKey('Assignee', on_delete=models.CASCADE, blank=True, null=True)
+    milestone = models.BooleanField(default=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL,
                              on_delete=models.CASCADE)
 
@@ -846,6 +847,7 @@ class Goal(models.Model):
     references = models.TextField(blank=True)
     due_date = models.DateField(blank=True, null=True)
     status = models.IntegerField(choices=STATUS, default=OPEN)
+    roadmap = models.BooleanField(default=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def __str__(self):

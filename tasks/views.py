@@ -898,6 +898,27 @@ class GoalAutocomplete(autocomplete.Select2QuerySetView):
         return qs
 
 
+class RoadmapView(LoginRequiredMixin, View):
+
+    def get(self, request, *args, **kwargs):
+        goals = Goal.objects.filter(
+            user=request.user,
+            status=Goal.OPEN,
+            roadmap=True,
+        ).order_by('due_date')
+
+        goals_with_milestones = []
+        for goal in goals:
+            goal.milestone_tasks = list(
+                goal.tasks.filter(milestone=True).order_by('due_date', 'goal_position')
+            )
+            goals_with_milestones.append(goal)
+
+        return TemplateResponse(request, 'tasks/roadmap.html', {
+            'goals': goals_with_milestones,
+        })
+
+
 class AssigneeCreate(LoginRequiredMixin, CreateView):
     model = Assignee
     fields = ['name']

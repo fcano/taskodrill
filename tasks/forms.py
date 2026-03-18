@@ -37,7 +37,7 @@ class TaskForm(forms.ModelForm):
     class Meta:
         model = Task
         fields = ['name', 'start_date', 'start_time', 'due_date', 'due_time', 'flexible_due_date', 'repeat',
-                  'repeat_from', 'length', 'priority', 'note', 'contexts', 'project', 'folder', 'goal', 'blocked_by', 'tasklist', 'assignee']
+                  'repeat_from', 'length', 'priority', 'note', 'contexts', 'project', 'folder', 'goal', 'blocked_by', 'tasklist', 'assignee', 'milestone']
         widgets = {
             'start_date': DateInput(),
             'due_date': DateInput(),
@@ -68,7 +68,7 @@ class ProjectForm(forms.ModelForm):
 class GoalForm(forms.ModelForm):
     class Meta:
         model = Goal
-        fields = ['name', 'references', 'due_date', 'status']
+        fields = ['name', 'references', 'due_date', 'status', 'roadmap']
         widgets = {
             'due_date': DateInput(),
             'name': forms.Textarea(attrs={'rows': 1, 'cols': 100})
@@ -96,6 +96,7 @@ class GoalMassEditForm(forms.Form):
         decimal_places=1,
         widget=forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.1'}),
     )
+    roadmap = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': 'form-control form-control-sm'}))
 
 
 class HolidayPeriodForm(forms.ModelForm):

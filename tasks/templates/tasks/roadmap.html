@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Roadmap</h1>
+
+    {% if goals %}
+        {% for goal in goals %}
+        <h3 class="mt-4">
+            <a href="{{ goal.get_absolute_url }}">{{ goal.name }}</a>
+            {% if goal.due_date %}<small class="text-muted"> &mdash; {{ goal.due_date }}</small>{% endif %}
+        </h3>
+        {% if goal.milestone_tasks %}
+        <table class="table table-sm table-bordered">
+            <thead class="thead-light">
+                <tr>
+                    <th scope="col">Task</th>
+                    <th scope="col">Due date</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Length</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in goal.milestone_tasks %}
+                <tr>
+                    <td><a href="{{ task.get_absolute_url }}">{{ task.name }}</a></td>
+                    <td>{{ task.due_date|default_if_none:"no date" }}</td>
+                    <td>{{ task.get_status_display }}</td>
+                    <td>{{ task.length|default_if_none:"—" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">No milestone tasks for this goal.</p>
+        {% endif %}
+        {% endfor %}
+    {% else %}
+        <p>There are no roadmap goals.</p>
+    {% endif %}
+{% endblock %}

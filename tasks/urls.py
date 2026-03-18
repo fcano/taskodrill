@@ -45,6 +45,7 @@ urlpatterns = [
     path('goal/<int:pk>/update_due_dates/', tasks_views.GoalUpdateDueDates.as_view(), name='goal_update_due_dates'),
     path('goal/<int:pk>/assign_slack_days/', tasks_views.GoalAssignSlackDays.as_view(), name='goal_assign_slack_days'),
     path('goal/<int:pk>/mass_edit_tasks/', tasks_views.GoalMassEditTasks.as_view(), name='goal_mass_edit_tasks'),
+    path('roadmap/', tasks_views.RoadmapView.as_view(), name='roadmap'),
     path('dashboard/', tasks_views.DashboardDetail.as_view(), name='dashboard_detail'),
     path('assignee/', tasks_views.AssigneeList.as_view(), name='assignee_list'),
     path('assignee/<int:pk>/', tasks_views.AssigneeDetail.as_view(), name='assignee_detail'),
