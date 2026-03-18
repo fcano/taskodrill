@@ -18,3 +18,20 @@ function saveOrdering() {
 }
 
 saveOrderingButton.addEventListener('click', saveOrdering);
+
+const sortByDueDateButton = document.getElementById('sortByDueDate');
+if (sortByDueDateButton) {
+    sortByDueDateButton.addEventListener('click', function () {
+        const tbody = document.getElementById('project_tasks_body');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        rows.sort(function (a, b) {
+            const dateA = a.dataset.dueDate || '9999-12-31';
+            const dateB = b.dataset.dueDate || '9999-12-31';
+            return dateA.localeCompare(dateB);
+        });
+        rows.forEach(function (row) {
+            tbody.appendChild(row);
+        });
+        saveOrdering();
+    });
+}
