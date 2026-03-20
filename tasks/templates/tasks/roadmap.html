@@ -21,7 +21,7 @@
             </thead>
             <tbody>
                 {% for task in goal.milestone_tasks %}
-                <tr>
+                <tr{% if task.status == 1 %} class="table-success"{% endif %}>
                     <td><a href="{{ task.get_absolute_url }}">{{ task.name }}</a></td>
                     <td>{{ task.due_date|default_if_none:"no date" }}</td>
                     <td>{{ task.get_status_display }}</td>
