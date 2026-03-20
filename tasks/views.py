@@ -870,6 +870,13 @@ class GoalMassEditTasks(LoginRequiredMixin, View):
                 for task in tasks:
                     task.flexible_due_date = bool_val
 
+            milestone_value = form.cleaned_data.get('milestone')
+            if milestone_value != '':
+                update_fields.append('milestone')
+                bool_val = milestone_value == 'true'
+                for task in tasks:
+                    task.milestone = bool_val
+
             if update_fields:
                 Task.objects.bulk_update(tasks, update_fields)
 

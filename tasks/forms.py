@@ -96,6 +96,11 @@ class GoalMassEditForm(forms.Form):
         decimal_places=1,
         widget=forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.1'}),
     )
+    milestone = forms.ChoiceField(
+        required=False,
+        choices=FLEXIBLE_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control form-control-sm'}),
+    )
     roadmap = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': 'form-control form-control-sm'}))
 
 

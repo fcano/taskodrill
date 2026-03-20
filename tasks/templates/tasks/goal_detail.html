@@ -50,6 +50,10 @@
                 {{ mass_edit_form.length }}
             </div>
             <div class="form-group col-auto">
+                <label for="{{ mass_edit_form.milestone.id_for_label }}">Milestone</label>
+                {{ mass_edit_form.milestone }}
+            </div>
+            <div class="form-group col-auto">
                 <button type="submit" class="btn btn-primary btn-sm">Apply to All Tasks</button>
             </div>
         </div>
