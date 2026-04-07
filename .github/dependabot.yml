@@ -1,0 +1,24 @@
+updates:
+  # Update dependencies automatically
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      - name: "dependencies"
+        patterns:
+          - "package.json"
+    maintainers:
+      - "florencio.cano@gmail.com"
+
+  # Update security vulnerabilities
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      - name: "security"
+        patterns:
+          - "package.json"
+    maintainers:
+      - "florencio.cano@gmail.com"
