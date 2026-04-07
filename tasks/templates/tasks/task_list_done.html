@@ -1,16 +1,61 @@
 {% extends "base.html" %}
 
 {% block content %}
+  <form method="get" class="form-inline mb-3">
+    <label class="mr-2">From</label>
+    <input type="date" name="from" class="form-control form-control-sm mr-3" value="{{ filter_from }}">
+    <label class="mr-2">To</label>
+    <input type="date" name="to" class="form-control form-control-sm mr-3" value="{{ filter_to }}">
+    <label class="mr-2">Project</label>
+    <select name="project" class="form-control form-control-sm mr-3">
+      <option value="">All</option>
+      {% for p in projects %}
+        <option value="{{ p.pk }}" {% if filter_project == p.pk|stringformat:"d" %}selected{% endif %}>{{ p.name }}</option>
+      {% endfor %}
+    </select>
+    <label class="mr-2">Goal</label>
+    <select name="goal" class="form-control form-control-sm mr-3">
+      <option value="">All</option>
+      {% for g in goals %}
+        <option value="{{ g.pk }}" {% if filter_goal == g.pk|stringformat:"d" %}selected{% endif %}>{{ g.name }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+  </form>
+
   <p>
-    Tasks: <span id="tasks_count">{{ task_list.count }}</span>
+    Tasks: <span id="tasks_count">{{ task_list|length }}</span>
+    | Total hours: {{ total_length|floatformat:1 }}
   </p>
-  <ul>
+
   {% if task_list %}
-    {% for task in task_list %}
-      <li>{{ task.name }}</li>
-    {% endfor %}
+  <table class="table table-sm">
+    <thead class="thead-light">
+      <tr>
+        <th scope="col">Task</th>
+        <th scope="col">Completed</th>
+        <th scope="col">Project</th>
+        <th scope="col">Goal</th>
+        <th scope="col">Priority</th>
+        <th scope="col">Length</th>
+        <th scope="col">Contexts</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for task in task_list %}
+      <tr>
+        <td><a href="{{ task.get_absolute_url }}">{{ task.name }}</a></td>
+        <td>{{ task.done_datetime|date:"Y-m-d H:i" }}</td>
+        <td>{% if task.project %}<a href="{{ task.project.get_absolute_url }}">{{ task.project.name }}</a>{% else %}-{% endif %}</td>
+        <td>{% if task.goal %}<a href="{{ task.goal.get_absolute_url }}">{{ task.goal.name }}</a>{% else %}-{% endif %}</td>
+        <td>{{ task.get_priority_display }}</td>
+        <td>{{ task.length|default_if_none:"-" }}</td>
+        <td>{% for ctx in task.contexts.all %}{{ ctx.name }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
   {% else %}
-    <p>There are no tasks in this list.</p>
+    <p>There are no tasks matching the filters.</p>
   {% endif %}
-  </ul>
 {% endblock %}

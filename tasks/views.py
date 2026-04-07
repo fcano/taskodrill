@@ -465,23 +465,43 @@ class SaveNewOrderingGoal(LoginRequiredMixin, View):
         return HttpResponseRedirect(task.goal.get_absolute_url())
 
 class TaskListDone(LoginRequiredMixin, ListView):
-    #model = Task
     template_name = 'tasks/task_list_done.html'
+    context_object_name = 'task_list'
 
-    #def get(self, request, *args, **kwargs):
     def get_queryset(self):
-        status_filter = Q(status=Task.DONE)
+        qs = Task.objects.filter(
+            user=self.request.user, status=Task.DONE,
+        ).select_related('project', 'goal')
 
         from_date = self.request.GET.get('from')
         to_date = self.request.GET.get('to')
-        to_date = datetime.datetime.strptime(to_date, "%Y-%m-%d")
-        to_date = to_date + datetime.timedelta(days=1)
-        to_date = to_date.strftime("%Y-%m-%d")
-        date_filter = Q(done_datetime__gte=from_date) & Q(done_datetime__lte=to_date)
+        if from_date and to_date:
+            to_date_parsed = datetime.datetime.strptime(to_date, "%Y-%m-%d")
+            to_date_end = (to_date_parsed + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+            qs = qs.filter(done_datetime__gte=from_date, done_datetime__lte=to_date_end)
 
-        search_filter = status_filter & date_filter
+        project_id = self.request.GET.get('project')
+        if project_id:
+            qs = qs.filter(project_id=project_id)
 
-        return Task.objects.filter(user=self.request.user).filter(search_filter).order_by('-modification_datetime')
+        goal_id = self.request.GET.get('goal')
+        if goal_id:
+            qs = qs.filter(goal_id=goal_id)
+
+        return qs.order_by('-done_datetime')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['projects'] = Project.objects.filter(user=self.request.user).order_by('name')
+        context['goals'] = Goal.objects.filter(user=self.request.user).order_by('name')
+        context['filter_from'] = self.request.GET.get('from', '')
+        context['filter_to'] = self.request.GET.get('to', '')
+        context['filter_project'] = self.request.GET.get('project', '')
+        context['filter_goal'] = self.request.GET.get('goal', '')
+        task_list = context['task_list']
+        total_length = sum(float(t.length) for t in task_list if t.length)
+        context['total_length'] = total_length
+        return context
 
 def get_quarter_start():
     today = datetime.date.today()
