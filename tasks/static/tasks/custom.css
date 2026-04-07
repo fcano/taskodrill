@@ -212,3 +212,29 @@ li.active {
 .done-tasks-table tbody tr td:nth-child(2) {
     text-decoration: line-through;
 }
+
+/* jQuery UI autocomplete dropdown */
+.ui-autocomplete {
+    max-height: 250px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    z-index: 1050;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: .25rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.ui-menu-item-wrapper {
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: .875rem;
+}
+
+.ui-menu-item-wrapper.ui-state-active,
+.ui-menu-item-wrapper:hover {
+    background-color: #007bff;
+    color: #fff;
+}

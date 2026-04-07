@@ -14,12 +14,12 @@
       {% endfor %}
     </select>
     <label class="mr-2">Goal</label>
-    <select name="goal" class="form-control form-control-sm mr-3">
-      <option value="">All</option>
-      {% for g in goals %}
-        <option value="{{ g.pk }}" {% if filter_goal == g.pk|stringformat:"d" %}selected{% endif %}>{{ g.name }}</option>
-      {% endfor %}
-    </select>
+    <input type="hidden" name="goal" id="goal-value" value="{{ filter_goal }}">
+    <input type="text"
+           class="form-control form-control-sm mr-3 js-autocomplete-filter"
+           data-hidden="#goal-value"
+           data-items='[{% for g in goals %}{"label":"{{ g.name|escapejs }}","value":"{{ g.pk }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'
+           placeholder="All" value="{{ filter_goal_name }}" autocomplete="off">
     <button type="submit" class="btn btn-primary btn-sm">Filter</button>
   </form>
 

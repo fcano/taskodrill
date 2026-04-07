@@ -359,3 +359,37 @@ $('#show_done_tasks').click(function () {
 });
 
 $('[data-toggle="tooltip"]').tooltip();
+
+$('.js-autocomplete-filter').each(function() {
+    var $input = $(this);
+    var $hidden = $($input.data('hidden'));
+    var items = JSON.parse($input.attr('data-items'));
+
+    $input.autocomplete({
+        source: function(request, response) {
+            var term = request.term.toLowerCase();
+            var matches = items.filter(function(item) {
+                return item.label.toLowerCase().indexOf(term) !== -1;
+            });
+            response(matches);
+        },
+        select: function(event, ui) {
+            $hidden.val(ui.item.value);
+            $(this).val(ui.item.label);
+            return false;
+        },
+        focus: function(event, ui) {
+            $(this).val(ui.item.label);
+            return false;
+        },
+        minLength: 0
+    }).on('input', function() {
+        if ($(this).val() === '') {
+            $hidden.val('');
+        }
+    }).on('focus', function() {
+        if ($(this).val() === '') {
+            $(this).autocomplete('search', '');
+        }
+    });
+});

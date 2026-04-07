@@ -498,6 +498,12 @@ class TaskListDone(LoginRequiredMixin, ListView):
         context['filter_to'] = self.request.GET.get('to', '')
         context['filter_project'] = self.request.GET.get('project', '')
         context['filter_goal'] = self.request.GET.get('goal', '')
+        goal_id = self.request.GET.get('goal')
+        if goal_id:
+            goal_obj = Goal.objects.filter(pk=goal_id, user=self.request.user).first()
+            context['filter_goal_name'] = goal_obj.name if goal_obj else ''
+        else:
+            context['filter_goal_name'] = ''
         task_list = context['task_list']
         total_length = sum(float(t.length) for t in task_list if t.length)
         context['total_length'] = total_length
