@@ -174,6 +174,7 @@ class TaskList(LoginRequiredMixin, ListView):
         context = super(TaskList, self).get_context_data(**kwargs)
         context['form'] = TaskForm(user=self.request.user)
         context['num_tasks_due_date'] = 0
+        context['sum_length_due_date'] = 0
         context['num_late_tasks'] = 0
         task_list = self.get_queryset()
         task_ids = task_list.values_list('id', flat=True)
@@ -183,6 +184,7 @@ class TaskList(LoginRequiredMixin, ListView):
         for task in context['task_list']:
             if task.due_date and task.due_date <= datetime.date.today():
                 context['num_tasks_due_date'] += 1
+                context['sum_length_due_date'] += float(task.length or 0)
             if task.due_date and task.planned_end_date and task.planned_end_date > task.due_date:
                 context['num_late_tasks'] += 1
         return context
