@@ -2,7 +2,7 @@
 
 {% block content %}
 	<h1>{{ myuserprofile.user.username }}</h1>
-    <p><a href="{% url 'myuserprofile_update' myuserprofile.pk %}">Edit</a>
+    <p><a href="{% url 'myuserprofile_update' myuserprofile.pk %}">Edit</a> | <a href="{% url 'api_token_manage' %}">API Token</a></p>
     <div>
         Work hours start: {{ myuserprofile.work_hours_start }} <br />
         Work hours end: {{ myuserprofile.work_hours_end }}<br />

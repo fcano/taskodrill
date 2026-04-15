@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}API Token - TaskODrill{% endblock %}
+
+{% block content %}
+<h1>API Token</h1>
+<p>Use this token to authenticate with the TaskODrill REST API. Include it in your requests as:</p>
+<pre>Authorization: Token &lt;your-token&gt;</pre>
+
+{% if token %}
+<div class="card mt-3 mb-3">
+    <div class="card-body">
+        <h5 class="card-title">Your API Token</h5>
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" id="api-token" value="{{ token.key }}" readonly>
+            <div class="input-group-append">
+                <button class="btn btn-outline-secondary" type="button" onclick="copyToken()">Copy</button>
+            </div>
+        </div>
+        <small class="text-muted">Created: {{ token.created|date:"N j, Y, P" }}</small>
+    </div>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="revoke">
+    <button type="submit" class="btn btn-danger" onclick="return confirm('Revoke this token? Any agent using it will lose access.');">
+        Revoke Token
+    </button>
+</form>
+
+{% else %}
+<div class="alert alert-info mt-3">
+    You don't have an API token yet. Generate one to start using the API.
+</div>
+
+<form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="generate">
+    <button type="submit" class="btn btn-primary">Generate Token</button>
+</form>
+{% endif %}
+
+{% if messages %}
+<div class="mt-3">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<hr>
+<h5>API Documentation</h5>
+<p>
+    <a href="{% url 'api_docs' %}">Interactive API docs (Swagger UI)</a><br>
+    <a href="{% url 'api_schema' %}">OpenAPI schema (JSON)</a>
+</p>
+
+<script>
+function copyToken() {
+    var input = document.getElementById('api-token');
+    input.select();
+    document.execCommand('copy');
+}
+</script>
+{% endblock %}

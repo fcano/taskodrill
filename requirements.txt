@@ -1,9 +1,13 @@
 Django==6.0.1
 django-autocomplete-light
 django-crispy-forms
+coverage
 crispy-bootstrap4
 django-debug-toolbar
+django-filter
 django-heroku
+djangorestframework
+drf-spectacular
 gunicorn
 holidays
 psycopg2

@@ -46,7 +46,11 @@ INSTALLED_APPS = [
     'pages.apps.PagesConfig',
     'crispy_forms',
     'crispy_bootstrap4',
-    'debug_toolbar'
+    'debug_toolbar',
+    'rest_framework',
+    'rest_framework.authtoken',
+    'django_filters',
+    'drf_spectacular',
 ]
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
@@ -144,6 +148,36 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'tasks/static/tasks'),] # new
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'tasks.api.pagination.FlexiblePageNumberPagination',
+    'PAGE_SIZE': 25,
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'user': '100/min',
+    },
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Taskodrill API',
+    'DESCRIPTION': 'REST API for managing tasks, goals, and contexts in Taskodrill.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
 
 SENDGRID_API_KEY = os.environ['SENDGRID_API_KEY']
 

@@ -21,6 +21,7 @@ from django.contrib.auth import views as auth_views
 from pages import views as pages_views
 
 urlpatterns = [
+    path("api/v1/", include("tasks.api.urls")),
     path("", include("tasks.urls")),
     path("", include("myauth.urls")),
     path("admin/", admin.site.urls),
