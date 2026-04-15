@@ -28,6 +28,7 @@ class TaskViewSet(OwnerViewSetMixin, viewsets.ModelViewSet):
     ordering_fields = [
         'name', 'due_date', 'start_date', 'priority', 'status',
         'creation_datetime', 'modification_datetime', 'ready_datetime',
+        'done_datetime',
     ]
     search_fields = ['name', 'note']
 
