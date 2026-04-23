@@ -219,6 +219,80 @@ class ContextCRUDTests(AuthenticatedAPITestCase):
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
 
 
+# ── Folder CRUD ──────────────────────────────────────────────────────────
+
+@override_settings(REST_FRAMEWORK=API_SETTINGS)
+class FolderCRUDTests(AuthenticatedAPITestCase):
+
+    def test_create_folder(self):
+        resp = self.client.post(reverse('folder-list'), {'name': 'OpenShell'})
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(resp.data['name'], 'OpenShell')
+        self.assertTrue(Folder.objects.filter(name='OpenShell', user=self.user).exists())
+
+    def test_list_folders(self):
+        Folder.objects.create(name='F1', user=self.user)
+        Folder.objects.create(name='F2', user=self.user)
+        resp = self.client.get(reverse('folder-list'))
+        self.assertEqual(resp.data['count'], 2)
+
+    def test_retrieve_folder(self):
+        f = Folder.objects.create(name='MyFolder', user=self.user)
+        resp = self.client.get(reverse('folder-detail', args=[f.pk]))
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data['name'], 'MyFolder')
+
+    def test_update_folder(self):
+        f = Folder.objects.create(name='Old', user=self.user)
+        resp = self.client.patch(
+            reverse('folder-detail', args=[f.pk]), {'name': 'New'},
+        )
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        f.refresh_from_db()
+        self.assertEqual(f.name, 'New')
+
+    def test_delete_folder(self):
+        f = Folder.objects.create(name='Temp', user=self.user)
+        resp = self.client.delete(reverse('folder-detail', args=[f.pk]))
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Folder.objects.filter(pk=f.pk).exists())
+
+    def test_folder_task_count(self):
+        f = Folder.objects.create(name='F', user=self.user)
+        Task.objects.create(name='T1', user=self.user, folder=f, status=Task.PENDING)
+        Task.objects.create(name='T2', user=self.user, folder=f, status=Task.DONE)
+        resp = self.client.get(reverse('folder-detail', args=[f.pk]))
+        self.assertEqual(resp.data['task_count'], 1)
+
+    def test_filter_folder_by_name(self):
+        Folder.objects.create(name='OpenShell', user=self.user)
+        Folder.objects.create(name='Backend', user=self.user)
+        resp = self.client.get(reverse('folder-list'), {'name': 'shell'})
+        self.assertEqual(resp.data['count'], 1)
+
+    def test_folder_isolation(self):
+        Folder.objects.create(name='Private', user=self.other_user)
+        resp = self.client.get(reverse('folder-list'))
+        self.assertEqual(resp.data['count'], 0)
+
+    def test_folder_cannot_access_other_user(self):
+        f = Folder.objects.create(name='Other', user=self.other_user)
+        resp = self.client.get(reverse('folder-detail', args=[f.pk]))
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_folder_cannot_update_other_user(self):
+        f = Folder.objects.create(name='Other', user=self.other_user)
+        resp = self.client.patch(
+            reverse('folder-detail', args=[f.pk]), {'name': 'Hacked'},
+        )
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_folder_cannot_delete_other_user(self):
+        f = Folder.objects.create(name='Other', user=self.other_user)
+        resp = self.client.delete(reverse('folder-detail', args=[f.pk]))
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+
 # ── Goal CRUD ────────────────────────────────────────────────────────────
 
 @override_settings(REST_FRAMEWORK=API_SETTINGS)

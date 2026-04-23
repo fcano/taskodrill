@@ -61,7 +61,7 @@ class FolderSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(serializers.IntegerField)
     def get_task_count(self, obj) -> int:
-        return obj.task_set.filter(status=Task.PENDING).count()
+        return obj.tasks.filter(status=Task.PENDING).count()
 
 
 class TaskContextSerializer(serializers.ModelSerializer):
