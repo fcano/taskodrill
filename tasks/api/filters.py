@@ -1,6 +1,6 @@
 import django_filters
 
-from tasks.models import Task, Goal, Context
+from tasks.models import Task, Goal, Context, Folder
 
 
 class TaskFilter(django_filters.FilterSet):
@@ -38,4 +38,12 @@ class ContextFilter(django_filters.FilterSet):
 
     class Meta:
         model = Context
+        fields = ['name']
+
+
+class FolderFilter(django_filters.FilterSet):
+    name = django_filters.CharFilter(lookup_expr='icontains')
+
+    class Meta:
+        model = Folder
         fields = ['name']

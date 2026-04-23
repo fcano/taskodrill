@@ -51,6 +51,19 @@ class GoalSerializer(serializers.ModelSerializer):
         return obj.tasks.filter(status=Task.PENDING).count()
 
 
+class FolderSerializer(serializers.ModelSerializer):
+    task_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Folder
+        fields = ['id', 'name', 'task_count']
+        read_only_fields = ['id']
+
+    @extend_schema_field(serializers.IntegerField)
+    def get_task_count(self, obj) -> int:
+        return obj.task_set.filter(status=Task.PENDING).count()
+
+
 class TaskContextSerializer(serializers.ModelSerializer):
     class Meta:
         model = Context

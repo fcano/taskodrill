@@ -4,9 +4,9 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from tasks.models import Task, Goal, Context
-from tasks.api.serializers import TaskSerializer, GoalSerializer, ContextSerializer
-from tasks.api.filters import TaskFilter, GoalFilter, ContextFilter
+from tasks.models import Task, Goal, Context, Folder
+from tasks.api.serializers import TaskSerializer, GoalSerializer, ContextSerializer, FolderSerializer
+from tasks.api.filters import TaskFilter, GoalFilter, ContextFilter, FolderFilter
 from tasks.api.permissions import IsOwner
 
 
@@ -54,5 +54,13 @@ class ContextViewSet(OwnerViewSetMixin, viewsets.ModelViewSet):
     queryset = Context.objects.all()
     serializer_class = ContextSerializer
     filterset_class = ContextFilter
+    ordering_fields = ['name']
+    search_fields = ['name']
+
+
+class FolderViewSet(OwnerViewSetMixin, viewsets.ModelViewSet):
+    queryset = Folder.objects.all()
+    serializer_class = FolderSerializer
+    filterset_class = FolderFilter
     ordering_fields = ['name']
     search_fields = ['name']

@@ -46,7 +46,6 @@ INSTALLED_APPS = [
     'pages.apps.PagesConfig',
     'crispy_forms',
     'crispy_bootstrap4',
-    'debug_toolbar',
     'rest_framework',
     'rest_framework.authtoken',
     'django_filters',
@@ -65,11 +64,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
-]
-
-INTERNAL_IPS = [
-    '127.0.0.1',
 ]
 
 AUTH_USER_MODEL = 'myauth.MyUser'

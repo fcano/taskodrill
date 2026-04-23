@@ -15,8 +15,6 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from django.conf import settings
-
 from django.contrib.auth import views as auth_views
 from pages import views as pages_views
 
@@ -30,10 +28,3 @@ urlpatterns = [
     #path("", pages_views.HomePage.as_view(), name="home"),
     path('', auth_views.LoginView.as_view(), name='home')
 ]
-
-if settings.DEBUG:
-    import debug_toolbar
-
-    urlpatterns = [
-        path("__debug__/", include(debug_toolbar.urls)),
-    ] + urlpatterns
