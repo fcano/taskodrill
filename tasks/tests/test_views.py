@@ -1135,6 +1135,21 @@ class TaskDetailViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, 'task-timer-cell')
 
+    def test_task_detail_shows_mark_done_for_pending(self):
+        user = mylogin(self)
+        task = create_task(user)
+        response = self.client.get(reverse("task_detail", args=(task.id,)))
+        self.assertContains(response, 'task_detail_mark_done')
+        self.assertContains(response, 'Mark as done')
+
+    def test_task_detail_hides_mark_done_when_done(self):
+        user = mylogin(self)
+        task = create_task(user)
+        task.status = Task.DONE
+        task.save(update_fields=['status'])
+        response = self.client.get(reverse("task_detail", args=(task.id,)))
+        self.assertNotContains(response, 'task_detail_mark_done')
+
     def test_task_detail_404(self):
         user = mylogin(self)
         task = create_task(user)

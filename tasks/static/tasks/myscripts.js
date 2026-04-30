@@ -79,6 +79,26 @@ $('#tasks_body').on('click', 'input[type="checkbox"]', function () {
     });
 });
 
+$(document).on('click', '#task_detail_mark_done', function () {
+    var $btn = $(this);
+    var taskId = String($btn.data('task-id'));
+    var postData = { id: taskId, value: 1 };
+    if (typeof window.taskTimerCollectSessionSecondsForMarkDone === 'function') {
+        var ts = window.taskTimerCollectSessionSecondsForMarkDone(taskId);
+        if (ts > 0) {
+            postData.timer_seconds = ts;
+        }
+    }
+    $.ajax({
+        type: 'POST',
+        url: $btn.data('mark-done-url'),
+        data: postData,
+        success: function () {
+            location.reload();
+        }
+    });
+});
+
 $('#project_tasks_body').on('click', 'input[type="checkbox"]', function () {
     var data = {};
     data.id = $(this).attr('value');

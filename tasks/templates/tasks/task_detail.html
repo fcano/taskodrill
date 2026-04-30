@@ -5,6 +5,11 @@
 <p>
   <a id="edit_task_button" class="btn btn-primary" href="{% url 'task_update' task.pk %}">Edit</a>
   <a class="btn btn-outline-secondary ml-1" href="{% url 'task_delete' task.pk %}">Delete</a>
+  {% if task.status != 1 %}
+  <button type="button" id="task_detail_mark_done" class="btn btn-success ml-1"
+      data-task-id="{{ task.pk }}"
+      data-mark-done-url="{% url 'task_mark_as_done' %}">Mark as done</button>
+  {% endif %}
 </p>
 
 {% if show_task_detail_timer %}
