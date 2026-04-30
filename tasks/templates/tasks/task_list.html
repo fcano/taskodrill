@@ -22,41 +22,12 @@
   {% endif %}
 
   {% if show_task_timer %}
-  <div class="modal fade" id="folderPickerModal" tabindex="-1" role="dialog" aria-labelledby="folderPickerModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="folderPickerModalLabel">Choose a folder</h5>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body">
-          <p class="small text-muted mb-2">This task has no folder yet. Pick an existing folder or type a new name (it will be created).</p>
-          <label for="folderPickerModalInput">Folder</label>
-          <input type="text" class="form-control" id="folderPickerModalInput" autocomplete="off" placeholder="Folder name">
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-primary" id="folderPickerModalConfirm">Start timer</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  {% include 'tasks/includes/task_folder_picker_modal.html' %}
   {% endif %}
 {% endblock %}
 
 {% block page_scripts %}
 {% if show_task_timer %}
-<script>
-  window.TASK_TIMER_URLS = {
-    logTime: "{% url 'task_log_time' %}",
-    assignFolder: "{% url 'task_assign_folder' %}",
-    folderSuggest: "{% url 'folder_suggest' %}",
-    timerPlay: "{% url 'task_timer_play' %}",
-    timerPause: "{% url 'task_timer_pause' %}"
-  };
-</script>
-<script src="{% static 'tasks/task_timers.js' %}"></script>
+{% include 'tasks/includes/task_timer_scripts.html' %}
 {% endif %}
 {% endblock %}

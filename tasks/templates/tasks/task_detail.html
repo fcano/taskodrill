@@ -3,9 +3,56 @@
 {% block content %}
 <h1>{{ task.name|urlize }}</h1>
 <p>
-    <a id="edit_task_button" class="btn btn-primary" href="{% url 'task_update' task.pk %}">Edit</a>
+  <a id="edit_task_button" class="btn btn-primary" href="{% url 'task_update' task.pk %}">Edit</a>
+  <a class="btn btn-outline-secondary ml-1" href="{% url 'task_delete' task.pk %}">Delete</a>
 </p>
-<p>{{ task.note|urlize }}</p>
-<p>{{ task.status }}</p>
-<p>{{ task.done_datetime }}</p>
+
+{% if show_task_detail_timer %}
+<h2 class="h5 mt-3">Timer</h2>
+<p class="small text-muted mb-2">Start, pause, or stop the session timer (requires a folder before play). Time is kept in sync with Next Actions.</p>
+<div class="card mb-4" style="max-width: 28rem;">
+  <div class="card-body py-3">
+    {% include 'tasks/includes/task_timer_markup.html' with task=task timer_session_state=timer_session_state %}
+  </div>
+</div>
+{% include 'tasks/includes/task_folder_picker_modal.html' %}
+{% endif %}
+
+<table class="table table-sm table-bordered w-auto mb-3">
+  <tbody>
+    <tr><th scope="row">Status</th><td>{{ task.get_status_display }}</td></tr>
+    <tr><th scope="row">Task list</th><td>{{ task.get_tasklist_display }}</td></tr>
+    <tr><th scope="row">Priority</th><td>{{ task.get_priority_display }}</td></tr>
+    <tr><th scope="row">Repeat</th><td>{{ task.get_repeat_display }}</td></tr>
+    <tr><th scope="row">Repeat from</th><td>{{ task.get_repeat_from_display }}</td></tr>
+    <tr><th scope="row">Start</th><td>{{ task.start_date|default_if_none:"—" }}{% if task.start_time %} {{ task.start_time }}{% endif %}</td></tr>
+    <tr><th scope="row">Due</th><td>{{ task.due_date|default_if_none:"—" }}{% if task.flexible_due_date %} <span class="text-muted">(flexible)</span>{% endif %}{% if task.due_time %} {{ task.due_time }}{% endif %}</td></tr>
+    <tr><th scope="row">Planned end</th><td>{{ task.planned_end_date|default_if_none:"—" }}</td></tr>
+    <tr><th scope="row">Length</th><td>{{ task.length|default_if_none:"—" }}</td></tr>
+    <tr><th scope="row">Milestone</th><td>{% if task.milestone %}Yes{% else %}No{% endif %}</td></tr>
+    <tr><th scope="row">Project</th><td>{% if task.project %}<a href="{{ task.project.get_absolute_url }}">{{ task.project.name }}</a>{% else %}—{% endif %}</td></tr>
+    <tr><th scope="row">Goal</th><td>{% if task.goal %}<a href="{{ task.goal.get_absolute_url }}">{{ task.goal.name }}</a>{% else %}—{% endif %}</td></tr>
+    <tr><th scope="row">Folder</th><td>{% if task.folder %}<a href="{{ task.folder.get_absolute_url }}">{{ task.folder.name }}</a>{% else %}—{% endif %}</td></tr>
+    <tr><th scope="row">Assignee</th><td>{% if task.assignee %}<a href="{{ task.assignee.get_absolute_url }}">{{ task.assignee.name }}</a>{% else %}—{% endif %}</td></tr>
+    <tr><th scope="row">Blocked by</th><td>{% if task.blocked_by %}<a href="{{ task.blocked_by.get_absolute_url }}">{{ task.blocked_by.name|truncatechars:80 }}</a>{% else %}—{% endif %}</td></tr>
+    <tr><th scope="row">Contexts</th><td>{% for c in task.contexts.all %}<a href="{{ c.get_absolute_url }}">{{ c.name }}</a>{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td></tr>
+    <tr><th scope="row">Created</th><td>{{ task.creation_datetime }}</td></tr>
+    <tr><th scope="row">Modified</th><td>{{ task.modification_datetime }}</td></tr>
+    <tr><th scope="row">Ready</th><td>{{ task.ready_datetime|default_if_none:"—" }}</td></tr>
+    <tr><th scope="row">Done</th><td>{{ task.done_datetime|default_if_none:"—" }}</td></tr>
+    <tr><th scope="row">Total logged time</th><td>{{ tracked_time_display }}</td></tr>
+  </tbody>
+</table>
+
+{% if task.note %}
+<h2>Note</h2>
+<div class="mb-4">{{ task.note|urlize|linebreaks }}</div>
+{% endif %}
+
+{% endblock %}
+
+{% block page_scripts %}
+{% if show_task_detail_timer %}
+{% include 'tasks/includes/task_timer_scripts.html' %}
+{% endif %}
 {% endblock %}

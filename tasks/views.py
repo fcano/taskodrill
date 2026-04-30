@@ -10,7 +10,7 @@ from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q, Sum
 from django.db import transaction, models
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.http import HttpResponseRedirect
@@ -146,6 +146,12 @@ class TaskCreate(LoginRequiredMixin, CreateView):
         return context
 
     def get_success_url(self):
+        if self.request.POST.get('submit_action') == 'open':
+            pk = getattr(self, '_open_detail_task_pk', None)
+            if pk is None and getattr(self, 'object', None) is not None:
+                pk = self.object.pk
+            if pk:
+                return reverse('task_detail', kwargs={'pk': pk})
         next_url = self.request.POST.get('next')
         if next_url:
             return next_url # return next url for redirection
@@ -172,7 +178,7 @@ class TaskCreate(LoginRequiredMixin, CreateView):
             form.instance.status = Task.BLOCKED
         if '|' in form.instance.name:
             tasks = [task.strip() for task in form.instance.name.split('|')]
-
+            last_pk = None
             for task in tasks:
                 t = form.save(commit=False)
                 t.pk = None
@@ -181,12 +187,15 @@ class TaskCreate(LoginRequiredMixin, CreateView):
                 t.save()
                 t.contexts.set(form.cleaned_data['contexts'])
                 t.contexts.add(*at_contexts)
+                last_pk = t.pk
+            self._open_detail_task_pk = last_pk
             return HttpResponseRedirect(self.get_success_url())
         elif '=>' in form.instance.name:
             tasks = [task.strip() for task in form.instance.name.split('=>')]
             if not form.cleaned_data['project']:
                 project = Project.objects.create(name=tasks[0], due_date=form.cleaned_data['due_date'], user=self.request.user)
                 tasks = tasks[1:]
+            last_pk = None
             for task in tasks:
                 t = form.save(commit=False)
                 t.pk = None
@@ -197,10 +206,13 @@ class TaskCreate(LoginRequiredMixin, CreateView):
                 t.save()
                 t.contexts.set(form.cleaned_data['contexts'])
                 t.contexts.add(*at_contexts)
+                last_pk = t.pk
+            self._open_detail_task_pk = last_pk
             return HttpResponseRedirect(self.get_success_url())
         elif '->' in form.instance.name:
             tasks = [task.strip() for task in form.instance.name.split('->')]
             prev_task = ''
+            last_pk = None
             for task in tasks:
                 t = form.save(commit=False)
                 t.pk = None
@@ -213,6 +225,8 @@ class TaskCreate(LoginRequiredMixin, CreateView):
                 t.contexts.set(form.cleaned_data['contexts'])
                 t.contexts.add(*at_contexts)
                 prev_task = Task.objects.get(pk=t.id)
+                last_pk = t.pk
+            self._open_detail_task_pk = last_pk
             return HttpResponseRedirect(self.get_success_url())
         #elif re.match('(\[(\w+)-(\w+)\])', form.instance.name):
         elif '[' in form.instance.name:
@@ -223,6 +237,7 @@ class TaskCreate(LoginRequiredMixin, CreateView):
             last_value = int(m.group(2))
             interval = int(m.group(4)) if m.group(4) is not None else 1
 
+            last_pk = None
             for i in range(first_value, last_value+interval, interval):
                 t = form.save(commit=False)
                 t.pk = None
@@ -231,6 +246,8 @@ class TaskCreate(LoginRequiredMixin, CreateView):
                 t.save()
                 t.contexts.set(form.cleaned_data['contexts'])
                 t.contexts.add(*at_contexts)
+                last_pk = t.pk
+            self._open_detail_task_pk = last_pk
             return HttpResponseRedirect(self.get_success_url())
         elif form.instance.repeat and form.instance.goal and form.instance.goal.due_date:
             name, at_contexts = extract_at_contexts(form.instance.name, self.request.user)
@@ -240,6 +257,7 @@ class TaskCreate(LoginRequiredMixin, CreateView):
                 current_date = Task.next_business_day(current_date)
             max_tasks_to_create = Goal.weekdays_between(current_date, form.instance.goal.due_date, HolidayPeriod.get_holiday_ranges()) // repeat_interval
             num_tasks_created = 0
+            last_pk = None
             while current_date <= form.instance.goal.due_date and num_tasks_created < max_tasks_to_create+1:
                 t = form.save(commit=False)
                 t.pk = None
@@ -250,10 +268,12 @@ class TaskCreate(LoginRequiredMixin, CreateView):
                 t.save()
                 t.contexts.set(form.cleaned_data['contexts'])
                 t.contexts.add(*at_contexts)
+                last_pk = t.pk
                 current_date = current_date + datetime.timedelta(days=repeat_interval)
                 if not Task.is_working_day(current_date):
                     current_date = Task.next_business_day(current_date)
                 num_tasks_created += 1
+            self._open_detail_task_pk = last_pk
             return HttpResponseRedirect(self.get_success_url())
 
         form.instance.name, at_contexts = extract_at_contexts(form.instance.name, self.request.user)
@@ -266,7 +286,35 @@ class TaskDetail(LoginRequiredMixin, DetailView):
     model = Task
 
     def get_queryset(self):
-        return Task.objects.filter(user=self.request.user)
+        return (
+            Task.objects.filter(user=self.request.user)
+            .select_related(
+                'project',
+                'goal',
+                'folder',
+                'assignee',
+                'blocked_by',
+                'timer_session',
+            )
+            .prefetch_related('contexts')
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        task = self.object
+        context['tracked_time_display'] = format_tracked_duration(
+            task.tracked_time_seconds
+        )
+        show_timer = task.status in (Task.PENDING, Task.BLOCKED)
+        context['show_task_detail_timer'] = show_timer
+        if show_timer:
+            try:
+                context['timer_session_state'] = task.timer_session
+            except TaskTimerSession.DoesNotExist:
+                context['timer_session_state'] = None
+        else:
+            context['timer_session_state'] = None
+        return context
 
 
 def none_to_max_date(date):

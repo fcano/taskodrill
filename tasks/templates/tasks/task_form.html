@@ -113,7 +113,12 @@
     </div>
     <input type="hidden" id="next" name="next" value="{{ next }}">
     <div id="submit_div">
-        <input type="submit" id="submit_button" value="Submit" />
+      {% if not form.instance.pk %}
+      <button type="submit" class="btn btn-primary" id="submit_button">Submit</button>
+      <button type="submit" name="submit_action" value="open" class="btn btn-secondary ml-2">Submit and open</button>
+      {% else %}
+      <input type="submit" id="submit_button" value="Submit" />
+      {% endif %}
     </div>
 </form>
 

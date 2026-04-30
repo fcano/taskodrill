@@ -1123,6 +1123,17 @@ class TaskDetailViewTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, task.name)
+        self.assertContains(response, 'task-timer-cell')
+        self.assertContains(response, 'Total logged time')
+
+    def test_task_detail_done_hides_timer_widget(self):
+        user = mylogin(self)
+        task = create_task(user)
+        task.status = Task.DONE
+        task.save(update_fields=['status'])
+        response = self.client.get(reverse("task_detail", args=(task.id,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'task-timer-cell')
 
     def test_task_detail_404(self):
         user = mylogin(self)
@@ -1177,6 +1188,33 @@ class TaskCreateViewTests(TestCase):
             target_status_code=200,
         )
         self.assertEqual(Task.objects.last().name, "Paint the bedroom")
+
+    def test_task_create_submit_and_open_redirects_to_detail(self):
+        self.client.login(username="testuser", password="testpassword")
+        response = self.client.post(
+            reverse("task_add"),
+            {
+                "name": "Detail redirect task",
+                "start_date": datetime.date.today(),
+                "start_time": datetime.datetime.now().time(),
+                "due_date": datetime.date.today() + datetime.timedelta(days=1),
+                "due_time": datetime.datetime.now().time(),
+                "repeat": Task.NO,
+                "repeat_from": Task.DUE_DATE,
+                "length": 15,
+                "priority": Task.URGENT,
+                "note": "",
+                "tasklist": Task.NEXT_ACTION,
+                "submit_action": "open",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        task = Task.objects.get(name="Detail redirect task")
+        self.assertRedirects(
+            response,
+            reverse("task_detail", kwargs={"pk": task.pk}),
+            target_status_code=200,
+        )
 
     def test_task_create_view_with_next(self):
         """ Test that if a next field is passed with the form, after the creation of the task the user is redirected to the path passed in next."""
@@ -1369,8 +1407,12 @@ class TaskCreateViewTests(TestCase):
 
         self.client.login(username="testuser1", password="testpassword")
         response = self.client.get(reverse("task_add"))
-        self.assertContains(response, "Context 1")
-        self.assertNotContains(response, "Context 2")
+        self.assertEqual(response.status_code, 200)
+        # Contexts use Select2/DAL: options are not embedded in HTML; assert on the form queryset.
+        form = response.context["form"]
+        ctx_qs = form.fields["contexts"].queryset
+        self.assertIn(context1, ctx_qs)
+        self.assertNotIn(context2, ctx_qs)
 
     def test_task_create_username_cannot_come_from_user(self):
         self.client.login(username="testuser", password="testpassword")

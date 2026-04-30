@@ -1,0 +1,11 @@
+{% load static %}
+<script>
+  window.TASK_TIMER_URLS = {
+    logTime: "{% url 'task_log_time' %}",
+    assignFolder: "{% url 'task_assign_folder' %}",
+    folderSuggest: "{% url 'folder_suggest' %}",
+    timerPlay: "{% url 'task_timer_play' %}",
+    timerPause: "{% url 'task_timer_pause' %}"
+  };
+</script>
+<script src="{% static 'tasks/task_timers.js' %}"></script>

@@ -168,8 +168,11 @@
         initCellFromDom($c);
     });
 
-    $('#tasks_body').on('click', '.task-timer-play', function () {
+    $(document).on('click', '.task-timer-play', function () {
         var $cell = $(this).closest('.task-timer-cell');
+        if (!$cell.length) {
+            return;
+        }
         var st = getState($cell);
         if (st.running) {
             return;
@@ -183,12 +186,18 @@
         playTimerForCell($cell);
     });
 
-    $('#tasks_body').on('click', '.task-timer-pause', function () {
-        pauseTimerForCell($(this).closest('.task-timer-cell'));
+    $(document).on('click', '.task-timer-pause', function () {
+        var $cell = $(this).closest('.task-timer-cell');
+        if ($cell.length) {
+            pauseTimerForCell($cell);
+        }
     });
 
-    $('#tasks_body').on('click', '.task-timer-stop', function () {
-        stopTimerForCell($(this).closest('.task-timer-cell'));
+    $(document).on('click', '.task-timer-stop', function () {
+        var $cell = $(this).closest('.task-timer-cell');
+        if ($cell.length) {
+            stopTimerForCell($cell);
+        }
     });
 
     $('#folderPickerModalConfirm').on('click', function () {
