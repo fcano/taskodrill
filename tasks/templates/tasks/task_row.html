@@ -40,7 +40,9 @@
   {% if show_task_timer %}
   <td class="task-timer-cell text-nowrap align-middle"
       data-task-id="{{ task.id }}"
-      data-folder-id="{% if task.folder_id %}{{ task.folder_id }}{% endif %}">
+      data-folder-id="{% if task.folder_id %}{{ task.folder_id }}{% endif %}"
+      data-timer-accumulated="{% if task.timer_session_state %}{{ task.timer_session_state.accumulated_seconds }}{% else %}0{% endif %}"
+      {% if task.timer_session_state and task.timer_session_state.segment_started_at %}data-timer-segment-start="{{ task.timer_session_state.segment_started_at.isoformat }}"{% endif %}>
     <div class="task-timer-session small text-muted mb-1">Session: <span class="task-timer-display">0:00</span></div>
     <div class="task-timer-total small">Logged: <span class="task-timer-total-value" data-seconds="{{ task.tracked_time_seconds|default:0 }}"></span></div>
     <div class="btn-group btn-group-sm mt-1" role="group">

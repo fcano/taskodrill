@@ -27,6 +27,14 @@
         return formatSessionMs(sec * 1000);
     }
 
+    function parseIsoToMs(iso) {
+        if (!iso) {
+            return null;
+        }
+        var t = Date.parse(iso);
+        return isNaN(t) ? null : t;
+    }
+
     function getState($cell) {
         var st = $cell.data('timerState');
         if (!st) {
@@ -34,6 +42,14 @@
             $cell.data('timerState', st);
         }
         return st;
+    }
+
+    function clearTick($cell) {
+        var st = getState($cell);
+        if (st.intervalId) {
+            clearInterval(st.intervalId);
+            st.intervalId = null;
+        }
     }
 
     function currentElapsedMs($cell) {
@@ -57,41 +73,73 @@
         $cell.find('.task-timer-stop').prop('disabled', !hasAccum);
     }
 
+    function setCellServerSnapshot($cell, accumulatedSeconds, segmentStartedAtIso) {
+        $cell.attr('data-timer-accumulated', String(accumulatedSeconds || 0));
+        if (segmentStartedAtIso) {
+            $cell.attr('data-timer-segment-start', segmentStartedAtIso);
+        } else {
+            $cell.removeAttr('data-timer-segment-start');
+        }
+    }
+
+    function applyServerSnapshot($cell, accumulatedSeconds, segmentStartedAtIso) {
+        clearTick($cell);
+        var st = getState($cell);
+        st.accumulatedMs = (parseInt(accumulatedSeconds, 10) || 0) * 1000;
+        var segMs = parseIsoToMs(segmentStartedAtIso);
+        st.running = segMs != null;
+        st.segmentStartMs = segMs;
+        setCellServerSnapshot($cell, accumulatedSeconds, segmentStartedAtIso);
+        if (st.running) {
+            st.intervalId = setInterval(function () {
+                updateDisplay($cell);
+            }, 250);
+        }
+        updateDisplay($cell);
+        syncButtons($cell);
+    }
+
     function hasFolder($cell) {
         var id = $cell.attr('data-folder-id');
         return id !== undefined && id !== null && String(id).trim() !== '';
     }
 
+    function postJson(url, payload, onSuccess) {
+        $.ajax({
+            type: 'POST',
+            url: url,
+            contentType: 'application/json; charset=utf-8',
+            data: JSON.stringify(payload),
+            success: onSuccess
+        });
+    }
+
+    function initCellFromDom($cell) {
+        var acc = parseInt($cell.attr('data-timer-accumulated'), 10) || 0;
+        var segIso = $cell.attr('data-timer-segment-start');
+        applyServerSnapshot($cell, acc, segIso || null);
+    }
+
     function playTimerForCell($cell) {
-        var st = getState($cell);
-        if (st.running) {
-            return;
-        }
-        st.running = true;
-        st.segmentStartMs = Date.now();
-        st.intervalId = setInterval(function () {
-            updateDisplay($cell);
-        }, 250);
-        updateDisplay($cell);
-        syncButtons($cell);
+        var taskId = $cell.data('task-id');
+        postJson(window.TASK_TIMER_URLS.timerPlay, { task_id: taskId }, function (res) {
+            if (res && res.ok) {
+                applyServerSnapshot(
+                    $cell,
+                    res.accumulated_seconds,
+                    res.segment_started_at
+                );
+            }
+        });
     }
 
     function pauseTimerForCell($cell) {
-        var st = getState($cell);
-        if (!st.running) {
-            return;
-        }
-        if (st.segmentStartMs != null) {
-            st.accumulatedMs += Date.now() - st.segmentStartMs;
-        }
-        st.segmentStartMs = null;
-        st.running = false;
-        if (st.intervalId) {
-            clearInterval(st.intervalId);
-            st.intervalId = null;
-        }
-        updateDisplay($cell);
-        syncButtons($cell);
+        var taskId = $cell.data('task-id');
+        postJson(window.TASK_TIMER_URLS.timerPause, { task_id: taskId }, function (res) {
+            if (res && res.ok) {
+                applyServerSnapshot($cell, res.accumulated_seconds, null);
+            }
+        });
     }
 
     function formatTotalDisplay($cell) {
@@ -101,33 +149,11 @@
     }
 
     function stopTimerForCell($cell) {
-        var st = getState($cell);
-        if (st.running && st.segmentStartMs != null) {
-            st.accumulatedMs += Date.now() - st.segmentStartMs;
-        }
-        st.segmentStartMs = null;
-        st.running = false;
-        if (st.intervalId) {
-            clearInterval(st.intervalId);
-            st.intervalId = null;
-        }
-        var secs = Math.max(0, Math.floor(st.accumulatedMs / 1000));
-        st.accumulatedMs = 0;
-        updateDisplay($cell);
-        syncButtons($cell);
-        if (secs === 0) {
-            return;
-        }
-        $.ajax({
-            type: 'POST',
-            url: window.TASK_TIMER_URLS.logTime,
-            contentType: 'application/json; charset=utf-8',
-            data: JSON.stringify({
-                task_id: $cell.data('task-id'),
-                seconds: secs
-            }),
-            success: function (res) {
-                if (res && res.tracked_time_seconds != null) {
+        var taskId = $cell.data('task-id');
+        postJson(window.TASK_TIMER_URLS.logTime, { task_id: taskId, seconds: 0 }, function (res) {
+            if (res && res.ok) {
+                applyServerSnapshot($cell, 0, null);
+                if (res.tracked_time_seconds != null) {
                     var $tot = $cell.find('.task-timer-total-value');
                     $tot.attr('data-seconds', res.tracked_time_seconds);
                     formatTotalDisplay($cell);
@@ -137,8 +163,9 @@
     }
 
     $('.task-timer-cell').each(function () {
-        formatTotalDisplay($(this));
-        syncButtons($(this));
+        var $c = $(this);
+        formatTotalDisplay($c);
+        initCellFromDom($c);
     });
 
     $('#tasks_body').on('click', '.task-timer-play', function () {
@@ -208,9 +235,8 @@
     });
 
     /**
-     * Collapse any running/paused session for this task and return whole seconds.
-     * Used when marking the task done so folder totals still get a TaskTimeEntry.
-     * Does not POST; caller sends timer_seconds with mark_as_done.
+     * Unsaved client-only seconds (for mark-as-done when no server session).
+     * With server-backed timers, mark_as_done drains the session; this returns 0 if in sync.
      */
     window.taskTimerCollectSessionSecondsForMarkDone = function (taskId) {
         var $cell = $('.task-timer-cell[data-task-id="' + taskId + '"]');

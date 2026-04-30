@@ -19,7 +19,17 @@ from django.template.response import TemplateResponse
 from django.utils import timezone
 import pytz
 
-from .models import Task, Project, Context, Folder, Goal, Assignee, HolidayPeriod, TaskTimeEntry
+from .models import (
+    Task,
+    Project,
+    Context,
+    Folder,
+    Goal,
+    Assignee,
+    HolidayPeriod,
+    TaskTimeEntry,
+    TaskTimerSession,
+)
 from .forms import TaskForm, ProjectForm, OrderingForm, GoalForm, GoalMassEditForm, HolidayPeriodForm
 
 import datetime
@@ -66,6 +76,17 @@ def format_tracked_duration(seconds):
     if h:
         return f'{h:d}:{m:02d}:{s:02d}'
     return f'{m:d}:{s:02d}'
+
+
+def drain_task_timer_session_locked(task):
+    """Delete the task's timer session and return elapsed whole seconds (0 if none)."""
+    qs = TaskTimerSession.objects.select_for_update().filter(task=task)
+    session = qs.first()
+    if not session:
+        return 0
+    sec = session.total_elapsed_seconds()
+    session.delete()
+    return max(0, min(int(sec), 86400 * 2))
 
 
 def folder_tracked_stats_by_period(user):
@@ -278,6 +299,14 @@ class TaskList(LoginRequiredMixin, ListView):
             if task.due_date and task.planned_end_date and task.planned_end_date > task.due_date:
                 context['num_late_tasks'] += 1
         context['show_task_timer'] = self.kwargs.get('tasklist_slug') == 'nextactions'
+        if context['show_task_timer'] and context['task_list']:
+            ids = [t.pk for t in context['task_list']]
+            sess_map = {
+                s.task_id: s
+                for s in TaskTimerSession.objects.filter(task_id__in=ids)
+            }
+            for t in context['task_list']:
+                t.timer_session_state = sess_map.get(t.pk)
         return context
 
     def get_queryset(self):
@@ -463,12 +492,19 @@ class TaskMarkAsDone(LoginRequiredMixin, View):
             new_task.pk = None
             timer_raw = request.POST.get('timer_seconds', '')
             try:
-                timer_sec = int(timer_raw) if timer_raw != '' else 0
+                post_timer_sec = int(timer_raw) if timer_raw != '' else 0
             except (ValueError, TypeError):
-                timer_sec = 0
+                post_timer_sec = 0
             with transaction.atomic():
                 task = Task.objects.select_for_update().get(user=self.request.user, id=tid)
-                if 0 < timer_sec <= 86400 * 2:
+                drained = drain_task_timer_session_locked(task)
+                if drained > 0:
+                    timer_sec = drained
+                elif 0 < post_timer_sec <= 86400 * 2:
+                    timer_sec = post_timer_sec
+                else:
+                    timer_sec = 0
+                if timer_sec > 0:
                     work_date = timezone.localdate()
                     TaskTimeEntry.objects.create(
                         task=task, seconds=timer_sec, work_date=work_date
@@ -483,7 +519,12 @@ class TaskMarkAsDone(LoginRequiredMixin, View):
                 new_task.update_next_dates()
                 if task.contexts:
                     new_task.contexts.set(task.contexts.all())
-                tasks_to_render.append(render_to_string('tasks/task_row.html', {'task': new_task}))
+                tasks_to_render.append(
+                    render_to_string(
+                        'tasks/task_row.html',
+                        {'task': new_task, 'show_task_timer': False},
+                    )
+                )
 
             # Here I'm returning JsonResponse with serialized task. The html has to be
             # built in the myscripts.js or {% block javascript %}
@@ -496,14 +537,24 @@ class TaskMarkAsDone(LoginRequiredMixin, View):
                     next_task = next_tasks_list[0]
                     next_task.update_ready_datetime()
                     #next_task_tr = render_to_string('tasks/task_row.html', {'task': next_task})
-                    tasks_to_render.append(render_to_string('tasks/task_row.html', {'task': next_task}))
+                    tasks_to_render.append(
+                        render_to_string(
+                            'tasks/task_row.html',
+                            {'task': next_task, 'show_task_timer': False},
+                        )
+                    )
             blocked_tasks = Task.objects.filter(blocked_by=task)
             if blocked_tasks:
                 for blocked_task in blocked_tasks:
                     blocked_task.update_ready_datetime()
                     blocked_task.status = Task.PENDING
                     blocked_task.save()
-                    tasks_to_render.append(render_to_string('tasks/task_row.html', {'task': blocked_task}))
+                    tasks_to_render.append(
+                        render_to_string(
+                            'tasks/task_row.html',
+                            {'task': blocked_task, 'show_task_timer': False},
+                        )
+                    )
                 #next_task = blocked_task
                 #next_task_tr = render_to_string('tasks/task_row.html', {'task': next_task})
 
@@ -981,7 +1032,48 @@ class TaskAssignFolder(LoginRequiredMixin, View):
 
 
 class TaskLogTime(LoginRequiredMixin, View):
-    """Persist one timer session (seconds) on stop (JSON POST)."""
+    """Persist timer session on stop (JSON POST). Prefers server session; else body seconds."""
+
+    def post(self, request, *args, **kwargs):
+        try:
+            body = json.loads(request.body.decode() or '{}')
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'invalid json'}, status=400)
+        try:
+            tid = body.get('task_id')
+        except (TypeError, ValueError):
+            tid = None
+        if not tid:
+            return JsonResponse({'error': 'task not found'}, status=404)
+        try:
+            post_seconds = int(body.get('seconds', 0))
+        except (TypeError, ValueError):
+            post_seconds = 0
+        work_date = timezone.localdate()
+        with transaction.atomic():
+            task = Task.objects.select_for_update().get(pk=tid, user=request.user)
+            drained = drain_task_timer_session_locked(task)
+            if drained > 0:
+                seconds = drained
+            elif 0 < post_seconds <= 86400 * 2:
+                seconds = post_seconds
+            else:
+                return JsonResponse({'error': 'seconds must be positive'}, status=400)
+            TaskTimeEntry.objects.create(
+                task=task, seconds=seconds, work_date=work_date
+            )
+            task.tracked_time_seconds += seconds
+            task.save(update_fields=['tracked_time_seconds'])
+        return JsonResponse(
+            {
+                'ok': True,
+                'tracked_time_seconds': task.tracked_time_seconds,
+            }
+        )
+
+
+class TaskTimerPlay(LoginRequiredMixin, View):
+    """Start or resume the server-backed timer (JSON POST)."""
 
     def post(self, request, *args, **kwargs):
         try:
@@ -992,25 +1084,74 @@ class TaskLogTime(LoginRequiredMixin, View):
             task = Task.objects.get(pk=body.get('task_id'), user=request.user)
         except (Task.DoesNotExist, TypeError, ValueError):
             return JsonResponse({'error': 'task not found'}, status=404)
-        try:
-            seconds = int(body.get('seconds', 0))
-        except (TypeError, ValueError):
-            return JsonResponse({'error': 'invalid seconds'}, status=400)
-        if seconds <= 0:
-            return JsonResponse({'error': 'seconds must be positive'}, status=400)
-        if seconds > 86400 * 2:
-            return JsonResponse({'error': 'seconds too large'}, status=400)
-        work_date = timezone.localdate()
+        if task.status not in (Task.PENDING, Task.BLOCKED):
+            return JsonResponse({'error': 'invalid task status'}, status=400)
+        if not task.folder_id:
+            return JsonResponse({'error': 'folder required'}, status=400)
         with transaction.atomic():
-            TaskTimeEntry.objects.create(
-                task=task, seconds=seconds, work_date=work_date
+            session, _created = TaskTimerSession.objects.select_for_update().get_or_create(
+                task=task
             )
-            task.tracked_time_seconds += seconds
-            task.save(update_fields=['tracked_time_seconds'])
+            if session.segment_started_at is None:
+                session.segment_started_at = timezone.now()
+                session.save(update_fields=['segment_started_at', 'updated_at'])
         return JsonResponse(
             {
                 'ok': True,
-                'tracked_time_seconds': task.tracked_time_seconds,
+                'accumulated_seconds': session.accumulated_seconds,
+                'segment_started_at': (
+                    session.segment_started_at.isoformat()
+                    if session.segment_started_at
+                    else None
+                ),
+            }
+        )
+
+
+class TaskTimerPause(LoginRequiredMixin, View):
+    """Pause the server-backed timer (JSON POST)."""
+
+    def post(self, request, *args, **kwargs):
+        try:
+            body = json.loads(request.body.decode() or '{}')
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'invalid json'}, status=400)
+        try:
+            task = Task.objects.get(pk=body.get('task_id'), user=request.user)
+        except (Task.DoesNotExist, TypeError, ValueError):
+            return JsonResponse({'error': 'task not found'}, status=404)
+        with transaction.atomic():
+            session = (
+                TaskTimerSession.objects.select_for_update()
+                .filter(task=task)
+                .first()
+            )
+            if not session:
+                return JsonResponse(
+                    {
+                        'ok': True,
+                        'accumulated_seconds': 0,
+                        'segment_started_at': None,
+                    }
+                )
+            if session.segment_started_at:
+                session.accumulated_seconds += int(
+                    (timezone.now() - session.segment_started_at).total_seconds()
+                )
+                session.segment_started_at = None
+                session.save(
+                    update_fields=[
+                        'accumulated_seconds',
+                        'segment_started_at',
+                        'updated_at',
+                    ]
+                )
+            acc = session.accumulated_seconds
+        return JsonResponse(
+            {
+                'ok': True,
+                'accumulated_seconds': acc,
+                'segment_started_at': None,
             }
         )
 

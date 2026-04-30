@@ -18,7 +18,16 @@ from webdriver_manager.chrome import ChromeDriverManager
 import time_machine
 
 from myauth.models import MyUser
-from tasks.models import Task, Project, Context, Goal, HolidayPeriod, Folder, TaskTimeEntry
+from tasks.models import (
+    Task,
+    Project,
+    Context,
+    Goal,
+    HolidayPeriod,
+    Folder,
+    TaskTimeEntry,
+    TaskTimerSession,
+)
 
 
 def mylogin(the_test):
@@ -1957,3 +1966,51 @@ class TaskTimerAndFolderTimeTests(TestCase):
         self.assertEqual(self.task.tracked_time_seconds, 90)
         self.assertEqual(self.task.time_entries.count(), 1)
         self.assertEqual(self.task.time_entries.first().seconds, 90)
+
+    def test_log_time_drains_paused_server_session(self):
+        TaskTimerSession.objects.create(
+            task=self.task,
+            accumulated_seconds=45,
+            segment_started_at=None,
+        )
+        resp = self.client.post(
+            reverse('task_log_time'),
+            data=json.dumps({'task_id': self.task.pk, 'seconds': 0}),
+            content_type='application/json',
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.json().get('ok'))
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.tracked_time_seconds, 45)
+        self.assertFalse(TaskTimerSession.objects.filter(task=self.task).exists())
+
+    def test_mark_done_drains_paused_server_session(self):
+        TaskTimerSession.objects.create(
+            task=self.task,
+            accumulated_seconds=33,
+            segment_started_at=None,
+        )
+        resp = self.client.post(
+            reverse('task_mark_as_done'),
+            {'id': str(self.task.pk), 'value': '1'},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.status, Task.DONE)
+        self.assertEqual(self.task.tracked_time_seconds, 33)
+        self.assertFalse(TaskTimerSession.objects.filter(task=self.task).exists())
+
+    def test_timer_play_requires_folder(self):
+        t = Task.objects.create(
+            name='No folder',
+            user=self.user,
+            tasklist=Task.NEXT_ACTION,
+            status=Task.PENDING,
+            folder=None,
+        )
+        resp = self.client.post(
+            reverse('task_timer_play'),
+            data=json.dumps({'task_id': t.pk}),
+            content_type='application/json',
+        )
+        self.assertEqual(resp.status_code, 400)

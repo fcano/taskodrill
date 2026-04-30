@@ -310,7 +310,9 @@ class Task(models.Model):
             )
 
             # Create a QuerySet ordered by the custom Case expression
-            tasks = cls.objects.filter(id__in=sorted_ids).order_by(preserved_order)
+            tasks = cls.objects.filter(id__in=sorted_ids).order_by(preserved_order).select_related(
+                'timer_session'
+            )
 
             Task.update_planned_end_date(tasks)
 
@@ -327,7 +329,9 @@ class Task(models.Model):
                         selected_task_ids.append(task.id)
                         total_required_time += task_length
 
-                selected_tasks = cls.objects.filter(id__in=selected_task_ids)
+                selected_tasks = cls.objects.filter(id__in=selected_task_ids).select_related(
+                    'timer_session'
+                )
                 return selected_tasks
 
     @classmethod
@@ -938,6 +942,34 @@ class TaskTimeEntry(models.Model):
 
     def __str__(self):
         return f'{self.task_id} {self.work_date} {self.seconds}s'
+
+
+class TaskTimerSession(models.Model):
+    """Server-side active/paused timer so elapsed time survives reload and other tabs."""
+
+    task = models.OneToOneField(
+        'Task',
+        on_delete=models.CASCADE,
+        related_name='timer_session',
+    )
+    accumulated_seconds = models.PositiveIntegerField(default=0)
+    segment_started_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def total_elapsed_seconds(self, now=None):
+        now = now or timezone.now()
+        total = int(self.accumulated_seconds)
+        if self.segment_started_at:
+            delta = (now - self.segment_started_at).total_seconds()
+            if delta > 0:
+                total += int(delta)
+        return min(total, 86400 * 2)
+
+    class Meta:
+        verbose_name = 'Task timer session'
+
+    def __str__(self):
+        return f'task={self.task_id} acc={self.accumulated_seconds} seg={self.segment_started_at}'
 
 
 class Goal(models.Model):
