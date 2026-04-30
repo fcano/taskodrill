@@ -119,6 +119,7 @@
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
   <script src="{% static 'tasks/mysort.js' %}"></script>
   <script src="{% static 'tasks/myscripts.js' %}"></script>
+  {% block page_scripts %}{% endblock %}
 
   {{ form.media }}
 

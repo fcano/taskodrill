@@ -41,10 +41,18 @@ $('#tasks_body').on('click', 'input[type="checkbox"]', function () {
 
     console.log(data);
 
+    var postData = $.extend({}, data);
+    if (data.value === 1 && typeof window.taskTimerCollectSessionSecondsForMarkDone === 'function') {
+        var ts = window.taskTimerCollectSessionSecondsForMarkDone(data.id);
+        if (ts > 0) {
+            postData.timer_seconds = ts;
+        }
+    }
+
     $.ajax({
         type: "POST",
         url: "/tasks/mark_as_done/",
-        data: data,
+        data: postData,
         success: function (response) {
             checkbox_str = '#checkbox_' + data.id;
             $(checkbox_str).prop('checked', false);

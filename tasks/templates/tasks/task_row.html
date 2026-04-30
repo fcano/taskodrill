@@ -37,6 +37,19 @@
   <td>{{ task.get_repeat_display | default_if_none:"none" }}</td>
   <td>{{ task.get_priority_display | default_if_none:"none" }}</td>
   <td>{{ task.length | default_if_none:"none" }}</td>
+  {% if show_task_timer %}
+  <td class="task-timer-cell text-nowrap align-middle"
+      data-task-id="{{ task.id }}"
+      data-folder-id="{% if task.folder_id %}{{ task.folder_id }}{% endif %}">
+    <div class="task-timer-session small text-muted mb-1">Session: <span class="task-timer-display">0:00</span></div>
+    <div class="task-timer-total small">Logged: <span class="task-timer-total-value" data-seconds="{{ task.tracked_time_seconds|default:0 }}"></span></div>
+    <div class="btn-group btn-group-sm mt-1" role="group">
+      <button type="button" class="btn btn-outline-success task-timer-play" title="Play">▶</button>
+      <button type="button" class="btn btn-outline-secondary task-timer-pause" disabled title="Pause">⏸</button>
+      <button type="button" class="btn btn-outline-danger task-timer-stop" disabled title="Stop">■</button>
+    </div>
+  </td>
+  {% endif %}
   <td>
     <div class="action-icons">
       <a href="{% url 'task_remove_deadline' task.pk %}" class="remove-deadline"><img src="/static/tasks/empty.svg" width="18" /></a>

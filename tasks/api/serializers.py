@@ -121,10 +121,12 @@ class TaskSerializer(serializers.ModelSerializer):
             'assignee', 'assignee_name',
             'blocked_by', 'blocked_by_name',
             'milestone',
+            'tracked_time_seconds',
         ]
         read_only_fields = [
             'id', 'creation_datetime', 'modification_datetime',
             'planned_end_date', 'ready_datetime', 'done_datetime',
+            'tracked_time_seconds',
         ]
 
     def _scope_fk_queryset(self, field_name, model_cls):

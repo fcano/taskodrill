@@ -1,4 +1,5 @@
 import datetime
+import json
 import time
 import uuid
 
@@ -17,7 +18,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 import time_machine
 
 from myauth.models import MyUser
-from tasks.models import Task, Project, Context, Goal, HolidayPeriod
+from tasks.models import Task, Project, Context, Goal, HolidayPeriod, Folder, TaskTimeEntry
 
 
 def mylogin(the_test):
@@ -1875,3 +1876,84 @@ class GoalDeleteTest(TestCase):
         response = self.client.post(reverse('goal_delete', args=[self.goal.id]))
         self.assertEqual(response.status_code, 302)  # Redirect after successful delete
         self.assertEqual(Goal.objects.count(), 0)
+
+
+class TaskTimerAndFolderTimeTests(TestCase):
+    def setUp(self):
+        self.user = MyUser.objects.create_user(username='testuser', password='12345')
+        self.client.login(username='testuser', password='12345')
+        self.folder = Folder.objects.create(name='Dev', user=self.user)
+        self.task = Task.objects.create(
+            name='Tracked task',
+            user=self.user,
+            tasklist=Task.NEXT_ACTION,
+            status=Task.PENDING,
+            folder=self.folder,
+        )
+
+    def test_log_time_increments_task_and_creates_entry(self):
+        resp = self.client.post(
+            reverse('task_log_time'),
+            data=json.dumps({'task_id': self.task.pk, 'seconds': 120}),
+            content_type='application/json',
+        )
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertTrue(data['ok'])
+        self.assertEqual(data['tracked_time_seconds'], 120)
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.tracked_time_seconds, 120)
+        self.assertEqual(self.task.time_entries.count(), 1)
+        self.assertEqual(self.task.time_entries.first().seconds, 120)
+
+    def test_assign_folder_creates_and_links(self):
+        t = Task.objects.create(
+            name='No folder',
+            user=self.user,
+            tasklist=Task.NEXT_ACTION,
+            folder=None,
+        )
+        resp = self.client.post(
+            reverse('task_assign_folder'),
+            data=json.dumps({'task_id': t.pk, 'folder_name': '  NewBox  '}),
+            content_type='application/json',
+        )
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertTrue(body['ok'])
+        t.refresh_from_db()
+        self.assertEqual(t.folder.name, 'NewBox')
+        self.assertTrue(Folder.objects.filter(user=self.user, name='NewBox').exists())
+
+    def test_folder_suggest_returns_json(self):
+        resp = self.client.get(reverse('folder_suggest'), {'term': 'De'})
+        self.assertEqual(resp.status_code, 200)
+        rows = resp.json()
+        self.assertTrue(any(r['value'] == 'Dev' for r in rows))
+
+    def test_folder_list_shows_tracked_columns(self):
+        today = datetime.date.today()
+        TaskTimeEntry.objects.create(
+            task=self.task, seconds=3661, work_date=today
+        )
+        resp = self.client.get(reverse('folder_list'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Dev')
+        self.assertContains(resp, '1:01:01')
+
+    def test_mark_done_with_timer_seconds_persists_time(self):
+        resp = self.client.post(
+            reverse('task_mark_as_done'),
+            {
+                'id': str(self.task.pk),
+                'value': '1',
+                'timer_seconds': '90',
+            },
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.json().get('success'))
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.status, Task.DONE)
+        self.assertEqual(self.task.tracked_time_seconds, 90)
+        self.assertEqual(self.task.time_entries.count(), 1)
+        self.assertEqual(self.task.time_entries.first().seconds, 90)

@@ -1,4 +1,6 @@
 import datetime
+import json
+import calendar
 from dal import autocomplete
 import re
 
@@ -6,7 +8,7 @@ from django.views.generic import ListView, View
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.db import transaction, models
 from django.urls import reverse_lazy
 from django.http import JsonResponse
@@ -16,9 +18,8 @@ from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.utils import timezone
 import pytz
-import calendar
 
-from .models import Task, Project, Context, Folder, Goal, Assignee, HolidayPeriod
+from .models import Task, Project, Context, Folder, Goal, Assignee, HolidayPeriod, TaskTimeEntry
 from .forms import TaskForm, ProjectForm, OrderingForm, GoalForm, GoalMassEditForm, HolidayPeriodForm
 
 import datetime
@@ -26,6 +27,81 @@ import holidays
 
 ONE_DAY = datetime.timedelta(days=1)
 HOLIDAYS_ES_VC = holidays.CountryHoliday('ES', prov='VC')
+
+
+def _last_day_of_month(d):
+    last = calendar.monthrange(d.year, d.month)[1]
+    return datetime.date(d.year, d.month, last)
+
+
+def folder_tracked_time_period_ranges():
+    """Calendar ranges using timezone.localdate() (see TIME_ZONE)."""
+    today = timezone.localdate()
+    monday = today - datetime.timedelta(days=today.weekday())
+    sunday = monday + datetime.timedelta(days=6)
+    prev_sunday = monday - datetime.timedelta(days=1)
+    prev_monday = prev_sunday - datetime.timedelta(days=6)
+    cur_month_start = today.replace(day=1)
+    cur_month_end = _last_day_of_month(today)
+    if today.month == 1:
+        prev_month_start = datetime.date(today.year - 1, 12, 1)
+    else:
+        prev_month_start = datetime.date(today.year, today.month - 1, 1)
+    prev_month_end = _last_day_of_month(prev_month_start)
+    return {
+        'today': (today, today),
+        'cur_week': (monday, sunday),
+        'cur_month': (cur_month_start, cur_month_end),
+        'prev_week': (prev_monday, prev_sunday),
+        'prev_month': (prev_month_start, prev_month_end),
+    }
+
+
+def format_tracked_duration(seconds):
+    seconds = int(seconds or 0)
+    if seconds <= 0:
+        return '0:00'
+    h, rem = divmod(seconds, 3600)
+    m, s = divmod(rem, 60)
+    if h:
+        return f'{h:d}:{m:02d}:{s:02d}'
+    return f'{m:d}:{s:02d}'
+
+
+def folder_tracked_stats_by_period(user):
+    """folder_id -> {period_key: seconds} for aggregating folder list columns."""
+    ranges = folder_tracked_time_period_ranges()
+    result = {}
+    for key, (start, end) in ranges.items():
+        rows = (
+            TaskTimeEntry.objects.filter(
+                task__user=user,
+                task__folder__isnull=False,
+                work_date__gte=start,
+                work_date__lte=end,
+            )
+            .values('task__folder_id')
+            .annotate(total=Sum('seconds'))
+        )
+        for row in rows:
+            fid = row['task__folder_id']
+            if fid not in result:
+                result[fid] = {}
+            result[fid][key] = int(row['total'] or 0)
+    return result
+
+
+def extract_at_contexts(name, user):
+    """Extract @context tokens from a task name, creating missing contexts.
+    The name is returned unchanged.
+    Returns (name, list_of_Context_objects).
+    """
+    context_names = re.findall(r'(?:^|(?<=\s))@(\w+)', name)
+    contexts = []
+    for ctx_name in context_names:
+        context, _ = Context.objects.get_or_create(name=ctx_name, user=user)
+        contexts.append(context)
+    return name, contexts
 
 
 class TaskCreate(LoginRequiredMixin, CreateView):
@@ -79,9 +155,11 @@ class TaskCreate(LoginRequiredMixin, CreateView):
             for task in tasks:
                 t = form.save(commit=False)
                 t.pk = None
+                task, at_contexts = extract_at_contexts(task, self.request.user)
                 t.name = task
                 t.save()
                 t.contexts.set(form.cleaned_data['contexts'])
+                t.contexts.add(*at_contexts)
             return HttpResponseRedirect(self.get_success_url())
         elif '=>' in form.instance.name:
             tasks = [task.strip() for task in form.instance.name.split('=>')]
@@ -91,11 +169,13 @@ class TaskCreate(LoginRequiredMixin, CreateView):
             for task in tasks:
                 t = form.save(commit=False)
                 t.pk = None
+                task, at_contexts = extract_at_contexts(task, self.request.user)
                 t.name = task
                 if not form.cleaned_data['project']:
                     t.project = project
                 t.save()
                 t.contexts.set(form.cleaned_data['contexts'])
+                t.contexts.add(*at_contexts)
             return HttpResponseRedirect(self.get_success_url())
         elif '->' in form.instance.name:
             tasks = [task.strip() for task in form.instance.name.split('->')]
@@ -103,18 +183,21 @@ class TaskCreate(LoginRequiredMixin, CreateView):
             for task in tasks:
                 t = form.save(commit=False)
                 t.pk = None
+                task, at_contexts = extract_at_contexts(task, self.request.user)
                 t.name = task
                 if prev_task:
                     t.blocked_by = prev_task
                     t.status = Task.BLOCKED
                 t.save()
                 t.contexts.set(form.cleaned_data['contexts'])
+                t.contexts.add(*at_contexts)
                 prev_task = Task.objects.get(pk=t.id)
             return HttpResponseRedirect(self.get_success_url())
         #elif re.match('(\[(\w+)-(\w+)\])', form.instance.name):
         elif '[' in form.instance.name:
             task = form.instance.name[:]
-            m = re.search(r'\[(\d+):(\d+)(:(\d+))?\]', form.instance.name)
+            task, at_contexts = extract_at_contexts(task, self.request.user)
+            m = re.search(r'\[(\d+):(\d+)(:(\d+))?\]', task)
             first_value = int(m.group(1))
             last_value = int(m.group(2))
             interval = int(m.group(4)) if m.group(4) is not None else 1
@@ -126,8 +209,10 @@ class TaskCreate(LoginRequiredMixin, CreateView):
                 t.name = re.sub(r"\[(\d+):(\d+)(:(\d+))?\]", str(i), task)
                 t.save()
                 t.contexts.set(form.cleaned_data['contexts'])
+                t.contexts.add(*at_contexts)
             return HttpResponseRedirect(self.get_success_url())
         elif form.instance.repeat and form.instance.goal and form.instance.goal.due_date:
+            name, at_contexts = extract_at_contexts(form.instance.name, self.request.user)
             repeat_interval = Task.REPEAT_TO_DAYS[form.instance.repeat]
             current_date = datetime.date.today() + datetime.timedelta(1)
             if not Task.is_working_day(current_date):
@@ -138,18 +223,23 @@ class TaskCreate(LoginRequiredMixin, CreateView):
                 t = form.save(commit=False)
                 t.pk = None
                 t._state.adding = True
-                t.name = form.instance.name
+                t.name = name
                 t.due_date = current_date
                 t.repeat = Task.NO
                 t.save()
                 t.contexts.set(form.cleaned_data['contexts'])
+                t.contexts.add(*at_contexts)
                 current_date = current_date + datetime.timedelta(days=repeat_interval)
                 if not Task.is_working_day(current_date):
                     current_date = Task.next_business_day(current_date)
                 num_tasks_created += 1
             return HttpResponseRedirect(self.get_success_url())
 
-        return super().form_valid(form)
+        form.instance.name, at_contexts = extract_at_contexts(form.instance.name, self.request.user)
+        response = super().form_valid(form)
+        if at_contexts:
+            self.object.contexts.add(*at_contexts)
+        return response
 
 class TaskDetail(LoginRequiredMixin, DetailView):
     model = Task
@@ -187,6 +277,7 @@ class TaskList(LoginRequiredMixin, ListView):
                 context['sum_length_due_date'] += float(task.length or 0)
             if task.due_date and task.planned_end_date and task.planned_end_date > task.due_date:
                 context['num_late_tasks'] += 1
+        context['show_task_timer'] = self.kwargs.get('tasklist_slug') == 'nextactions'
         return context
 
     def get_queryset(self):
@@ -259,6 +350,7 @@ class TaskUpdate(LoginRequiredMixin, UpdateView):
             tasks = [task.strip() for task in form.instance.name.split('->')]
             prev_task = ''
             for task in tasks:
+                task, at_contexts = extract_at_contexts(task, self.request.user)
                 try:
                     t = self.request.user.task_set.filter(Q(status=Task.PENDING) | Q(status=Task.BLOCKED)).get(name=task)
                 except Task.DoesNotExist:
@@ -270,11 +362,15 @@ class TaskUpdate(LoginRequiredMixin, UpdateView):
                     t.status = Task.BLOCKED
                 t.save()
                 t.contexts.set(form.cleaned_data['contexts'])
+                t.contexts.add(*at_contexts)
                 prev_task = Task.objects.get(pk=t.id)
             return HttpResponseRedirect(self.get_success_url())
 
-
-        return super().form_valid(form)
+        form.instance.name, at_contexts = extract_at_contexts(form.instance.name, self.request.user)
+        response = super().form_valid(form)
+        if at_contexts:
+            self.object.contexts.add(*at_contexts)
+        return response
 
 #    def get_success_url(self):
 #        return reverse('task_list_tasklist', kwargs={'tasklist_slug' : 'nextactions', })
@@ -362,12 +458,25 @@ class TaskMarkAsDone(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         if self.request.user.is_authenticated:
-            new_task = Task.objects.get(user=self.request.user, id=self.request.POST['id'])
+            tid = request.POST['id']
+            new_task = Task.objects.get(user=self.request.user, id=tid)
             new_task.pk = None
-            task = Task.objects.get(user=self.request.user, id=self.request.POST['id'])
-            task.status = Task.DONE
-            task.done_datetime = timezone.now()
-            task.save()
+            timer_raw = request.POST.get('timer_seconds', '')
+            try:
+                timer_sec = int(timer_raw) if timer_raw != '' else 0
+            except (ValueError, TypeError):
+                timer_sec = 0
+            with transaction.atomic():
+                task = Task.objects.select_for_update().get(user=self.request.user, id=tid)
+                if 0 < timer_sec <= 86400 * 2:
+                    work_date = timezone.localdate()
+                    TaskTimeEntry.objects.create(
+                        task=task, seconds=timer_sec, work_date=work_date
+                    )
+                    task.tracked_time_seconds += timer_sec
+                task.status = Task.DONE
+                task.done_datetime = timezone.now()
+                task.save()
 
             tasks_to_render = []
             if new_task.repeat:
@@ -792,6 +901,18 @@ class FolderList(LoginRequiredMixin, ListView):
     def get_queryset(self):
         return Folder.objects.filter(user=self.request.user)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        stats = folder_tracked_stats_by_period(self.request.user)
+        for folder in context['folder_list']:
+            s = stats.get(folder.pk, {})
+            folder.tracked_today_fmt = format_tracked_duration(s.get('today', 0))
+            folder.tracked_cur_week_fmt = format_tracked_duration(s.get('cur_week', 0))
+            folder.tracked_cur_month_fmt = format_tracked_duration(s.get('cur_month', 0))
+            folder.tracked_prev_week_fmt = format_tracked_duration(s.get('prev_week', 0))
+            folder.tracked_prev_month_fmt = format_tracked_duration(s.get('prev_month', 0))
+        return context
+
 class FolderUpdate(LoginRequiredMixin,UpdateView):
     model = Folder
     fields = ['name']
@@ -804,7 +925,7 @@ class FolderAutocomplete(autocomplete.Select2QuerySetView):
 
     def get_queryset(self):
         if not self.request.user.is_authenticated:
-            return Task.objects.none()
+            return Folder.objects.none()
 
         qs = self.request.user.folder_set.all()
 
@@ -812,6 +933,86 @@ class FolderAutocomplete(autocomplete.Select2QuerySetView):
             qs = qs.filter(name__icontains=self.q)
 
         return qs
+
+    def has_add_permission(self, request):
+        return request.user.is_authenticated
+
+    def create_object(self, text):
+        return Folder.objects.create(name=text.strip(), user=self.request.user)
+
+
+class FolderSuggest(LoginRequiredMixin, View):
+    """JSON for jQuery UI autocomplete: list of {id, label, value}."""
+
+    def get(self, request, *args, **kwargs):
+        term = (request.GET.get('term') or '').strip()
+        qs = self.request.user.folder_set.all().order_by('name')
+        if term:
+            qs = qs.filter(name__icontains=term)[:20]
+        else:
+            qs = qs[:20]
+        data = [{'id': f.pk, 'label': f.name, 'value': f.name} for f in qs]
+        return JsonResponse(data, safe=False)
+
+
+class TaskAssignFolder(LoginRequiredMixin, View):
+    """Assign task to folder, creating the folder by name if needed (JSON POST)."""
+
+    def post(self, request, *args, **kwargs):
+        try:
+            body = json.loads(request.body.decode() or '{}')
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'invalid json'}, status=400)
+        try:
+            task = Task.objects.get(pk=body.get('task_id'), user=request.user)
+        except (Task.DoesNotExist, TypeError, ValueError):
+            return JsonResponse({'error': 'task not found'}, status=404)
+        name = (body.get('folder_name') or '').strip()
+        if not name:
+            return JsonResponse({'error': 'folder name required'}, status=400)
+        folder, _created = Folder.objects.get_or_create(
+            user=request.user, name=name
+        )
+        task.folder = folder
+        task.save(update_fields=['folder'])
+        return JsonResponse(
+            {'ok': True, 'folder_id': folder.pk, 'folder_name': folder.name}
+        )
+
+
+class TaskLogTime(LoginRequiredMixin, View):
+    """Persist one timer session (seconds) on stop (JSON POST)."""
+
+    def post(self, request, *args, **kwargs):
+        try:
+            body = json.loads(request.body.decode() or '{}')
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'invalid json'}, status=400)
+        try:
+            task = Task.objects.get(pk=body.get('task_id'), user=request.user)
+        except (Task.DoesNotExist, TypeError, ValueError):
+            return JsonResponse({'error': 'task not found'}, status=404)
+        try:
+            seconds = int(body.get('seconds', 0))
+        except (TypeError, ValueError):
+            return JsonResponse({'error': 'invalid seconds'}, status=400)
+        if seconds <= 0:
+            return JsonResponse({'error': 'seconds must be positive'}, status=400)
+        if seconds > 86400 * 2:
+            return JsonResponse({'error': 'seconds too large'}, status=400)
+        work_date = timezone.localdate()
+        with transaction.atomic():
+            TaskTimeEntry.objects.create(
+                task=task, seconds=seconds, work_date=work_date
+            )
+            task.tracked_time_seconds += seconds
+            task.save(update_fields=['tracked_time_seconds'])
+        return JsonResponse(
+            {
+                'ok': True,
+                'tracked_time_seconds': task.tracked_time_seconds,
+            }
+        )
 
 
 class GoalCreate(LoginRequiredMixin, CreateView):

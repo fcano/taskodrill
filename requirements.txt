@@ -16,6 +16,7 @@ pytz
 requests
 selenium
 six
+time-machine
 webdriver-manager
 websocket-client
 wheel

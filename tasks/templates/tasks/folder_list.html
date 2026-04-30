@@ -8,12 +8,22 @@
     <table class="table table-sm">
       <tr>
         <th>Name</th>
+        <th class="text-right">Today</th>
+        <th class="text-right">This week</th>
+        <th class="text-right">This month</th>
+        <th class="text-right">Prev. week</th>
+        <th class="text-right">Prev. month</th>
         <th></th>
       </tr>
       {% for folder in folder_list %}
       <tr id="folder_row_{{ folder.id }}">
         <td><a href="{{ folder.get_absolute_url }}">{{ folder.name }}</a></td>
-        <td><a href="{% url 'folder_delete' folder.pk %}" class="confirm-delete"><img src="/static/tasks/trash-2.svg" /></a></td>
+        <td class="text-right text-nowrap">{{ folder.tracked_today_fmt }}</td>
+        <td class="text-right text-nowrap">{{ folder.tracked_cur_week_fmt }}</td>
+        <td class="text-right text-nowrap">{{ folder.tracked_cur_month_fmt }}</td>
+        <td class="text-right text-nowrap">{{ folder.tracked_prev_week_fmt }}</td>
+        <td class="text-right text-nowrap">{{ folder.tracked_prev_month_fmt }}</td>
+        <td><a href="{% url 'folder_delete' folder.pk %}" class="confirm-delete"><img src="/static/tasks/trash-2.svg" alt="Delete" /></a></td>
       </tr>
       {% endfor %}
     </table>

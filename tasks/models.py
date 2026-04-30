@@ -141,6 +141,10 @@ class Task(models.Model):
     blocked_by = models.ForeignKey('Task', on_delete=models.SET_NULL, blank=True, null=True)
     assignee = models.ForeignKey('Assignee', on_delete=models.CASCADE, blank=True, null=True)
     milestone = models.BooleanField(default=False)
+    tracked_time_seconds = models.PositiveIntegerField(
+        default=0,
+        help_text='Cumulative time logged from the task timer (stop).',
+    )
     user = models.ForeignKey(settings.AUTH_USER_MODEL,
                              on_delete=models.CASCADE)
 
@@ -917,6 +921,23 @@ class Folder(models.Model):
     class Meta:
         ordering = ["name"]
         unique_together = (("name", "user"),)
+
+
+class TaskTimeEntry(models.Model):
+    """One row per timer stop; used for per-day / folder time reports."""
+
+    task = models.ForeignKey(
+        'Task', on_delete=models.CASCADE, related_name='time_entries'
+    )
+    seconds = models.PositiveIntegerField()
+    work_date = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.task_id} {self.work_date} {self.seconds}s'
 
 
 class Goal(models.Model):
