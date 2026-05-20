@@ -70,18 +70,18 @@ class Task(models.Model):
         (COMPLETION_DATE, 'Completion Date'),
     )
 
-    URGENT = 3
-    COMMITMENT = 2
-    ABOVE_NORMAL = 1
+    BLOCKER = 3
+    CRITICAL = 2
+    MAJOR = 1
     NORMAL = 0
-    BELOW_NORMAL = -1
+    MINOR = -1
 
     PRIORITY = (
-        (URGENT, '3 Urgent'),
-        (COMMITMENT, '2 Commitment'),
-        (ABOVE_NORMAL, '1 Above normal'),
-        (NORMAL, '0 Normal'),
-        (BELOW_NORMAL, '-1 Below normal'),
+        (BLOCKER, 'Blocker'),
+        (CRITICAL, 'Critical'),
+        (MAJOR, 'Major'),
+        (NORMAL, 'Normal'),
+        (MINOR, 'Minor'),
     )
 
     NEXT_ACTION = 0

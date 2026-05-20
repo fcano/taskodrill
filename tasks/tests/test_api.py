@@ -416,7 +416,7 @@ class TaskCRUDTests(AuthenticatedAPITestCase):
             'name': 'Full task',
             'start_date': '2026-06-01',
             'due_date': '2026-06-15',
-            'priority': Task.URGENT,
+            'priority': Task.BLOCKER,
             'tasklist': Task.NEXT_ACTION,
             'status': Task.PENDING,
             'note': 'Some note',
@@ -477,12 +477,12 @@ class TaskCRUDTests(AuthenticatedAPITestCase):
 
     def test_task_choice_fields_have_labels(self):
         t = Task.objects.create(
-            name='T', user=self.user, priority=Task.URGENT,
+            name='T', user=self.user, priority=Task.BLOCKER,
             tasklist=Task.NEXT_ACTION, status=Task.PENDING,
         )
         resp = self.client.get(reverse('task-detail', args=[t.pk]))
-        self.assertEqual(resp.data['priority']['value'], Task.URGENT)
-        self.assertIn('Urgent', resp.data['priority']['label'])
+        self.assertEqual(resp.data['priority']['value'], Task.BLOCKER)
+        self.assertIn('Blocker', resp.data['priority']['label'])
         self.assertEqual(resp.data['tasklist']['value'], Task.NEXT_ACTION)
         self.assertEqual(resp.data['status']['value'], Task.PENDING)
 
@@ -563,9 +563,9 @@ class TaskFilterTests(AuthenticatedAPITestCase):
         self.assertEqual(resp.data['count'], 1)
 
     def test_filter_by_priority(self):
-        Task.objects.create(name='U', user=self.user, priority=Task.URGENT)
+        Task.objects.create(name='U', user=self.user, priority=Task.BLOCKER)
         Task.objects.create(name='N', user=self.user, priority=Task.NORMAL)
-        resp = self.client.get(reverse('task-list'), {'priority': Task.URGENT})
+        resp = self.client.get(reverse('task-list'), {'priority': Task.BLOCKER})
         self.assertEqual(resp.data['count'], 1)
 
     def test_filter_by_project(self):
@@ -747,16 +747,16 @@ class SerializerEdgeCaseTests(AuthenticatedAPITestCase):
     def test_choice_field_accepts_dict_format(self):
         resp = self.client.post(reverse('task-list'), {
             'name': 'Dict choice',
-            'priority': {'value': Task.COMMITMENT},
+            'priority': {'value': Task.CRITICAL},
         }, format='json')
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
         t = Task.objects.get(name='Dict choice')
-        self.assertEqual(t.priority, Task.COMMITMENT)
+        self.assertEqual(t.priority, Task.CRITICAL)
 
     def test_choice_field_accepts_raw_value(self):
         resp = self.client.post(reverse('task-list'), {
             'name': 'Raw choice',
-            'priority': Task.BELOW_NORMAL,
+            'priority': Task.MINOR,
         }, format='json')
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
 

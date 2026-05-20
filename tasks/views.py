@@ -484,7 +484,7 @@ class TaskRemoveDeadlinePrio(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         if self.request.user.is_authenticated:
             task = Task.objects.get(user=self.request.user, id=self.request.POST['id'])
-            task.priority = Task.ABOVE_NORMAL
+            task.priority = Task.MAJOR
 
             task.start_date = None
             task.start_time = None
