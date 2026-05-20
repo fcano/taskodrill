@@ -17,6 +17,7 @@ urlpatterns = [
     path('tasks/log-time/', tasks_views.TaskLogTime.as_view(), name='task_log_time'),
     path('tasks/timer/play/', tasks_views.TaskTimerPlay.as_view(), name='task_timer_play'),
     path('tasks/timer/pause/', tasks_views.TaskTimerPause.as_view(), name='task_timer_pause'),
+    path('tasks/mass-edit/', tasks_views.TaskMassEdit.as_view(), name='task_mass_edit'),
     path('tasks/assign-folder/', tasks_views.TaskAssignFolder.as_view(), name='task_assign_folder'),
     path('tasks/folder-suggest/', tasks_views.FolderSuggest.as_view(), name='folder_suggest'),
     path('tasks/save-task-ordering/', tasks_views.SaveNewOrdering.as_view(), name='save_task_ordering'),

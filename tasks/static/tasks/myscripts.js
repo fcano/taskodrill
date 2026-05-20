@@ -29,50 +29,101 @@ $.ajaxSetup({
     }
 });
 
-// tasks_body es tbody de la tabla
-// esto permite que si se añade un elemento a la tabla dinamicamente
-// también se cace el click
-$('#tasks_body').on('click', 'input[type="checkbox"]', function () {
-    var data = {};
-    data.id = $(this).attr('value');
-    data.value = $(this).is(':checked') ? 1 : 0;
-    tasks_count = parseInt($('#tasks_count').text());
-    tasks_due_date_count = parseInt($('#tasks_due_date_count').text());
+// ─── Mass-edit selection helpers ─────────────────────────────────────────────
 
-    console.log(data);
+function getSelectedTaskIds() {
+    var ids = [];
+    $('.task-select-checkbox:checked').each(function () {
+        ids.push($(this).data('task-id'));
+    });
+    return ids;
+}
 
-    var postData = $.extend({}, data);
-    if (data.value === 1 && typeof window.taskTimerCollectSessionSecondsForMarkDone === 'function') {
-        var ts = window.taskTimerCollectSessionSecondsForMarkDone(data.id);
+function updateMassEditToolbar() {
+    var ids = getSelectedTaskIds();
+    var count = ids.length;
+    if (count > 0) {
+        $('#mass-edit-toolbar').show();
+        $('#mass-edit-count').text(count + ' selected');
+    } else {
+        $('#mass-edit-toolbar').hide();
+    }
+}
+
+function massEditRequest(payload) {
+    var ids = getSelectedTaskIds();
+    if (ids.length === 0) return;
+    payload.task_ids = ids.join(',');
+    payload.next = window.location.href;
+    $.ajax({
+        type: 'POST',
+        url: '/tasks/mass-edit/',
+        data: payload,
+        success: function (response) {
+            location.reload();
+        },
+        error: function (xhr) {
+            alert('Mass edit failed: ' + xhr.responseText);
+        }
+    });
+}
+
+// Select-all / deselect-all
+$(document).on('change', '#select-all-tasks', function () {
+    var checked = $(this).is(':checked');
+    $('.task-select-checkbox').prop('checked', checked);
+    updateMassEditToolbar();
+});
+
+// Individual selection toggles toolbar
+$('#tasks_body').on('change', '.task-select-checkbox', function () {
+    var total = $('.task-select-checkbox').length;
+    var checked = $('.task-select-checkbox:checked').length;
+    $('#select-all-tasks').prop('indeterminate', checked > 0 && checked < total);
+    $('#select-all-tasks').prop('checked', checked === total && total > 0);
+    updateMassEditToolbar();
+});
+
+// Mass edit action buttons
+$(document).on('click', '#mass-clear-due-date', function () {
+    if (!confirm('Remove due date from all selected tasks?')) return;
+    massEditRequest({ clear_due_date: '1' });
+});
+
+$(document).on('click', '#mass-clear-start-date', function () {
+    if (!confirm('Remove start date from all selected tasks?')) return;
+    massEditRequest({ clear_start_date: '1' });
+});
+
+$(document).on('click', '#mass-set-due-date', function () {
+    var val = $('#mass-set-due-date-input').val();
+    if (!val) { alert('Please pick a due date first.'); return; }
+    massEditRequest({ due_date: val });
+});
+
+$(document).on('click', '#mass-set-start-date', function () {
+    var val = $('#mass-set-start-date-input').val();
+    if (!val) { alert('Please pick a start date first.'); return; }
+    massEditRequest({ start_date: val });
+});
+
+// ─── Mark-as-done button (the ✓ icon next to the selection checkbox) ──────────
+$('#tasks_body').on('click', 'a.mark-done-btn', function (e) {
+    e.preventDefault();
+    var taskId = String($(this).data('task-id'));
+    var postData = { id: taskId, value: 1 };
+    if (typeof window.taskTimerCollectSessionSecondsForMarkDone === 'function') {
+        var ts = window.taskTimerCollectSessionSecondsForMarkDone(taskId);
         if (ts > 0) {
             postData.timer_seconds = ts;
         }
     }
-
     $.ajax({
-        type: "POST",
-        url: "/tasks/mark_as_done/",
+        type: 'POST',
+        url: '/tasks/mark_as_done/',
         data: postData,
-        success: function (response) {
-            checkbox_str = '#checkbox_' + data.id;
-            $(checkbox_str).prop('checked', false);
+        success: function () {
             location.reload();
-            // task_row_str = '#tasks_row_' + data.id;
-            // $(task_row_str).remove();
-            // tasks_count = tasks_count - 1;
-            // tasks_due_date_count = tasks_due_date_count - 1;
-            // for (next_task_tr_html of response.tasks_to_render) {
-            //     tasks_count = tasks_count + 1;
-            //     $('#tasks_table tr:last').after(next_task_tr_html);
-            // }
-            // $('#tasks_count').text(tasks_count);
-            // $('#tasks_due_date_count').text(tasks_due_date_count);
-            // // next_task_tr_html = response.next_task_tr;
-            // // if (next_task_tr_html != "") {
-            // //     $('#tasks_table tr:last').after(next_task_tr_html);
-            // // } else {
-            // //     $('#tasks_count').text(tasks_count - 1);
-            // // }
         }
     }).done(function (data) {
         console.log(data);

@@ -1,7 +1,24 @@
+{% if not done %}
+<div id="mass-edit-toolbar" class="mb-2" style="display:none;">
+  <div class="d-flex align-items-center flex-wrap gap-2" style="gap:.5rem;">
+    <span id="mass-edit-count" class="badge badge-secondary mr-2">0 selected</span>
+    <button type="button" class="btn btn-sm btn-outline-danger" id="mass-clear-due-date">Remove due date</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" id="mass-clear-start-date">Remove start date</button>
+    <span class="mx-1 text-muted">|</span>
+    <label class="mb-0 mr-1 small">Set due date:</label>
+    <input type="date" id="mass-set-due-date-input" class="form-control form-control-sm" style="width:auto;">
+    <button type="button" class="btn btn-sm btn-outline-primary" id="mass-set-due-date">Apply</button>
+    <span class="mx-1 text-muted">|</span>
+    <label class="mb-0 mr-1 small">Set start date:</label>
+    <input type="date" id="mass-set-start-date-input" class="form-control form-control-sm" style="width:auto;">
+    <button type="button" class="btn btn-sm btn-outline-primary" id="mass-set-start-date">Apply</button>
+  </div>
+</div>
+{% endif %}
 <table id="{% if done %}done_tasks_table{% else %}tasks_table{% endif %}" class="table table-sm{% if done %} done-tasks-table{% endif %}">
   <thead class="thead-light">
     <tr>
-      <th scope="col"></th>
+      <th scope="col">{% if not done %}<input type="checkbox" id="select-all-tasks" title="Select all">{% endif %}</th>
       <th scope="col">Task</th>
       <th scope="col">Due date</th>
       <th scope="col">Planned end date</th>

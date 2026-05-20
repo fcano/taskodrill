@@ -104,6 +104,22 @@ class GoalMassEditForm(forms.Form):
     roadmap = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': 'form-control form-control-sm'}))
 
 
+class TaskMassEditForm(forms.Form):
+    due_date = forms.DateField(required=False, widget=DateInput(attrs={'class': 'form-control form-control-sm'}))
+    start_date = forms.DateField(required=False, widget=DateInput(attrs={'class': 'form-control form-control-sm'}))
+    clear_due_date = forms.BooleanField(required=False)
+    clear_start_date = forms.BooleanField(required=False)
+    task_ids = forms.CharField(widget=forms.HiddenInput)
+
+    def clean_task_ids(self):
+        raw = self.cleaned_data.get('task_ids', '')
+        try:
+            ids = [int(i) for i in raw.split(',') if i.strip()]
+        except ValueError:
+            raise forms.ValidationError('Invalid task ids')
+        return ids
+
+
 class HolidayPeriodForm(forms.ModelForm):
     class Meta:
         model = HolidayPeriod

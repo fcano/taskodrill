@@ -1,0 +1,36 @@
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+pythonVersion = "3.12"
+
+[project]
+name = "taskodrill"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "coverage>=7.14.0",
+    "crispy-bootstrap4>=2026.2",
+    "django==6.0.1",
+    "django-autocomplete-light>=4.0.0",
+    "django-crispy-forms>=2.6",
+    "django-debug-toolbar>=6.3.0",
+    "django-filter>=25.2",
+    "django-heroku>=0.3.1",
+    "djangorestframework>=3.17.1",
+    "drf-spectacular>=0.29.0",
+    "gunicorn>=26.0.0",
+    "holidays>=0.97",
+    "psycopg2>=2.9.12",
+    "python-dotenv>=1.2.2",
+    "pytz>=2026.2",
+    "requests>=2.34.2",
+    "selenium>=4.44.0",
+    "six>=1.17.0",
+    "time-machine>=3.2.0",
+    "webdriver-manager>=4.1.1",
+    "websocket-client>=1.9.0",
+    "wheel>=0.47.0",
+    "whitenoise>=6.12.0",
+]

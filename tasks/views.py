@@ -30,7 +30,7 @@ from .models import (
     TaskTimeEntry,
     TaskTimerSession,
 )
-from .forms import TaskForm, ProjectForm, OrderingForm, GoalForm, GoalMassEditForm, HolidayPeriodForm
+from .forms import TaskForm, ProjectForm, OrderingForm, GoalForm, GoalMassEditForm, HolidayPeriodForm, TaskMassEditForm
 
 import datetime
 import holidays
@@ -1202,6 +1202,47 @@ class TaskTimerPause(LoginRequiredMixin, View):
                 'segment_started_at': None,
             }
         )
+
+
+class TaskMassEdit(LoginRequiredMixin, View):
+
+    def post(self, request, *args, **kwargs):
+        form = TaskMassEditForm(request.POST)
+        if not form.is_valid():
+            return JsonResponse({'error': 'invalid form', 'errors': form.errors}, status=400)
+
+        task_ids = form.cleaned_data['task_ids']
+        tasks = list(Task.objects.filter(pk__in=task_ids, user=request.user))
+        if not tasks:
+            return JsonResponse({'error': 'no tasks found'}, status=404)
+
+        update_fields = []
+
+        if form.cleaned_data.get('clear_due_date'):
+            for task in tasks:
+                task.due_date = None
+                task.due_time = None
+            update_fields += ['due_date', 'due_time']
+        elif form.cleaned_data.get('due_date') is not None:
+            for task in tasks:
+                task.due_date = form.cleaned_data['due_date']
+            update_fields.append('due_date')
+
+        if form.cleaned_data.get('clear_start_date'):
+            for task in tasks:
+                task.start_date = None
+                task.start_time = None
+            update_fields += ['start_date', 'start_time']
+        elif form.cleaned_data.get('start_date') is not None:
+            for task in tasks:
+                task.start_date = form.cleaned_data['start_date']
+            update_fields.append('start_date')
+
+        if update_fields:
+            Task.objects.bulk_update(tasks, list(set(update_fields)))
+
+        next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or '/'
+        return JsonResponse({'ok': True, 'updated': len(tasks), 'next': next_url})
 
 
 class GoalCreate(LoginRequiredMixin, CreateView):

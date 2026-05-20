@@ -1,5 +1,8 @@
 <tr id="tasks_row_{{ task.id }}" class="{% if task.is_time_constrained %}row-time-constrained{% endif %}">
-  <td><input class="checkbox align-middle" type="checkbox" id="checkbox_{{ task.id }}" value="{{ task.id }}"></td>
+  <td class="text-nowrap">
+    <input class="align-middle task-select-checkbox" type="checkbox" id="checkbox_{{ task.id }}" data-task-id="{{ task.id }}" value="{{ task.id }}">
+    <a href="#" class="mark-done-btn align-middle ml-1" data-task-id="{{ task.id }}" title="Mark as done" style="color:#28a745;text-decoration:none;">&#10003;</a>
+  </td>
   <td>{{ task.name|urlizetrunc:50 }}</td>
   <td id="tasks_td_due_date_{{ task.id }}">{{ task.due_date | default_if_none:"no date"}}{% if task.flexible_due_date %} ~{% endif %}</td>
   <td id="tasks_td_planned_end_date_{{ task.id }}">{{ task.planned_end_date | default_if_none:"no date"}}</td>
