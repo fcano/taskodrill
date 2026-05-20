@@ -107,6 +107,21 @@ $(document).on('click', '#mass-set-start-date', function () {
     massEditRequest({ start_date: val });
 });
 
+$(document).on('click', '#mass-move-to-someday', function () {
+    if (!confirm('Move selected tasks to Someday/Maybe?')) return;
+    massEditRequest({ tasklist: '1' });
+});
+
+$(document).on('click', '#mass-move-to-notthisweek', function () {
+    if (!confirm('Move selected tasks to Not This Week?')) return;
+    massEditRequest({ tasklist: '3' });
+});
+
+$(document).on('click', '#mass-move-to-nextaction', function () {
+    if (!confirm('Move selected tasks to Next Action?')) return;
+    massEditRequest({ tasklist: '0' });
+});
+
 // ─── Mark-as-done button (the ✓ icon next to the selection checkbox) ──────────
 $('#tasks_body').on('click', 'a.mark-done-btn', function (e) {
     e.preventDefault();

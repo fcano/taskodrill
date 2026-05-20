@@ -2071,3 +2071,72 @@ class TaskTimerAndFolderTimeTests(TestCase):
             content_type='application/json',
         )
         self.assertEqual(resp.status_code, 400)
+
+
+class TaskMassEditTasklistTests(TestCase):
+    def setUp(self):
+        self.user = MyUser.objects.create_user(username='testuser', password='12345')
+        self.client.login(username='testuser', password='12345')
+        self.t1 = Task.objects.create(
+            name='Task 1', user=self.user, tasklist=Task.NEXT_ACTION, status=Task.PENDING,
+        )
+        self.t2 = Task.objects.create(
+            name='Task 2', user=self.user, tasklist=Task.NEXT_ACTION, status=Task.PENDING,
+        )
+
+    def _post(self, data):
+        return self.client.post(reverse('task_mass_edit'), data=data)
+
+    def test_move_to_someday_maybe(self):
+        resp = self._post({
+            'task_ids': f'{self.t1.pk},{self.t2.pk}',
+            'tasklist': str(Task.SOMEDAY_MAYBE),
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.t1.refresh_from_db()
+        self.t2.refresh_from_db()
+        self.assertEqual(self.t1.tasklist, Task.SOMEDAY_MAYBE)
+        self.assertEqual(self.t2.tasklist, Task.SOMEDAY_MAYBE)
+
+    def test_move_to_not_this_week(self):
+        resp = self._post({
+            'task_ids': f'{self.t1.pk},{self.t2.pk}',
+            'tasklist': str(Task.NOT_THIS_WEEK),
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.t1.refresh_from_db()
+        self.t2.refresh_from_db()
+        self.assertEqual(self.t1.tasklist, Task.NOT_THIS_WEEK)
+        self.assertEqual(self.t2.tasklist, Task.NOT_THIS_WEEK)
+
+    def test_move_back_to_next_action(self):
+        self.t1.tasklist = Task.SOMEDAY_MAYBE
+        self.t1.save()
+        resp = self._post({
+            'task_ids': str(self.t1.pk),
+            'tasklist': str(Task.NEXT_ACTION),
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.t1.refresh_from_db()
+        self.assertEqual(self.t1.tasklist, Task.NEXT_ACTION)
+
+    def test_no_tasklist_field_leaves_list_unchanged(self):
+        resp = self._post({
+            'task_ids': str(self.t1.pk),
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.t1.refresh_from_db()
+        self.assertEqual(self.t1.tasklist, Task.NEXT_ACTION)
+
+    def test_does_not_affect_other_users_tasks(self):
+        other = MyUser.objects.create_user(username='other', password='pass')
+        other_task = Task.objects.create(
+            name='Other task', user=other, tasklist=Task.NEXT_ACTION, status=Task.PENDING,
+        )
+        resp = self._post({
+            'task_ids': str(other_task.pk),
+            'tasklist': str(Task.SOMEDAY_MAYBE),
+        })
+        self.assertEqual(resp.status_code, 404)
+        other_task.refresh_from_db()
+        self.assertEqual(other_task.tasklist, Task.NEXT_ACTION)

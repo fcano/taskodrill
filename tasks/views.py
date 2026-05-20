@@ -1238,6 +1238,11 @@ class TaskMassEdit(LoginRequiredMixin, View):
                 task.start_date = form.cleaned_data['start_date']
             update_fields.append('start_date')
 
+        if form.cleaned_data.get('tasklist') is not None:
+            for task in tasks:
+                task.tasklist = form.cleaned_data['tasklist']
+            update_fields.append('tasklist')
+
         if update_fields:
             Task.objects.bulk_update(tasks, list(set(update_fields)))
 

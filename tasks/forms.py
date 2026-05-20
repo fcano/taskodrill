@@ -104,11 +104,24 @@ class GoalMassEditForm(forms.Form):
     roadmap = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': 'form-control form-control-sm'}))
 
 
+TASKLIST_CHOICES = [
+    ('', '-- No change --'),
+    (str(Task.NEXT_ACTION), 'Next Action'),
+    (str(Task.SOMEDAY_MAYBE), 'Someday / Maybe'),
+    (str(Task.NOT_THIS_WEEK), 'Not This Week'),
+]
+
+
 class TaskMassEditForm(forms.Form):
     due_date = forms.DateField(required=False, widget=DateInput(attrs={'class': 'form-control form-control-sm'}))
     start_date = forms.DateField(required=False, widget=DateInput(attrs={'class': 'form-control form-control-sm'}))
     clear_due_date = forms.BooleanField(required=False)
     clear_start_date = forms.BooleanField(required=False)
+    tasklist = forms.ChoiceField(
+        required=False,
+        choices=TASKLIST_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control form-control-sm'}),
+    )
     task_ids = forms.CharField(widget=forms.HiddenInput)
 
     def clean_task_ids(self):
@@ -118,6 +131,15 @@ class TaskMassEditForm(forms.Form):
         except ValueError:
             raise forms.ValidationError('Invalid task ids')
         return ids
+
+    def clean_tasklist(self):
+        val = self.cleaned_data.get('tasklist', '')
+        if val == '':
+            return None
+        try:
+            return int(val)
+        except (ValueError, TypeError):
+            raise forms.ValidationError('Invalid tasklist value')
 
 
 class HolidayPeriodForm(forms.ModelForm):
