@@ -452,8 +452,6 @@ $('#show_done_tasks').click(function () {
     refreshWithParams();
 });
 
-$('[data-toggle="tooltip"]').tooltip();
-
 $('.js-autocomplete-filter').each(function() {
     var $input = $(this);
     var $hidden = $($input.data('hidden'));
