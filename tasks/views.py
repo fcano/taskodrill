@@ -347,6 +347,20 @@ class TaskList(LoginRequiredMixin, ListView):
             if task.due_date and task.planned_end_date and task.planned_end_date > task.due_date:
                 context['num_late_tasks'] += 1
         context['show_task_timer'] = self.kwargs.get('tasklist_slug') == 'nextactions'
+        if self.kwargs.get('tasklist_slug') == 'nextactions':
+            since_24h = timezone.now() - datetime.timedelta(hours=24)
+            created = Task.objects.filter(
+                user=self.request.user,
+                creation_datetime__gte=since_24h,
+            ).count()
+            done = Task.objects.filter(
+                user=self.request.user,
+                status=Task.DONE,
+                done_datetime__gte=since_24h,
+            ).count()
+            context['created_last_24h'] = created
+            context['done_last_24h'] = done
+            context['net_last_24h'] = done - created
         if context['show_task_timer'] and context['task_list']:
             ids = [t.pk for t in context['task_list']]
             sess_map = {

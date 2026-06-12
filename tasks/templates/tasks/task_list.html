@@ -9,6 +9,20 @@
       <input type="submit" value="Filter">
     </form>
   </p>
+  {% if show_task_timer %}
+  <p>
+    <strong>Last 24 h &mdash;</strong>
+    Created: <strong>{{ created_last_24h }}</strong> &nbsp;|&nbsp;
+    Closed: <strong>{{ done_last_24h }}</strong> &nbsp;|&nbsp;
+    {% if net_last_24h > 0 %}
+      <span style="color: green;">Net +{{ net_last_24h }} (closing faster)</span>
+    {% elif net_last_24h < 0 %}
+      <span style="color: #c0392b;">Net {{ net_last_24h }} (backlog growing)</span>
+    {% else %}
+      <span>Balanced</span>
+    {% endif %}
+  </p>
+  {% endif %}
   <p>
     Tasks: <span id="tasks_count">{{ task_list.count }}</span> | 
     Tasks with due date < today: <span id="tasks_due_date_count">{{ num_tasks_due_date }}</span> ({{ sum_length_due_date }}h) | 
