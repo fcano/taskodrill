@@ -348,38 +348,31 @@ class TaskList(LoginRequiredMixin, ListView):
                 context['num_late_tasks'] += 1
         context['show_task_timer'] = self.kwargs.get('tasklist_slug') == 'nextactions'
         if self.kwargs.get('tasklist_slug') == 'nextactions':
-            # Use the time window covered by the last 100 created tasks and the
-            # last 100 completed tasks; take the earlier boundary so both pools
-            # contribute at least 100 events to the window.
+            # Merge the last 100 creation events and last 100 completion events,
+            # sort by timestamp descending, keep the 100 most recent, then count
+            # how many are creations vs closures. Total always sums to ≤ 100.
             SAMPLE = 100
-            nth_created = (
+            recent_created = list(
                 Task.objects.filter(user=self.request.user, creation_datetime__isnull=False)
                 .order_by('-creation_datetime')
-                .values_list('creation_datetime', flat=True)[SAMPLE - 1:SAMPLE]
+                .values_list('creation_datetime', flat=True)[:SAMPLE]
             )
-            nth_done = (
+            recent_done = list(
                 Task.objects.filter(user=self.request.user, status=Task.DONE, done_datetime__isnull=False)
                 .order_by('-done_datetime')
-                .values_list('done_datetime', flat=True)[SAMPLE - 1:SAMPLE]
+                .values_list('done_datetime', flat=True)[:SAMPLE]
             )
-            since_dt = None
-            if nth_created:
-                since_dt = nth_created[0]
-            if nth_done:
-                candidate = nth_done[0]
-                since_dt = min(since_dt, candidate) if since_dt else candidate
-
-            if since_dt:
-                created = Task.objects.filter(
-                    user=self.request.user,
-                    creation_datetime__gte=since_dt,
-                ).count()
-                done = Task.objects.filter(
-                    user=self.request.user,
-                    status=Task.DONE,
-                    done_datetime__gte=since_dt,
-                ).count()
-                span_days = max(1, (timezone.now() - since_dt).days)
+            events = (
+                [('created', dt) for dt in recent_created] +
+                [('done', dt) for dt in recent_done]
+            )
+            events.sort(key=lambda e: e[1], reverse=True)
+            top = events[:SAMPLE]
+            if top:
+                created = sum(1 for kind, _ in top if kind == 'created')
+                done = sum(1 for kind, _ in top if kind == 'done')
+                oldest_dt = top[-1][1]
+                span_days = max(1, (timezone.now() - oldest_dt).days)
                 context['velocity_created'] = created
                 context['velocity_done'] = done
                 context['velocity_net'] = done - created
