@@ -348,19 +348,42 @@ class TaskList(LoginRequiredMixin, ListView):
                 context['num_late_tasks'] += 1
         context['show_task_timer'] = self.kwargs.get('tasklist_slug') == 'nextactions'
         if self.kwargs.get('tasklist_slug') == 'nextactions':
-            since_24h = timezone.now() - datetime.timedelta(hours=24)
-            created = Task.objects.filter(
-                user=self.request.user,
-                creation_datetime__gte=since_24h,
-            ).count()
-            done = Task.objects.filter(
-                user=self.request.user,
-                status=Task.DONE,
-                done_datetime__gte=since_24h,
-            ).count()
-            context['created_last_24h'] = created
-            context['done_last_24h'] = done
-            context['net_last_24h'] = done - created
+            # Use the time window covered by the last 100 created tasks and the
+            # last 100 completed tasks; take the earlier boundary so both pools
+            # contribute at least 100 events to the window.
+            SAMPLE = 100
+            nth_created = (
+                Task.objects.filter(user=self.request.user)
+                .order_by('-creation_datetime')
+                .values_list('creation_datetime', flat=True)[SAMPLE - 1:SAMPLE]
+            )
+            nth_done = (
+                Task.objects.filter(user=self.request.user, status=Task.DONE)
+                .order_by('-done_datetime')
+                .values_list('done_datetime', flat=True)[SAMPLE - 1:SAMPLE]
+            )
+            since_dt = None
+            if nth_created:
+                since_dt = nth_created[0]
+            if nth_done:
+                candidate = nth_done[0]
+                since_dt = min(since_dt, candidate) if since_dt else candidate
+
+            if since_dt:
+                created = Task.objects.filter(
+                    user=self.request.user,
+                    creation_datetime__gte=since_dt,
+                ).count()
+                done = Task.objects.filter(
+                    user=self.request.user,
+                    status=Task.DONE,
+                    done_datetime__gte=since_dt,
+                ).count()
+                span_days = max(1, (timezone.now() - since_dt).days)
+                context['velocity_created'] = created
+                context['velocity_done'] = done
+                context['velocity_net'] = done - created
+                context['velocity_days'] = span_days
         if context['show_task_timer'] and context['task_list']:
             ids = [t.pk for t in context['task_list']]
             sess_map = {

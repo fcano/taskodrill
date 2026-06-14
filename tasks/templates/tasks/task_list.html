@@ -9,15 +9,15 @@
       <input type="submit" value="Filter">
     </form>
   </p>
-  {% if show_task_timer %}
+  {% if velocity_days %}
   <p>
-    <strong>Last 24 h &mdash;</strong>
-    Created: <strong>{{ created_last_24h }}</strong> &nbsp;|&nbsp;
-    Closed: <strong>{{ done_last_24h }}</strong> &nbsp;|&nbsp;
-    {% if net_last_24h > 0 %}
-      <span style="color: green;">Net +{{ net_last_24h }} (closing faster)</span>
-    {% elif net_last_24h < 0 %}
-      <span style="color: #c0392b;">Net {{ net_last_24h }} (backlog growing)</span>
+    <strong>Velocity (last {{ velocity_days }} days) &mdash;</strong>
+    Created: <strong>{{ velocity_created }}</strong> &nbsp;|&nbsp;
+    Closed: <strong>{{ velocity_done }}</strong> &nbsp;|&nbsp;
+    {% if velocity_net > 0 %}
+      <span style="color: green;">Net +{{ velocity_net }} (closing faster)</span>
+    {% elif velocity_net < 0 %}
+      <span style="color: #c0392b;">Net {{ velocity_net }} (backlog growing)</span>
     {% else %}
       <span>Balanced</span>
     {% endif %}
