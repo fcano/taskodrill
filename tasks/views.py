@@ -353,12 +353,12 @@ class TaskList(LoginRequiredMixin, ListView):
             # contribute at least 100 events to the window.
             SAMPLE = 100
             nth_created = (
-                Task.objects.filter(user=self.request.user)
+                Task.objects.filter(user=self.request.user, creation_datetime__isnull=False)
                 .order_by('-creation_datetime')
                 .values_list('creation_datetime', flat=True)[SAMPLE - 1:SAMPLE]
             )
             nth_done = (
-                Task.objects.filter(user=self.request.user, status=Task.DONE)
+                Task.objects.filter(user=self.request.user, status=Task.DONE, done_datetime__isnull=False)
                 .order_by('-done_datetime')
                 .values_list('done_datetime', flat=True)[SAMPLE - 1:SAMPLE]
             )
