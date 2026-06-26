@@ -134,6 +134,30 @@ class TaskPostponeViewTests(TestCase):
         self.assertEqual(task_after.start_date, datetime.date.today() + datetime.timedelta(1))
         self.assertEqual(task_after.due_date, None)
 
+    @time_machine.travel(datetime.date(2021, 4, 8))
+    def test_postpone_7_days_wo_due_date(self):
+        self.client.login(username="testuser", password="testpassword")
+        user = MyUser.objects.get(username="testuser")
+
+        task_before = Task.objects.create(
+            name="Project Task 7",
+            tasklist=Task.NEXT_ACTION,
+            user=user,
+        )
+
+        time.sleep(1)
+
+        response = self.client.post(
+            reverse("task_postpone", kwargs={"pk": task_before.id, "ndays": 7}),
+            {"id": task_before.id, "ndays": 7},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 200)
+
+        task_after = Task.objects.get(id=task_before.id)
+        self.assertEqual(task_after.start_date, datetime.date.today() + datetime.timedelta(7))
+        self.assertEqual(task_after.due_date, None)
+
     @time_machine.travel(datetime.date(2021, 4, 9))
     def test_postpone_wo_due_date_today_is_friday(self):
         self.client.login(username="testuser", password="testpassword")
@@ -269,6 +293,7 @@ class TaskListViewTests(TestCase):
             ["<Task: Example of next action>"],
             transform=repr,
         )
+        self.assertContains(response, "+7")
 
     def test_tasks_no_somedaymaybe(self):
         self.client.login(username="testuser", password="testpassword")
