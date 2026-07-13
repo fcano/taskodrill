@@ -232,24 +232,29 @@ class TaskCreate(LoginRequiredMixin, CreateView):
         elif '[' in form.instance.name:
             task = form.instance.name[:]
             task, at_contexts = extract_at_contexts(task, self.request.user)
-            m = re.search(r'\[(-?\d+):(-?\d+)(:(-?\d+))?\]', task)
+            m = re.search(r'\[(-?\d+(?:\.\d+)?):(-?\d+(?:\.\d+)?)(:(-?\d+(?:\.\d+)?))?\]', task)
             if m:
-                first_value = int(m.group(1))
-                last_value = int(m.group(2))
-                interval = int(m.group(4)) if m.group(4) is not None else 1
+                first_value = float(m.group(1))
+                last_value = float(m.group(2))
+                interval = float(m.group(4)) if m.group(4) is not None else 1.0
 
-                last_pk = None
-                for i in range(first_value, last_value+interval, interval):
-                    t = form.save(commit=False)
-                    t.pk = None
-                    t._state.adding = True
-                    t.name = re.sub(r"\[(-?\d+):(-?\d+)(:(-?\d+))?\]", str(i), task)
-                    t.save()
-                    t.contexts.set(form.cleaned_data['contexts'])
-                    t.contexts.add(*at_contexts)
-                    last_pk = t.pk
-                self._open_detail_task_pk = last_pk
-                return HttpResponseRedirect(self.get_success_url())
+                if interval != 0:
+                    last_pk = None
+                    i = first_value
+                    count = 0
+                    while ((interval > 0 and i <= last_value + 1e-9) or (interval < 0 and i >= last_value - 1e-9)) and count < 1000:
+                        t = form.save(commit=False)
+                        t.pk = None
+                        t._state.adding = True
+                        t.name = task[:m.start()] + str(i) + task[m.end():]
+                        t.save()
+                        t.contexts.set(form.cleaned_data['contexts'])
+                        t.contexts.add(*at_contexts)
+                        last_pk = t.pk
+                        i += interval
+                        count += 1
+                    self._open_detail_task_pk = last_pk
+                    return HttpResponseRedirect(self.get_success_url())
         elif form.instance.repeat and form.instance.goal and form.instance.goal.due_date:
             name, at_contexts = extract_at_contexts(form.instance.name, self.request.user)
             repeat_interval = Task.REPEAT_TO_DAYS[form.instance.repeat]
