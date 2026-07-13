@@ -1363,6 +1363,12 @@ class GoalMassEditTasks(LoginRequiredMixin, View):
                     for task in tasks:
                         setattr(task, field_name, value)
 
+            start_date_as_due_date = form.cleaned_data.get('start_date_as_due_date')
+            if start_date_as_due_date:
+                update_fields.append('start_date')
+                for task in tasks:
+                    task.start_date = task.due_date
+
             flexible_value = form.cleaned_data.get('flexible_due_date')
             if flexible_value != '':
                 update_fields.append('flexible_due_date')

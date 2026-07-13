@@ -101,6 +101,7 @@ class GoalMassEditForm(forms.Form):
         choices=FLEXIBLE_CHOICES,
         widget=forms.Select(attrs={'class': 'form-control form-control-sm'}),
     )
+    start_date_as_due_date = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': 'form-control form-control-sm'}))
     roadmap = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': 'form-control form-control-sm'}))
 
 
