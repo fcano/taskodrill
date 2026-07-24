@@ -80,7 +80,7 @@ MIDDLEWARE = [
 INTERNAL_IPS = [
     '127.0.0.1',
 ]
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'peaceful-springs-31717.herokuapp.com').split(',')
 
 AUTH_USER_MODEL = 'myauth.MyUser'
 
