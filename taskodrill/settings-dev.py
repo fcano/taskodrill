@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
 import os
+import dj_database_url
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -27,7 +28,7 @@ SECRET_KEY = os.environ['SECRET_KEY']
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 
 
 # Application definition
@@ -92,11 +93,11 @@ TEMPLATES = [
 WSGI_APPLICATION = 'taskodrill.wsgi.application'
 
 DATABASES = {
-    'default': {
+    'default': dj_database_url.config(default=os.environ.get('DATABASE_URL')) or {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ['DBNAME'],
-        'USER': os.environ['DBUSER'],
-        'PASSWORD': os.environ['DBPASS'],
+        'NAME': os.environ.get('DBNAME'),
+        'USER': os.environ.get('DBUSER'),
+        'PASSWORD': os.environ.get('DBPASS'),
         'HOST': '127.0.0.1',
         'PORT': '5432',
     }

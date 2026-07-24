@@ -10,7 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
-import django_heroku
+import dj_database_url
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -80,7 +80,7 @@ MIDDLEWARE = [
 INTERNAL_IPS = [
     '127.0.0.1',
 ]
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 
 AUTH_USER_MODEL = 'myauth.MyUser'
 
@@ -108,11 +108,11 @@ TEMPLATES = [
 WSGI_APPLICATION = 'taskodrill.wsgi.application'
 
 DATABASES = {
-    'default': {
+    'default': dj_database_url.config(default=os.environ.get('DATABASE_URL')) or {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ['DBNAME'],
-        'USER': os.environ['DBUSER'],
-        'PASSWORD': os.environ['DBPASS'],
+        'NAME': os.environ.get('DBNAME'),
+        'USER': os.environ.get('DBUSER'),
+        'PASSWORD': os.environ.get('DBPASS'),
         'HOST': '127.0.0.1',
         'PORT': '5432',
     }
@@ -199,4 +199,4 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = os.environ['DEFAULT_FROM_EMAIL']
 
-django_heroku.settings(locals())
+

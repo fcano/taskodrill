@@ -91,3 +91,5 @@ db.sqlite3
 .vscode
 .opencode
 AGENTS.md
+opencode.json
+
