@@ -124,6 +124,12 @@ class Task(models.Model):
     tasklist = models.IntegerField(choices=TASK_LIST, default=NEXT_ACTION)
     status = models.IntegerField(choices=STATUS, default=PENDING)
     note = models.TextField(blank=True)
+    deliverable_name = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text='Name/description of the deliverable produced by this task, if any. '
+                   'Leave blank if this task has no deliverable.',
+    )
     creation_datetime = models.DateTimeField(auto_now_add=True)
     modification_datetime = models.DateTimeField(auto_now=True)
     ready_datetime = models.DateTimeField(blank=True, null=True)

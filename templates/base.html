@@ -5,6 +5,7 @@
 {% url 'project_list' as projectlist %}
 {% url 'context_list' as contextlist %}
 {% url 'dashboard_detail' as dashboard %}
+{% url 'deliverables_list' as deliverableslist %}
 {% url 'roadmap' as roadmap %}
 
 <!DOCTYPE html>
@@ -93,6 +94,9 @@
           </li>          
           <li class="nav-item {% if request.path == dashboard %}active{% endif %}">
             <a class="nav-link" href="{% url 'dashboard_detail'%}">Dashboard</a>
+          </li>
+          <li class="nav-item {% if request.path == deliverableslist %}active{% endif %}">
+            <a class="nav-link" href="{% url 'deliverables_list'%}">Deliverables</a>
           </li>
           <li class="nav-item {% if request.path == holidayperiod_list %}active{% endif %}">
             <a class="nav-link" href="{% url 'holidayperiod_list'%}">Holidays</a>

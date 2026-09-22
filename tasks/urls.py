@@ -53,6 +53,7 @@ urlpatterns = [
     path('goal/<int:pk>/mass_edit_tasks/', tasks_views.GoalMassEditTasks.as_view(), name='goal_mass_edit_tasks'),
     path('roadmap/', tasks_views.RoadmapView.as_view(), name='roadmap'),
     path('dashboard/', tasks_views.DashboardDetail.as_view(), name='dashboard_detail'),
+    path('deliverables/', tasks_views.DeliverablesList.as_view(), name='deliverables_list'),
     path('assignee/', tasks_views.AssigneeList.as_view(), name='assignee_list'),
     path('assignee/<int:pk>/', tasks_views.AssigneeDetail.as_view(), name='assignee_detail'),
     path('assignee/add/', tasks_views.AssigneeCreate.as_view(), name='assignee_add'),

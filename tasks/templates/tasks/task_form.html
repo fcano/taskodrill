@@ -110,6 +110,11 @@
             <label class="col-form-label-sm" for="{{ form.note.id_for_label }}">Note</label> <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='Additional information about the task.' />
             {{ form.note }}
         </div>
+        <div class="form-group fieldWrapper">
+            {{ form.deliverable_name.errors }}
+            <label class="col-form-label-sm" for="{{ form.deliverable_name.id_for_label }}">Deliverable</label> <img src="/static/tasks/help-circle.svg" width="12" data-toggle='tooltip' title='Name/description of the deliverable produced by this task. Leave blank if this task has no deliverable.' />
+            {{ form.deliverable_name }}
+        </div>
     </div>
     <input type="hidden" id="next" name="next" value="{{ next }}">
     <div id="submit_div">

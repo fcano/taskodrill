@@ -46,6 +46,7 @@
     <tr><th scope="row">Ready</th><td>{{ task.ready_datetime|default_if_none:"—" }}</td></tr>
     <tr><th scope="row">Done</th><td>{{ task.done_datetime|default_if_none:"—" }}</td></tr>
     <tr><th scope="row">Total logged time</th><td>{{ tracked_time_display }}</td></tr>
+    <tr><th scope="row">Deliverable</th><td>{{ task.deliverable_name|default:"—" }}</td></tr>
   </tbody>
 </table>
 

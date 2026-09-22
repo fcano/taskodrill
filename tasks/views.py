@@ -867,6 +867,22 @@ class DashboardDetail(LoginRequiredMixin, View):
             'end_of_m_minus_1': end_of_m_minus_1.strftime("%Y-%m-%d"),
             })
 
+class DeliverablesList(LoginRequiredMixin, ListView):
+    """Dashboard-style page: open tasks that have a deliverable, with their due date."""
+    template_name = 'tasks/deliverables_list.html'
+    context_object_name = 'task_list'
+
+    def get_queryset(self):
+        return (
+            Task.objects.filter(
+                user=self.request.user,
+                status__in=[Task.PENDING, Task.BLOCKED],
+            )
+            .exclude(deliverable_name='')
+            .order_by('due_date', 'ready_datetime')
+        )
+
+
 class ProjectCreate(LoginRequiredMixin, CreateView):
     model = Project
     form_class = ProjectForm
