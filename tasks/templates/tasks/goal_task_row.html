@@ -14,5 +14,6 @@
     <a href="{% url 'task_delete' task.pk %}" class="confirm-delete"><img src="/static/tasks/trash-2.svg" /></a>
     <a href="{% url 'task_postpone' pk=task.pk ndays=1 %}" class="postpone"><img src="/static/tasks/skip-forward.svg" data-toggle='tooltip' title='Postpone to NBD.' width="18" /></a>
     <a href="{% url 'task_postpone' pk=task.pk ndays=2 %}" class="postpone2"><img src="/static/tasks/fast-forward.svg" data-toggle='tooltip' title='Postpone to 48h+NBD.' width="18" /></a>
+    <a href="{% url 'task_move_to_end_of_day' task.pk %}" class="move-to-end-of-day"><img src="/static/tasks/chevrons-down.svg" data-toggle='tooltip' title='Move to end of list for this day.' width="18" /></a>
   </td>
 </tr>

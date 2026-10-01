@@ -396,6 +396,26 @@ $(document).on('click', 'a.mark-flexible', function (event) {
     });
 });
 
+$(document).on('click', 'a.move-to-end-of-day', function (event) {
+    event.preventDefault();
+
+    var data = {};
+    href = $(this).attr('href');
+    href_elems = href.split('/');
+    data.id = href_elems[2];
+
+    $.ajax({
+        type: "POST",
+        url: "/tasks/" + data.id + "/move_to_end_of_day/",
+        data: data,
+        success: function (json) {
+            window.location.reload();
+        }
+    }).done(function (data) {
+        console.log(data);
+    });
+});
+
 $(document).on('click', 'a.confirm-delete', function (event) {
     event.preventDefault();
     confirm('Are you sure you want to delete this?');

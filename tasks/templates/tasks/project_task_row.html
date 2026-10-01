@@ -14,5 +14,8 @@
   <td>{{ task.get_repeat_display | default_if_none:"none" }}</td>
   <td>{{ task.length | default_if_none:"none" }}</td>
   <td><a href="{% url 'task_update' task.pk %}?next={{ next }}"><img src="/static/tasks/edit.svg" /></a></td>
-  <td><a href="{% url 'task_delete' task.pk %}" class="confirm-delete"><img src="/static/tasks/trash-2.svg" /></a></td>
+  <td>
+    <a href="{% url 'task_delete' task.pk %}" class="confirm-delete"><img src="/static/tasks/trash-2.svg" /></a>
+    <a href="{% url 'task_move_to_end_of_day' task.pk %}" class="move-to-end-of-day"><img src="/static/tasks/chevrons-down.svg" data-toggle='tooltip' title='Move to end of list for this day.' width="18" /></a>
+  </td>
 </tr>

@@ -255,6 +255,130 @@ class TaskPostponeViewTests(TestCase):
         self.assertEqual(task_after.start_date, datetime.date.today() + datetime.timedelta(3))
         self.assertEqual(task_after.due_date, datetime.date.today() + datetime.timedelta(3))
 
+
+class TaskMoveToEndOfDayViewTests(TestCase):
+    def setUp(self):
+        MyUser.objects.create_user(
+            username="testuser",
+            password="testpassword",
+        )
+
+    def test_move_to_end_of_day_puts_task_last_among_ties(self):
+        user = mylogin(self)
+        due_date = datetime.date.today() + datetime.timedelta(5)
+
+        task1 = Task.objects.create(
+            name="Task 1", user=user, tasklist=Task.NEXT_ACTION,
+            due_date=due_date, priority=Task.NORMAL,
+        )
+        task2 = Task.objects.create(
+            name="Task 2", user=user, tasklist=Task.NEXT_ACTION,
+            due_date=due_date, priority=Task.NORMAL,
+        )
+        task3 = Task.objects.create(
+            name="Task 3", user=user, tasklist=Task.NEXT_ACTION,
+            due_date=due_date, priority=Task.NORMAL,
+        )
+
+        response = self.client.post(
+            reverse("task_move_to_end_of_day", kwargs={"pk": task1.id}),
+            {"id": task1.id},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 200)
+
+        task_list = Task.get_task_plan("nextactions", None, None, None, user)
+        ids_in_order = [task.id for task in task_list]
+        self.assertEqual(ids_in_order, [task2.id, task3.id, task1.id])
+
+    def test_move_to_end_of_day_does_not_change_other_attributes(self):
+        user = mylogin(self)
+        due_date = datetime.date.today() + datetime.timedelta(5)
+
+        task1 = Task.objects.create(
+            name="Task 1", user=user, tasklist=Task.NEXT_ACTION,
+            due_date=due_date, priority=Task.MAJOR, note="keep me",
+        )
+
+        self.client.post(
+            reverse("task_move_to_end_of_day", kwargs={"pk": task1.id}),
+            {"id": task1.id},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        task1.refresh_from_db()
+        self.assertEqual(task1.due_date, due_date)
+        self.assertEqual(task1.priority, Task.MAJOR)
+        self.assertEqual(task1.note, "keep me")
+
+    def test_move_to_end_of_day_only_competes_with_same_priority(self):
+        user = mylogin(self)
+        due_date = datetime.date.today() + datetime.timedelta(5)
+
+        high_prio_task = Task.objects.create(
+            name="High prio", user=user, tasklist=Task.NEXT_ACTION,
+            due_date=due_date, priority=Task.CRITICAL,
+        )
+        low_prio_task = Task.objects.create(
+            name="Low prio", user=user, tasklist=Task.NEXT_ACTION,
+            due_date=due_date, priority=Task.MINOR,
+        )
+
+        self.client.post(
+            reverse("task_move_to_end_of_day", kwargs={"pk": low_prio_task.id}),
+            {"id": low_prio_task.id},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        # Priority still dominates the ordering: the CRITICAL task stays first
+        # even though the MINOR one was just "moved to the end".
+        task_list = Task.get_task_plan("nextactions", None, None, None, user)
+        ids_in_order = [task.id for task in task_list]
+        self.assertEqual(ids_in_order, [high_prio_task.id, low_prio_task.id])
+
+    def test_move_to_end_of_day_does_not_disturb_goal_position(self):
+        """
+        Regression test: day_position (used by move_to_end_of_day) and
+        goal_position (used by the Goal drag-and-drop ordering) must be
+        fully independent, since a task can belong to a goal *and* appear
+        in the Next Actions list at the same time.
+        """
+        user = mylogin(self)
+        goal = Goal.objects.create(name="Test Goal", user=user)
+        due_date = datetime.date.today() + datetime.timedelta(5)
+
+        goal_task1 = Task.objects.create(
+            name="Goal Task 1", user=user, tasklist=Task.NEXT_ACTION,
+            due_date=due_date, priority=Task.NORMAL,
+            goal=goal, goal_position=1,
+        )
+        goal_task2 = Task.objects.create(
+            name="Goal Task 2", user=user, tasklist=Task.NEXT_ACTION,
+            due_date=due_date, priority=Task.NORMAL,
+            goal=goal, goal_position=2,
+        )
+
+        self.client.post(
+            reverse("task_move_to_end_of_day", kwargs={"pk": goal_task1.id}),
+            {"id": goal_task1.id},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        goal_task1.refresh_from_db()
+        goal_task2.refresh_from_db()
+
+        # day_position moved goal_task1 after goal_task2 in the Next Actions list...
+        self.assertGreater(goal_task1.day_position, goal_task2.day_position)
+
+        # ...but its goal_position (its rank within the Goal's own task list)
+        # is untouched, so the goal's drag-and-drop order is unaffected.
+        self.assertEqual(goal_task1.goal_position, 1)
+        self.assertEqual(goal_task2.goal_position, 2)
+        self.assertEqual(
+            list(goal.pending_tasks()), [goal_task1, goal_task2]
+        )
+
+
 class TaskListViewTests(TestCase):
     def setUp(self):
         MyUser.objects.create_user(

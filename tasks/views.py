@@ -541,6 +541,15 @@ class TaskMarkFlexibleDueDate(LoginRequiredMixin, View):
             data = {'success': 'OK'}
             return JsonResponse(data)
 
+class TaskMoveToEndOfDay(LoginRequiredMixin, View):
+
+    def post(self, request, *args, **kwargs):
+        if self.request.user.is_authenticated:
+            task = Task.objects.get(user=self.request.user, id=self.request.POST['id'])
+            task.move_to_end_of_day()
+            data = {'success': 'OK'}
+            return JsonResponse(data)
+
 class TaskPostpone(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):

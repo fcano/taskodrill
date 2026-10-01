@@ -137,7 +137,19 @@ class Task(models.Model):
     project = models.ForeignKey(
         'Project', on_delete=models.CASCADE, blank=True, null=True)
     project_order = models.IntegerField(default=DEFAULT_PROJECT_ORDER)
-    goal_position = models.IntegerField(default=0)
+    goal_position = models.IntegerField(
+        default=0,
+        help_text="Manual rank of this task within its goal's own task list "
+                   "(1..N, reassigned wholesale whenever the goal is "
+                   "reordered). Meaningless for tasks without a goal.",
+    )
+    day_position = models.IntegerField(
+        default=0,
+        help_text="Tiebreaker used only among a user's tasks that share the "
+                   "same due_date and priority in the main task-list "
+                   "ordering (e.g. the 'move to end of day' action). "
+                   "Unrelated to goal_position.",
+    )
     contexts = models.ManyToManyField(
         'Context', related_name="tasks", blank=True)
     folder = models.ForeignKey(
@@ -179,6 +191,41 @@ class Task(models.Model):
                 return None
         else:
             return None
+
+    def move_to_end_of_day(self):
+        """
+        Move this task to the end of the list of tasks that currently tie
+        with it (same user, status, due_date and priority), without
+        touching any other attribute.
+
+        `due_date`/`priority` are resolved before `day_position` in the
+        task-list ordering (see Task.get_task_plan), so tasks sharing those
+        two values are the ones actually competing on `day_position`. We
+        bump this task's `day_position` just past the highest value in
+        that group so it sorts last among them, while still correctly
+        staying above/below tasks with a different priority on the same
+        day.
+
+        Note: this intentionally uses `day_position`, not `goal_position`.
+        `goal_position` is a separate, goal-scoped manual rank (reassigned
+        wholesale whenever a Goal is reordered); reusing it here would
+        collide with that feature for tasks that belong to a goal, since a
+        task can need both an independent "position within its goal" and
+        an independent "tiebreak for this day" at the same time.
+        """
+        tied_tasks = Task.objects.filter(
+            user=self.user,
+            status=self.status,
+            due_date=self.due_date,
+            priority=self.priority,
+        ).exclude(pk=self.pk)
+
+        max_position = tied_tasks.aggregate(
+            models.Max('day_position')
+        )['day_position__max'] or 0
+
+        self.day_position = max_position + 1
+        self.save(update_fields=['day_position'])
 
     @classmethod
     def next_slack_day(cls, user, after_date=None):
@@ -302,7 +349,7 @@ class Task(models.Model):
                                 )
 
             tasks = tasks_wo_project.union(last_task_from_each_project).order_by(
-                'overdue', 'first_field', '-second_field', 'due_date', '-priority', 'goal_position', 'ready_datetime'
+                'overdue', 'first_field', '-second_field', 'due_date', '-priority', 'day_position', 'ready_datetime'
             )
 
             task_list = list(tasks)
