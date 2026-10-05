@@ -1425,6 +1425,9 @@ class GoalMassEditTasks(LoginRequiredMixin, View):
             if update_fields:
                 Task.objects.bulk_update(tasks, update_fields)
 
+            if form.cleaned_data.get('chain_blocked_by_previous'):
+                goal.chain_pending_tasks()
+
         return redirect(goal.get_absolute_url())
 
 

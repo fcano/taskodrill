@@ -2156,6 +2156,53 @@ class GoalMassEditTasksTest(TestCase):
         self.t1.refresh_from_db()
         self.assertIsNone(self.t1.due_date)
 
+    def test_mass_edit_chain_blocked_by_previous(self):
+        self.t1.goal_position = 1
+        self.t1.save()
+        self.t2.goal_position = 2
+        self.t2.save()
+
+        response = self.client.post(
+            reverse('goal_mass_edit_tasks', args=[self.goal.id]),
+            {'chain_blocked_by_previous': 'on'},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.t1.refresh_from_db()
+        self.t2.refresh_from_db()
+        self.assertIsNone(self.t1.blocked_by)
+        self.assertEqual(self.t1.status, Task.PENDING)
+        self.assertEqual(self.t2.blocked_by, self.t1)
+        self.assertEqual(self.t2.status, Task.BLOCKED)
+
+    def test_mass_edit_chain_blocked_by_previous_combined_with_other_field(self):
+        self.t1.goal_position = 1
+        self.t1.save()
+        self.t2.goal_position = 2
+        self.t2.save()
+
+        response = self.client.post(
+            reverse('goal_mass_edit_tasks', args=[self.goal.id]),
+            {'priority': str(Task.CRITICAL), 'chain_blocked_by_previous': 'on'},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.t1.refresh_from_db()
+        self.t2.refresh_from_db()
+        self.assertEqual(self.t1.priority, Task.CRITICAL)
+        self.assertEqual(self.t2.priority, Task.CRITICAL)
+        self.assertIsNone(self.t1.blocked_by)
+        self.assertEqual(self.t2.blocked_by, self.t1)
+        self.assertEqual(self.t2.status, Task.BLOCKED)
+
+    def test_mass_edit_without_chain_leaves_blocked_by_untouched(self):
+        response = self.client.post(
+            reverse('goal_mass_edit_tasks', args=[self.goal.id]),
+            {'priority': str(Task.CRITICAL)},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.t2.refresh_from_db()
+        self.assertIsNone(self.t2.blocked_by)
+        self.assertEqual(self.t2.status, Task.PENDING)
+
 
 class TaskTimerAndFolderTimeTests(TestCase):
     def setUp(self):

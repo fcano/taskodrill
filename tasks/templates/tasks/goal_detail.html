@@ -68,6 +68,14 @@
                 {{ mass_edit_form.start_date_as_due_date }}
             </div>
             <div class="form-group col-auto">
+                <div class="form-check">
+                    {{ mass_edit_form.chain_blocked_by_previous }}
+                    <label class="form-check-label" for="{{ mass_edit_form.chain_blocked_by_previous.id_for_label }}">
+                        Block each task by the previous one
+                    </label>
+                </div>
+            </div>
+            <div class="form-group col-auto">
                 <button type="submit" class="btn btn-primary btn-sm">Apply to All Tasks</button>
             </div>
         </div>

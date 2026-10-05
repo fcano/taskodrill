@@ -1148,6 +1148,23 @@ class Goal(models.Model):
                 task.due_date = slack_day
                 task.save(update_fields=['due_date'])
 
+    def chain_pending_tasks(self):
+        """
+        Chain pending tasks in goal order: every task after the first is set
+        to be blocked by the task immediately before it.
+        """
+        tasks = list(self.pending_tasks_wo_order())
+        if len(tasks) < 2:
+            return
+        tasks_to_update = []
+        previous = tasks[0]
+        for task in tasks[1:]:
+            task.blocked_by = previous
+            task.status = Task.BLOCKED
+            tasks_to_update.append(task)
+            previous = task
+        Task.objects.bulk_update(tasks_to_update, ['blocked_by', 'status'])
+
     def pending_tasks(self):
         q1 = Q(start_date=datetime.date.today()) & Q(start_time__lte=datetime.datetime.now())
         q2 = Q(start_date=datetime.date.today()) & Q(start_time__isnull=True)

@@ -468,3 +468,48 @@ class GoalModelTests(TestCase):
         goals = Goal.objects.all()
         self.assertEqual(goals[0], goal2)
         self.assertEqual(goals[1], self.goal)
+
+    def test_chain_pending_tasks(self):
+        """Each task after the first gets blocked by the task right before it, in goal order."""
+        task1 = Task.objects.create(
+            name='Task 1', goal=self.goal, status=Task.PENDING,
+            tasklist=Task.NEXT_ACTION, goal_position=1, user=self.user,
+        )
+        task2 = Task.objects.create(
+            name='Task 2', goal=self.goal, status=Task.PENDING,
+            tasklist=Task.NEXT_ACTION, goal_position=2, user=self.user,
+        )
+        task3 = Task.objects.create(
+            name='Task 3', goal=self.goal, status=Task.PENDING,
+            tasklist=Task.NEXT_ACTION, goal_position=3, user=self.user,
+        )
+
+        self.goal.chain_pending_tasks()
+
+        task1.refresh_from_db()
+        task2.refresh_from_db()
+        task3.refresh_from_db()
+
+        self.assertIsNone(task1.blocked_by)
+        self.assertEqual(task1.status, Task.PENDING)
+
+        self.assertEqual(task2.blocked_by, task1)
+        self.assertEqual(task2.status, Task.BLOCKED)
+
+        self.assertEqual(task3.blocked_by, task2)
+        self.assertEqual(task3.status, Task.BLOCKED)
+
+    def test_chain_pending_tasks_no_op_with_fewer_than_two_tasks(self):
+        """A goal with 0 or 1 pending task is left untouched."""
+        self.goal.chain_pending_tasks()  # no tasks at all
+
+        task1 = Task.objects.create(
+            name='Task 1', goal=self.goal, status=Task.PENDING,
+            tasklist=Task.NEXT_ACTION, goal_position=1, user=self.user,
+        )
+
+        self.goal.chain_pending_tasks()  # single task
+
+        task1.refresh_from_db()
+        self.assertIsNone(task1.blocked_by)
+        self.assertEqual(task1.status, Task.PENDING)

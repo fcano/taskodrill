@@ -113,6 +113,10 @@ class GoalMassEditForm(forms.Form):
     )
     start_date_as_due_date = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': 'form-control form-control-sm'}))
     roadmap = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': 'form-control form-control-sm'}))
+    chain_blocked_by_previous = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-control form-control-sm'}),
+    )
 
     def clean_priority(self):
         val = self.cleaned_data.get('priority', '')
