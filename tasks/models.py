@@ -1188,6 +1188,30 @@ class Goal(models.Model):
 
         return tasks_wo_project.union(last_task_from_each_project).order_by('due_date', 'goal_position', 'ready_datetime')
 
+    def pending_and_blocked_tasks(self):
+        """
+        Like pending_tasks(), but also includes BLOCKED tasks, so the
+        goal's task table can show the full chain set up by
+        chain_pending_tasks() instead of just the single next actionable
+        task.
+        """
+        statuses = [Task.PENDING, Task.BLOCKED]
+
+        tasks_wo_project = self.tasks.filter(
+            project__isnull=True,
+            status__in=statuses,
+        )
+
+        last_task_from_each_project = self.tasks.filter(
+            status__in=statuses,
+            project__isnull=False,
+            project__status=Project.OPEN
+        ).order_by('project_id', 'project_order').distinct('project_id')
+
+        last_task_from_each_project = Task.objects.filter(pk__in=last_task_from_each_project)
+
+        return tasks_wo_project.union(last_task_from_each_project).order_by('due_date', 'goal_position', 'ready_datetime')
+
     def pending_tasks_wo_order(self):
         q1 = Q(start_date=datetime.date.today()) & Q(start_time__lte=datetime.datetime.now())
         q2 = Q(start_date=datetime.date.today()) & Q(start_time__isnull=True)

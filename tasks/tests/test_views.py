@@ -2058,6 +2058,22 @@ class GoalDetailTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.goal.name)
 
+    def test_goal_detail_shows_blocked_tasks_and_blocker(self):
+        task1 = Task.objects.create(
+            name='Blocker Task', goal=self.goal, status=Task.PENDING,
+            tasklist=Task.NEXT_ACTION, goal_position=1, user=self.user,
+        )
+        task2 = Task.objects.create(
+            name='Blocked Task', goal=self.goal, status=Task.BLOCKED,
+            blocked_by=task1, tasklist=Task.NEXT_ACTION, goal_position=2,
+            user=self.user,
+        )
+        response = self.client.get(reverse('goal_detail', args=[self.goal.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Blocker Task')
+        self.assertContains(response, 'Blocked Task')
+        self.assertContains(response, task1.get_absolute_url())
+
 class GoalListTest(TestCase):
     def setUp(self):
         self.user = MyUser.objects.create_user(username='testuser', password='12345')

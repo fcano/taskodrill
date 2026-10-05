@@ -1330,6 +1330,7 @@ class GoalDetail(LoginRequiredMixin, DetailView):
         context['next'] = self.object.get_absolute_url()
         context['weekdays_until_deadline'] = Goal.weekdays_between(datetime.datetime.today().date(), self.object.due_date)
         context['mass_edit_form'] = GoalMassEditForm()
+        context['task_list'] = self.object.pending_and_blocked_tasks()
         return context
 
     def get_queryset(self):

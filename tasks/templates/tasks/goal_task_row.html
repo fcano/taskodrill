@@ -1,4 +1,4 @@
-<tr data-lookup="{{ task.id }}" data-due-date="{{ task.due_date|date:'Y-m-d'|default:'9999-12-31' }}" id="tasks_row_{{ task.id }}">
+<tr data-lookup="{{ task.id }}" data-due-date="{{ task.due_date|date:'Y-m-d'|default:'9999-12-31' }}" id="tasks_row_{{ task.id }}"{% if task.blocked_by %} class="table-warning"{% endif %}>
   <td><span class="handle"></span></td>
   <td><input class="checkbox align-middle" type="checkbox" id="checkbox_{{ task.id }}" value="{{ task.id }}"></td>
   <td><a href="{{ task.get_absolute_url }}">{{ task.name }}</a></td>
@@ -10,6 +10,10 @@
   <td>{{ task.get_repeat_display | default_if_none:"none" }}</td>
   <td>{{ task.length | default_if_none:"none" }}</td>
   <td>{{ task.get_priority_display }}</td>
+  <td>
+    {{ task.get_status_display }}
+    {% if task.blocked_by %}<br /><small class="text-muted">by <a href="{{ task.blocked_by.get_absolute_url }}">{{ task.blocked_by.name|truncatechars:40 }}</a></small>{% endif %}
+  </td>
   <td>
     <a href="{% url 'task_update' task.pk %}?next={{ next }}"><img src="/static/tasks/edit.svg" /></a>
     <a href="{% url 'task_delete' task.pk %}" class="confirm-delete"><img src="/static/tasks/trash-2.svg" /></a>

@@ -499,6 +499,29 @@ class GoalModelTests(TestCase):
         self.assertEqual(task3.blocked_by, task2)
         self.assertEqual(task3.status, Task.BLOCKED)
 
+    def test_pending_and_blocked_tasks_includes_blocked(self):
+        """pending_and_blocked_tasks() returns both PENDING and BLOCKED tasks."""
+        task1 = Task.objects.create(
+            name='Task 1', goal=self.goal, status=Task.PENDING,
+            tasklist=Task.NEXT_ACTION, goal_position=1, user=self.user,
+        )
+        task2 = Task.objects.create(
+            name='Task 2', goal=self.goal, status=Task.BLOCKED,
+            blocked_by=task1, tasklist=Task.NEXT_ACTION, goal_position=2,
+            user=self.user,
+        )
+        done_task = Task.objects.create(
+            name='Done Task', goal=self.goal, status=Task.DONE,
+            tasklist=Task.NEXT_ACTION, goal_position=3, user=self.user,
+        )
+
+        tasks = self.goal.pending_and_blocked_tasks()
+
+        self.assertIn(task1, tasks)
+        self.assertIn(task2, tasks)
+        self.assertNotIn(done_task, tasks)
+        self.assertEqual(tasks.count(), 2)
+
     def test_chain_pending_tasks_no_op_with_fewer_than_two_tasks(self):
         """A goal with 0 or 1 pending task is left untouched."""
         self.goal.chain_pending_tasks()  # no tasks at all
