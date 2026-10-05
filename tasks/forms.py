@@ -81,6 +81,10 @@ FLEXIBLE_CHOICES = [
     ('false', 'No'),
 ]
 
+PRIORITY_CHOICES = [
+    ('', '-- No change --'),
+] + [(str(value), label) for value, label in Task.PRIORITY]
+
 class GoalMassEditForm(forms.Form):
     due_date = forms.DateField(required=False, widget=DateInput(attrs={'class': 'form-control form-control-sm'}))
     start_date = forms.DateField(required=False, widget=DateInput(attrs={'class': 'form-control form-control-sm'}))
@@ -96,6 +100,11 @@ class GoalMassEditForm(forms.Form):
         decimal_places=1,
         widget=forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.1'}),
     )
+    priority = forms.ChoiceField(
+        required=False,
+        choices=PRIORITY_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control form-control-sm'}),
+    )
     milestone = forms.ChoiceField(
         required=False,
         choices=FLEXIBLE_CHOICES,
@@ -103,6 +112,15 @@ class GoalMassEditForm(forms.Form):
     )
     start_date_as_due_date = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': 'form-control form-control-sm'}))
     roadmap = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': 'form-control form-control-sm'}))
+
+    def clean_priority(self):
+        val = self.cleaned_data.get('priority', '')
+        if val == '':
+            return None
+        try:
+            return int(val)
+        except (ValueError, TypeError):
+            raise forms.ValidationError('Invalid priority value')
 
 
 TASKLIST_CHOICES = [

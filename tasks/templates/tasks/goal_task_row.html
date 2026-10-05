@@ -9,6 +9,7 @@
   <td>{{ task.due_date | default_if_none:"no date"}}{% if task.flexible_due_date %} ~{% endif %}{% if task.milestone %} &#x1F3AF;{% endif %}</td>
   <td>{{ task.get_repeat_display | default_if_none:"none" }}</td>
   <td>{{ task.length | default_if_none:"none" }}</td>
+  <td>{{ task.get_priority_display }}</td>
   <td>
     <a href="{% url 'task_update' task.pk %}?next={{ next }}"><img src="/static/tasks/edit.svg" /></a>
     <a href="{% url 'task_delete' task.pk %}" class="confirm-delete"><img src="/static/tasks/trash-2.svg" /></a>

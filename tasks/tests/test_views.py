@@ -2093,6 +2093,41 @@ class GoalDeleteTest(TestCase):
         self.assertEqual(Goal.objects.count(), 0)
 
 
+class GoalMassEditTasksTest(TestCase):
+    def setUp(self):
+        self.user = MyUser.objects.create_user(username='testuser', password='12345')
+        self.client.login(username='testuser', password='12345')
+        self.goal = Goal.objects.create(name='Test Goal', user=self.user)
+        self.t1 = Task.objects.create(
+            name='Task 1', user=self.user, goal=self.goal,
+            tasklist=Task.NEXT_ACTION, status=Task.PENDING, priority=Task.NORMAL,
+        )
+        self.t2 = Task.objects.create(
+            name='Task 2', user=self.user, goal=self.goal,
+            tasklist=Task.NEXT_ACTION, status=Task.PENDING, priority=Task.NORMAL,
+        )
+
+    def test_mass_edit_sets_priority_on_all_tasks(self):
+        response = self.client.post(
+            reverse('goal_mass_edit_tasks', args=[self.goal.id]),
+            {'priority': str(Task.CRITICAL)},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.t1.refresh_from_db()
+        self.t2.refresh_from_db()
+        self.assertEqual(self.t1.priority, Task.CRITICAL)
+        self.assertEqual(self.t2.priority, Task.CRITICAL)
+
+    def test_mass_edit_no_change_leaves_priority_untouched(self):
+        response = self.client.post(
+            reverse('goal_mass_edit_tasks', args=[self.goal.id]),
+            {'priority': ''},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.t1.refresh_from_db()
+        self.assertEqual(self.t1.priority, Task.NORMAL)
+
+
 class TaskTimerAndFolderTimeTests(TestCase):
     def setUp(self):
         self.user = MyUser.objects.create_user(username='testuser', password='12345')

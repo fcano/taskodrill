@@ -1408,6 +1408,12 @@ class GoalMassEditTasks(LoginRequiredMixin, View):
                 for task in tasks:
                     task.milestone = bool_val
 
+            priority_value = form.cleaned_data.get('priority')
+            if priority_value is not None:
+                update_fields.append('priority')
+                for task in tasks:
+                    task.priority = priority_value
+
             if update_fields:
                 Task.objects.bulk_update(tasks, update_fields)
 
