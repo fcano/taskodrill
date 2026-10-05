@@ -34,6 +34,12 @@
                 {{ mass_edit_form.due_date }}
             </div>
             <div class="form-group col-auto">
+                <div class="form-check">
+                    {{ mass_edit_form.clear_due_date }}
+                    <label class="form-check-label" for="{{ mass_edit_form.clear_due_date.id_for_label }}">Clear due date</label>
+                </div>
+            </div>
+            <div class="form-group col-auto">
                 <label for="{{ mass_edit_form.start_date.id_for_label }}">Start date</label>
                 {{ mass_edit_form.start_date }}
             </div>

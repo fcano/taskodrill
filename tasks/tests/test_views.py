@@ -2127,6 +2127,35 @@ class GoalMassEditTasksTest(TestCase):
         self.t1.refresh_from_db()
         self.assertEqual(self.t1.priority, Task.NORMAL)
 
+    def test_mass_edit_clear_due_date_clears_all_tasks(self):
+        self.t1.due_date = datetime.date.today()
+        self.t1.due_time = datetime.time(10, 0)
+        self.t1.save()
+        self.t2.due_date = datetime.date.today()
+        self.t2.due_time = datetime.time(11, 0)
+        self.t2.save()
+
+        response = self.client.post(
+            reverse('goal_mass_edit_tasks', args=[self.goal.id]),
+            {'clear_due_date': 'on'},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.t1.refresh_from_db()
+        self.t2.refresh_from_db()
+        self.assertIsNone(self.t1.due_date)
+        self.assertIsNone(self.t1.due_time)
+        self.assertIsNone(self.t2.due_date)
+        self.assertIsNone(self.t2.due_time)
+
+    def test_mass_edit_clear_due_date_takes_precedence_over_due_date(self):
+        response = self.client.post(
+            reverse('goal_mass_edit_tasks', args=[self.goal.id]),
+            {'clear_due_date': 'on', 'due_date': '2030-01-01'},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.t1.refresh_from_db()
+        self.assertIsNone(self.t1.due_date)
+
 
 class TaskTimerAndFolderTimeTests(TestCase):
     def setUp(self):

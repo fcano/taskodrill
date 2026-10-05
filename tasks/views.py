@@ -1381,7 +1381,15 @@ class GoalMassEditTasks(LoginRequiredMixin, View):
             tasks = list(goal.pending_tasks())
             update_fields = []
 
+            if form.cleaned_data.get('clear_due_date'):
+                for task in tasks:
+                    task.due_date = None
+                    task.due_time = None
+                update_fields += ['due_date', 'due_time']
+
             for field_name in ('due_date', 'start_date', 'planned_end_date', 'length'):
+                if field_name == 'due_date' and form.cleaned_data.get('clear_due_date'):
+                    continue
                 value = form.cleaned_data.get(field_name)
                 if value is not None:
                     update_fields.append(field_name)

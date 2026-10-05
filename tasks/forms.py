@@ -87,6 +87,7 @@ PRIORITY_CHOICES = [
 
 class GoalMassEditForm(forms.Form):
     due_date = forms.DateField(required=False, widget=DateInput(attrs={'class': 'form-control form-control-sm'}))
+    clear_due_date = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': 'form-control form-control-sm'}))
     start_date = forms.DateField(required=False, widget=DateInput(attrs={'class': 'form-control form-control-sm'}))
     planned_end_date = forms.DateField(required=False, widget=DateInput(attrs={'class': 'form-control form-control-sm'}))
     flexible_due_date = forms.ChoiceField(
