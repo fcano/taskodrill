@@ -4,18 +4,9 @@
     <a href="#" class="mark-done-btn align-middle ml-1" data-task-id="{{ task.id }}" title="Mark as done" style="color:#28a745;text-decoration:none;">&#10003;</a>
   </td>
   <td>{{ task.name|urlizetrunc:50 }}</td>
+  <td>{{ task.display_deliverable }}</td>
   <td id="tasks_td_due_date_{{ task.id }}">{{ task.due_date | default_if_none:"no date"}}{% if task.flexible_due_date %} ~{% endif %}</td>
   <td id="tasks_td_planned_end_date_{{ task.id }}">{{ task.planned_end_date | default_if_none:"no date"}}</td>
-  {% if task.project %}
-  <td><a href="{{ task.project.get_absolute_url }}">{{ task.project.name }}</a></td>
-  {% else %}
-    <td>none</td>
-  {% endif %}
-  {% if task.project %}
-  <td>{{ task.project.due_date }}</td>
-  {% else %}
-    <td>none</td>
-  {% endif %}
   {% if task.goal %}
   <td><a href="{{ task.goal.get_absolute_url }}">{{ task.goal.name }}</a></td>
   {% else %}
@@ -40,11 +31,6 @@
   <td>{{ task.get_repeat_display | default_if_none:"none" }}</td>
   <td>{{ task.get_priority_display | default_if_none:"none" }}</td>
   <td>{{ task.length | default_if_none:"none" }}</td>
-  {% if show_task_timer %}
-  <td class="text-nowrap align-middle">
-    {% include 'tasks/includes/task_timer_markup.html' with task=task timer_session_state=task.timer_session_state %}
-  </td>
-  {% endif %}
   <td>
     <div class="action-icons">
       <a href="{% url 'task_remove_deadline' task.pk %}" class="remove-deadline"><img src="/static/tasks/empty.svg" width="18" /></a>

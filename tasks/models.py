@@ -785,6 +785,23 @@ class Task(models.Model):
         else:
             return False
 
+    @property
+    def display_deliverable(self):
+        """Deliverable string to show for this task, combining the task's own
+        deliverable (if any) with its goal's deliverable (if any).
+
+        - If only the task has a deliverable, show the task's deliverable.
+        - If only the goal has a deliverable, show the goal's deliverable.
+        - If both have a deliverable, show both separated by a colon,
+          task deliverable first, then goal deliverable.
+        - If neither has a deliverable, returns an empty string.
+        """
+        task_deliverable = self.deliverable_name or ''
+        goal_deliverable = self.goal.deliverable_name if self.goal else ''
+        if task_deliverable and goal_deliverable:
+            return f'{task_deliverable}: {goal_deliverable}'
+        return task_deliverable or goal_deliverable
+
         # if self.goal:
         #     if self.goal.is_time_constrained:
         #         return True
@@ -1039,6 +1056,12 @@ class Goal(models.Model):
     due_date = models.DateField(blank=True, null=True)
     status = models.IntegerField(choices=STATUS, default=OPEN)
     roadmap = models.BooleanField(default=False)
+    deliverable_name = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text='Name/description of the deliverable produced by this goal, if any. '
+                   'Leave blank if this goal has no deliverable.',
+    )
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def __str__(self):
