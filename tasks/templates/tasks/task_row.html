@@ -1,11 +1,10 @@
-<tr id="tasks_row_{{ task.id }}" class="{% if task.is_time_constrained %}row-time-constrained{% endif %}">
+<tr id="tasks_row_{{ task.id }}">
   <td class="text-nowrap">
-    <input class="align-middle task-select-checkbox" type="checkbox" id="checkbox_{{ task.id }}" data-task-id="{{ task.id }}" value="{{ task.id }}">
-    <a href="#" class="mark-done-btn align-middle ml-1" data-task-id="{{ task.id }}" title="Mark as done" style="color:#28a745;text-decoration:none;">&#10003;</a>
+    <input class="align-middle task-select-checkbox" type="checkbox" id="checkbox_{{ task.id }}" data-task-id="{{ task.id }}" value="{{ task.id }}" title="Mark as done" autocomplete="off">
   </td>
   <td>{{ task.name|urlizetrunc:50 }}</td>
   <td>{{ task.display_deliverable }}</td>
-  <td id="tasks_td_due_date_{{ task.id }}">{{ task.due_date | default_if_none:"no date"}}{% if task.flexible_due_date %} ~{% endif %}</td>
+  <td id="tasks_td_due_date_{{ task.id }}">{% if task.is_time_constrained %}<span class="late-indicator" data-toggle="tooltip" title="Late: planned end date is past the due date">&#9200;</span> {% endif %}{{ task.due_date | default_if_none:"no date"}}{% if task.flexible_due_date %} ~{% endif %}</td>
   <td id="tasks_td_planned_end_date_{{ task.id }}">{{ task.planned_end_date | default_if_none:"no date"}}</td>
   {% if task.goal %}
   <td><a href="{{ task.goal.get_absolute_url }}">{{ task.goal.name }}</a></td>

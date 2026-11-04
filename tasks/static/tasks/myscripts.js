@@ -31,6 +31,10 @@ $.ajaxSetup({
 
 // ─── Mass-edit selection helpers ─────────────────────────────────────────────
 
+// When false (default), the checkbox next to a task marks it as done.
+// When true, checkboxes select tasks for the mass edit toolbar.
+var massEditMode = false;
+
 function getSelectedTaskIds() {
     var ids = [];
     $('.task-select-checkbox:checked').each(function () {
@@ -40,15 +44,30 @@ function getSelectedTaskIds() {
 }
 
 function updateMassEditToolbar() {
-    var ids = getSelectedTaskIds();
-    var count = ids.length;
-    if (count > 0) {
-        $('#mass-edit-toolbar').show();
-        $('#mass-edit-count').text(count + ' selected');
-    } else {
-        $('#mass-edit-toolbar').hide();
+    $('#mass-edit-count').text(getSelectedTaskIds().length + ' selected');
+}
+
+function setMassEditMode(on) {
+    massEditMode = on;
+    $('#mass-edit-toggle').toggleClass('active', on).attr('aria-pressed', on ? 'true' : 'false');
+    $('#mass-edit-toolbar').toggle(on);
+    $('#select-all-tasks').toggle(on);
+    $('#checkbox-mode-hint').text(
+        on ? 'Selection mode: pick tasks, then use the toolbar above the table.'
+           : "Check a task's checkbox to mark it as done."
+    );
+    $('.task-select-checkbox').attr('title', on ? 'Select for mass edit' : 'Mark as done');
+    if (!on) {
+        $('.task-select-checkbox').prop('checked', false);
+        $('#select-all-tasks').prop('checked', false).prop('indeterminate', false);
+        updateMassEditToolbar();
     }
 }
+
+// Enter/leave mass edit mode
+$(document).on('click', '#mass-edit-toggle', function () {
+    setMassEditMode(!massEditMode);
+});
 
 function massEditRequest(payload) {
     var ids = getSelectedTaskIds();
@@ -68,15 +87,48 @@ function massEditRequest(payload) {
     });
 }
 
-// Select-all / deselect-all
+// Select-all / deselect-all (only used in mass edit mode)
 $(document).on('change', '#select-all-tasks', function () {
+    if (!massEditMode) return;
     var checked = $(this).is(':checked');
     $('.task-select-checkbox').prop('checked', checked);
     updateMassEditToolbar();
 });
 
-// Individual selection toggles toolbar
+// Individual checkboxes: mark done in normal mode, select in mass edit mode
 $('#tasks_body').on('change', '.task-select-checkbox', function () {
+    var $box = $(this);
+
+    if (!massEditMode) {
+        // Normal mode: checking the box marks the task as done.
+        var taskId = String($box.data('task-id'));
+        var postData = { id: taskId, value: 1 };
+        if (typeof window.taskTimerCollectSessionSecondsForMarkDone === 'function') {
+            var ts = window.taskTimerCollectSessionSecondsForMarkDone(taskId);
+            if (ts > 0) {
+                postData.timer_seconds = ts;
+            }
+        }
+        $.ajax({
+            type: 'POST',
+            url: '/tasks/mark_as_done/',
+            data: postData,
+            success: function () {
+                // Uncheck before reloading: browsers snapshot form state when a
+                // reload starts and restore it afterwards, which would keep the
+                // checkbox (or the one rendered in its place) visually checked.
+                $box.prop('checked', false);
+                $('#select-all-tasks').prop('checked', false).prop('indeterminate', false);
+                location.reload();
+            },
+            error: function () {
+                $box.prop('checked', false);
+                alert('Could not mark the task as done.');
+            }
+        });
+        return;
+    }
+
     var total = $('.task-select-checkbox').length;
     var checked = $('.task-select-checkbox:checked').length;
     $('#select-all-tasks').prop('indeterminate', checked > 0 && checked < total);
@@ -122,29 +174,7 @@ $(document).on('click', '#mass-move-to-nextaction', function () {
     massEditRequest({ tasklist: '0' });
 });
 
-// ─── Mark-as-done button (the ✓ icon next to the selection checkbox) ──────────
-$('#tasks_body').on('click', 'a.mark-done-btn', function (e) {
-    e.preventDefault();
-    var taskId = String($(this).data('task-id'));
-    var postData = { id: taskId, value: 1 };
-    if (typeof window.taskTimerCollectSessionSecondsForMarkDone === 'function') {
-        var ts = window.taskTimerCollectSessionSecondsForMarkDone(taskId);
-        if (ts > 0) {
-            postData.timer_seconds = ts;
-        }
-    }
-    $.ajax({
-        type: 'POST',
-        url: '/tasks/mark_as_done/',
-        data: postData,
-        success: function () {
-            location.reload();
-        }
-    }).done(function (data) {
-        console.log(data);
-    });
-});
-
+// ─── Mark as done (task detail page) ─────────────────────────────────────────
 $(document).on('click', '#task_detail_mark_done', function () {
     var $btn = $(this);
     var taskId = String($btn.data('task-id'));

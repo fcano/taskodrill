@@ -1,4 +1,9 @@
 {% if not done %}
+<div class="d-flex align-items-center mb-2">
+  <button type="button" class="btn btn-sm btn-outline-secondary" id="mass-edit-toggle" aria-pressed="false"
+          title="Use the checkboxes to edit several tasks at once">Mass edit</button>
+  <span class="text-muted small ml-2" id="checkbox-mode-hint">Check a task's checkbox to mark it as done.</span>
+</div>
 <div id="mass-edit-toolbar" class="mb-2" style="display:none;">
   <div class="d-flex align-items-center flex-wrap gap-2" style="gap:.5rem;">
     <span id="mass-edit-count" class="badge badge-secondary mr-2">0 selected</span>
@@ -23,7 +28,7 @@
 <table id="{% if done %}done_tasks_table{% else %}tasks_table{% endif %}" class="table table-sm{% if done %} done-tasks-table{% endif %}">
   <thead class="thead-light">
     <tr>
-      <th scope="col">{% if not done %}<input type="checkbox" id="select-all-tasks" title="Select all">{% endif %}</th>
+      <th scope="col">{% if not done %}<input type="checkbox" id="select-all-tasks" title="Select all" style="display:none;" autocomplete="off">{% endif %}</th>
       <th scope="col">Task</th>
       <th scope="col">Deliverable</th>
       <th scope="col">Due date</th>

@@ -108,8 +108,16 @@ li.active {
         url("/static/tasks/cube_background.png");
 }
 
-.row-time-constrained {
-    background-color: red;
+/* Late task indicator (alarm clock shown next to the due date) */
+.late-indicator {
+    color: #c0392b;
+    cursor: help;
+}
+
+/* Done lists have no mark-as-done/mass-edit checkbox column */
+.done-tasks-table th:first-child,
+.done-tasks-table td:first-child {
+    display: none;
 }
 
 /* Styles for contexts autocomplete field */
