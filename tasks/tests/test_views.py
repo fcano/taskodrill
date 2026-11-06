@@ -2273,15 +2273,17 @@ class TaskTimerAndFolderTimeTests(TestCase):
         rows = resp.json()
         self.assertTrue(any(r['value'] == 'Dev' for r in rows))
 
-    def test_folder_list_shows_tracked_columns(self):
-        today = datetime.date.today()
-        TaskTimeEntry.objects.create(
-            task=self.task, seconds=3661, work_date=today
-        )
+    def test_folder_list_shows_task_counts(self):
         resp = self.client.get(reverse('folder_list'))
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, 'Dev')
-        self.assertContains(resp, '1:01:01')
+        # The task created in setUp belongs to the 'Dev' folder
+        self.assertContains(resp, '<td class="text-right text-nowrap">1</td>')
+        # A folder with no tasks shows 0
+        Folder.objects.create(name='Empty', user=self.user)
+        resp = self.client.get(reverse('folder_list'))
+        self.assertContains(resp, 'Empty')
+        self.assertContains(resp, '<td class="text-right text-nowrap">0</td>')
 
     def test_mark_done_with_timer_seconds_persists_time(self):
         resp = self.client.post(
@@ -2416,3 +2418,89 @@ class TaskMassEditTasklistTests(TestCase):
         self.assertEqual(resp.status_code, 404)
         other_task.refresh_from_db()
         self.assertEqual(other_task.tasklist, Task.NEXT_ACTION)
+
+
+class FolderAutocompleteCreateTests(TestCase):
+    """Inline folder creation from the task form's Folder autocomplete."""
+
+    def setUp(self):
+        self.user = MyUser.objects.create_user(username='testuser', password='12345')
+        self.client.login(username='testuser', password='12345')
+
+    def test_get_offers_create_option_for_unknown_name(self):
+        resp = self.client.get(reverse('folder-autocomplete'), {'q': 'BrandNew'})
+        self.assertEqual(resp.status_code, 200)
+        results = resp.json()['results']
+        create_options = [r for r in results if r.get('create_id')]
+        self.assertEqual(len(create_options), 1)
+        self.assertEqual(create_options[0]['id'], 'BrandNew')
+
+    def test_get_no_create_option_for_existing_name(self):
+        Folder.objects.create(name='Existing', user=self.user)
+        resp = self.client.get(reverse('folder-autocomplete'), {'q': 'existing'})
+        self.assertEqual(resp.status_code, 200)
+        results = resp.json()['results']
+        self.assertEqual(len(results), 1)
+        self.assertEqual(int(results[0]['id']), self.user.folder_set.first().pk)
+        self.assertFalse(results[0].get('create_id'))
+
+    def test_post_creates_folder(self):
+        resp = self.client.post(reverse('folder-autocomplete'), {'text': 'NewFolder'})
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        folder = Folder.objects.get(name='NewFolder', user=self.user)
+        self.assertEqual(int(data['id']), folder.pk)
+        self.assertEqual(data['text'], 'NewFolder')
+
+    def test_post_existing_name_returns_existing_folder(self):
+        folder = Folder.objects.create(name='Dup', user=self.user)
+        resp = self.client.post(reverse('folder-autocomplete'), {'text': 'Dup'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(int(resp.json()['id']), folder.pk)
+        self.assertEqual(Folder.objects.filter(user=self.user).count(), 1)
+
+    def test_post_requires_authentication(self):
+        self.client.logout()
+        resp = self.client.post(reverse('folder-autocomplete'), {'text': 'Nope'})
+        self.assertEqual(resp.status_code, 403)
+
+    def test_task_create_with_inline_created_folder(self):
+        # Simulate the widget flow: the folder is created via the
+        # autocomplete POST, then its pk is submitted with the task form.
+        folder_id = self.client.post(
+            reverse('folder-autocomplete'), {'text': 'InlineFolder'}
+        ).json()['id']
+        response = self.client.post(
+            reverse('task_add'),
+            {
+                'name': 'Task with new folder',
+                'repeat': Task.NO,
+                'repeat_from': Task.DUE_DATE,
+                'priority': Task.NORMAL,
+                'tasklist': Task.NEXT_ACTION,
+                'folder': folder_id,
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        task = Task.objects.get(name='Task with new folder')
+        self.assertEqual(task.folder.name, 'InlineFolder')
+        self.assertEqual(task.folder.user, self.user)
+
+    def test_task_create_rejects_other_users_folder(self):
+        other = MyUser.objects.create_user(username='otheruser', password='12345')
+        other_folder = Folder.objects.create(name='OtherFolder', user=other)
+        response = self.client.post(
+            reverse('task_add'),
+            {
+                'name': 'Task with foreign folder',
+                'repeat': Task.NO,
+                'repeat_from': Task.DUE_DATE,
+                'priority': Task.NORMAL,
+                'tasklist': Task.NEXT_ACTION,
+                'folder': other_folder.pk,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(
+            Task.objects.filter(name='Task with foreign folder').exists()
+        )

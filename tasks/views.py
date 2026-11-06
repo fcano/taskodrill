@@ -8,7 +8,7 @@ from django.views.generic import ListView, View
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Q, Sum
+from django.db.models import Q, Count
 from django.db import transaction, models
 from django.urls import reverse, reverse_lazy
 from django.http import JsonResponse
@@ -39,34 +39,6 @@ ONE_DAY = datetime.timedelta(days=1)
 HOLIDAYS_ES_VC = holidays.CountryHoliday('ES', prov='VC')
 
 
-def _last_day_of_month(d):
-    last = calendar.monthrange(d.year, d.month)[1]
-    return datetime.date(d.year, d.month, last)
-
-
-def folder_tracked_time_period_ranges():
-    """Calendar ranges using timezone.localdate() (see TIME_ZONE)."""
-    today = timezone.localdate()
-    monday = today - datetime.timedelta(days=today.weekday())
-    sunday = monday + datetime.timedelta(days=6)
-    prev_sunday = monday - datetime.timedelta(days=1)
-    prev_monday = prev_sunday - datetime.timedelta(days=6)
-    cur_month_start = today.replace(day=1)
-    cur_month_end = _last_day_of_month(today)
-    if today.month == 1:
-        prev_month_start = datetime.date(today.year - 1, 12, 1)
-    else:
-        prev_month_start = datetime.date(today.year, today.month - 1, 1)
-    prev_month_end = _last_day_of_month(prev_month_start)
-    return {
-        'today': (today, today),
-        'cur_week': (monday, sunday),
-        'cur_month': (cur_month_start, cur_month_end),
-        'prev_week': (prev_monday, prev_sunday),
-        'prev_month': (prev_month_start, prev_month_end),
-    }
-
-
 def format_tracked_duration(seconds):
     seconds = int(seconds or 0)
     if seconds <= 0:
@@ -87,29 +59,6 @@ def drain_task_timer_session_locked(task):
     sec = session.total_elapsed_seconds()
     session.delete()
     return max(0, min(int(sec), 86400 * 2))
-
-
-def folder_tracked_stats_by_period(user):
-    """folder_id -> {period_key: seconds} for aggregating folder list columns."""
-    ranges = folder_tracked_time_period_ranges()
-    result = {}
-    for key, (start, end) in ranges.items():
-        rows = (
-            TaskTimeEntry.objects.filter(
-                task__user=user,
-                task__folder__isnull=False,
-                work_date__gte=start,
-                work_date__lte=end,
-            )
-            .values('task__folder_id')
-            .annotate(total=Sum('seconds'))
-        )
-        for row in rows:
-            fid = row['task__folder_id']
-            if fid not in result:
-                result[fid] = {}
-            result[fid][key] = int(row['total'] or 0)
-    return result
 
 
 def extract_at_contexts(name, user):
@@ -1059,19 +1008,9 @@ class FolderList(LoginRequiredMixin, ListView):
     model = Folder
 
     def get_queryset(self):
-        return Folder.objects.filter(user=self.request.user)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        stats = folder_tracked_stats_by_period(self.request.user)
-        for folder in context['folder_list']:
-            s = stats.get(folder.pk, {})
-            folder.tracked_today_fmt = format_tracked_duration(s.get('today', 0))
-            folder.tracked_cur_week_fmt = format_tracked_duration(s.get('cur_week', 0))
-            folder.tracked_cur_month_fmt = format_tracked_duration(s.get('cur_month', 0))
-            folder.tracked_prev_week_fmt = format_tracked_duration(s.get('prev_week', 0))
-            folder.tracked_prev_month_fmt = format_tracked_duration(s.get('prev_month', 0))
-        return context
+        return Folder.objects.filter(user=self.request.user).annotate(
+            task_count=Count('tasks')
+        )
 
 class FolderUpdate(LoginRequiredMixin,UpdateView):
     model = Folder
@@ -1082,6 +1021,10 @@ class FolderDelete(LoginRequiredMixin,DeleteView):
     success_url = reverse_lazy('folder_list')
 
 class FolderAutocomplete(autocomplete.Select2QuerySetView):
+    # Setting create_field is what enables the "Create '<text>'" option in
+    # the Select2 widget (e.g. the Folder field of the task form), so users
+    # can create a new folder inline instead of picking an existing one.
+    create_field = 'name'
 
     def get_queryset(self):
         if not self.request.user.is_authenticated:
@@ -1098,7 +1041,12 @@ class FolderAutocomplete(autocomplete.Select2QuerySetView):
         return request.user.is_authenticated
 
     def create_object(self, text):
-        return Folder.objects.create(name=text.strip(), user=self.request.user)
+        # get_or_create guards against races/duplicates (Folder has a
+        # unique (name, user) constraint) while still creating the folder
+        # on the fly when it does not exist yet.
+        return Folder.objects.get_or_create(
+            name=text.strip(), user=self.request.user
+        )[0]
 
 
 class FolderSuggest(LoginRequiredMixin, View):

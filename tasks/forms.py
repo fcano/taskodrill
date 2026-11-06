@@ -1,7 +1,7 @@
 from django import forms
 from dal import autocomplete
 
-from .models import Task, Context, Project, Goal, HolidayPeriod
+from .models import Task, Context, Project, Goal, HolidayPeriod, Folder
 
 class DateInput(forms.DateInput):
     input_type = 'date'
@@ -20,6 +20,7 @@ class TaskForm(forms.ModelForm):
         # Filter contexts queryset by user for the autocomplete
         if self.user:
             self.fields['contexts'].queryset = Context.objects.filter(user=self.user)
+            self.fields['folder'].queryset = Folder.objects.filter(user=self.user)
         if self.context_id:
             self.fields['contexts'].initial = [self.context_id]
         if self.project_id:
