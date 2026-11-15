@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <p>
+      <a id="new_mto_button" class="btn btn-primary" href="{% url 'mto_add' %}">New MTO</a>
+    </p>
+
+    <h1>Massive Transformative Objectives</h1>
+    {% if massivetransformativeobjective_list %}
+    <table class="table table-sm">
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+        <th>Goals</th>
+        <th></th>
+      </tr>
+      {% for mto in massivetransformativeobjective_list %}
+      <tr id="mto_row_{{ mto.id }}">
+        <td><a href="{{ mto.get_absolute_url }}">{{ mto.name }}</a></td>
+        <td>{{ mto.description|truncatechars:80 }}</td>
+        <td>{{ mto.goals.count }}</td>
+        <td><a href="{% url 'mto_delete' mto.pk %}" class="confirm-delete"><img src="/static/tasks/trash-2.svg" /></a></td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+      <p>There are no Massive Transformative Objectives.</p>
+    {% endif %}
+{% endblock %}

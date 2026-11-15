@@ -27,6 +27,7 @@ from tasks.models import (
     Folder,
     TaskTimeEntry,
     TaskTimerSession,
+    MassiveTransformativeObjective,
 )
 
 
@@ -2085,6 +2086,18 @@ class GoalListTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Test Goal')
 
+    def test_goal_list_shows_related_mto(self):
+        mto = MassiveTransformativeObjective.objects.create(
+            name='Test MTO', user=self.user,
+        )
+        Goal.objects.create(name='Goal with MTO', user=self.user, mto=mto)
+
+        response = self.client.get(reverse('goal_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Goal with MTO')
+        self.assertContains(response, 'Test MTO')
+        self.assertContains(response, mto.get_absolute_url())
+
 class GoalUpdateTest(TestCase):
     def setUp(self):
         self.user = MyUser.objects.create_user(username='testuser', password='12345')
@@ -2504,3 +2517,135 @@ class FolderAutocompleteCreateTests(TestCase):
         self.assertFalse(
             Task.objects.filter(name='Task with foreign folder').exists()
         )
+
+
+class MassiveTransformativeObjectiveCreateTest(TestCase):
+    def setUp(self):
+        self.user = MyUser.objects.create_user(username='testuser', password='12345')
+        self.client.login(username='testuser', password='12345')
+
+    def test_create_mto(self):
+        response = self.client.post(
+            reverse('mto_add'),
+            {'name': 'Test MTO', 'description': 'A description'},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(MassiveTransformativeObjective.objects.count(), 1)
+        self.assertEqual(MassiveTransformativeObjective.objects.first().name, 'Test MTO')
+        self.assertEqual(MassiveTransformativeObjective.objects.first().user, self.user)
+
+
+class MassiveTransformativeObjectiveDetailTest(TestCase):
+    def setUp(self):
+        self.user = MyUser.objects.create_user(username='testuser', password='12345')
+        self.client.login(username='testuser', password='12345')
+        self.mto = MassiveTransformativeObjective.objects.create(
+            name='Test MTO', user=self.user,
+        )
+
+    def test_mto_detail_view(self):
+        response = self.client.get(reverse('mto_detail', args=[self.mto.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.mto.name)
+
+    def test_mto_detail_shows_its_goals(self):
+        goal = Goal.objects.create(name='Test Goal', user=self.user, mto=self.mto)
+        response = self.client.get(reverse('mto_detail', args=[self.mto.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Test Goal')
+
+
+class MassiveTransformativeObjectiveListTest(TestCase):
+    def setUp(self):
+        self.user = MyUser.objects.create_user(username='testuser', password='12345')
+        self.client.login(username='testuser', password='12345')
+        MassiveTransformativeObjective.objects.create(name='Test MTO', user=self.user)
+
+    def test_mto_list_view(self):
+        response = self.client.get(reverse('mto_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Test MTO')
+
+
+class MassiveTransformativeObjectiveUpdateTest(TestCase):
+    def setUp(self):
+        self.user = MyUser.objects.create_user(username='testuser', password='12345')
+        self.client.login(username='testuser', password='12345')
+        self.mto = MassiveTransformativeObjective.objects.create(
+            name='Test MTO', user=self.user,
+        )
+
+    def test_update_mto(self):
+        response = self.client.post(
+            reverse('mto_update', args=[self.mto.id]),
+            {'name': 'Updated MTO', 'description': 'Updated'},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.mto.refresh_from_db()
+        self.assertEqual(self.mto.name, 'Updated MTO')
+        self.assertEqual(self.mto.description, 'Updated')
+
+
+class MassiveTransformativeObjectiveDeleteTest(TestCase):
+    def setUp(self):
+        self.user = MyUser.objects.create_user(username='testuser', password='12345')
+        self.client.login(username='testuser', password='12345')
+        self.mto = MassiveTransformativeObjective.objects.create(
+            name='Test MTO', user=self.user,
+        )
+
+    def test_delete_mto(self):
+        response = self.client.post(reverse('mto_delete', args=[self.mto.id]))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(MassiveTransformativeObjective.objects.count(), 0)
+
+
+class GoalMtoFormTest(TestCase):
+    def setUp(self):
+        self.user = MyUser.objects.create_user(username='testuser', password='12345')
+        self.client.login(username='testuser', password='12345')
+        self.mto = MassiveTransformativeObjective.objects.create(
+            name='Test MTO', user=self.user,
+        )
+
+    def test_goal_create_with_mto(self):
+        response = self.client.post(
+            reverse('goal_add'),
+            {'name': 'Test Goal', 'status': Goal.OPEN, 'mto': self.mto.id},
+        )
+        self.assertEqual(response.status_code, 302)
+        goal = Goal.objects.first()
+        self.assertEqual(goal.mto, self.mto)
+
+    def test_goal_update_removes_mto(self):
+        goal = Goal.objects.create(
+            name='Test Goal', user=self.user, mto=self.mto,
+        )
+        response = self.client.post(
+            reverse('goal_update', args=[goal.id]),
+            {'name': 'Test Goal', 'status': Goal.OPEN, 'mto': ''},
+        )
+        self.assertEqual(response.status_code, 302)
+        goal.refresh_from_db()
+        self.assertIsNone(goal.mto)
+
+
+class MassiveTransformativeObjectiveFormPagesTest(TestCase):
+    def setUp(self):
+        self.user = MyUser.objects.create_user(username='testuser', password='12345')
+        self.client.login(username='testuser', password='12345')
+        self.mto = MassiveTransformativeObjective.objects.create(
+            name='Test MTO', user=self.user,
+        )
+
+    def test_add_page_renders(self):
+        response = self.client.get(reverse('mto_add'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_edit_page_renders(self):
+        response = self.client.get(reverse('mto_update', args=[self.mto.id]))
+        self.assertEqual(response.status_code, 200)
+
+    def test_delete_page_renders(self):
+        response = self.client.get(reverse('mto_delete', args=[self.mto.id]))
+        self.assertEqual(response.status_code, 200)

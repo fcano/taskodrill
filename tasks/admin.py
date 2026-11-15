@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Task, Project
+from .models import Task, Project, MassiveTransformativeObjective
 from myauth.models import MyUser
 from django.contrib.auth.admin import UserAdmin
 
@@ -12,3 +12,4 @@ class TaskAdmin(admin.ModelAdmin):
 admin.site.register(MyUser, MyUserAdmin)
 admin.site.register(Task, TaskAdmin)
 admin.site.register(Project)
+admin.site.register(MassiveTransformativeObjective)

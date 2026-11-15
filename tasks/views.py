@@ -29,8 +29,9 @@ from .models import (
     HolidayPeriod,
     TaskTimeEntry,
     TaskTimerSession,
+    MassiveTransformativeObjective,
 )
-from .forms import TaskForm, ProjectForm, OrderingForm, GoalForm, GoalMassEditForm, HolidayPeriodForm, TaskMassEditForm
+from .forms import TaskForm, ProjectForm, OrderingForm, GoalForm, GoalMassEditForm, HolidayPeriodForm, TaskMassEditForm, MassiveTransformativeObjectiveForm
 
 import datetime
 import holidays
@@ -1265,6 +1266,11 @@ class GoalCreate(LoginRequiredMixin, CreateView):
 
     success_url = reverse_lazy('goal_list')
 
+    def get_form_kwargs(self):
+        kwargs = super(GoalCreate, self).get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
     def form_valid(self, form):
         form.instance.user = self.request.user
         return super().form_valid(form)
@@ -1298,12 +1304,12 @@ class GoalList(LoginRequiredMixin, ListView):
     def get_queryset(self):
         filter = self.request.GET.get('filter')
         if filter == "allgoals":
-            return Goal.objects.filter(user=self.request.user).order_by('due_date')
+            return Goal.objects.filter(user=self.request.user).select_related('mto').order_by('due_date')
         else:
             return Goal.objects.filter(
                 user=self.request.user,
                 status=Goal.OPEN
-            ).order_by('due_date')
+            ).select_related('mto').order_by('due_date')
 
 class GoalUpdateDueDates(LoginRequiredMixin, View):
 
@@ -1384,6 +1390,11 @@ class GoalUpdate(LoginRequiredMixin,UpdateView):
     model = Goal
     form_class = GoalForm
 
+    def get_form_kwargs(self):
+        kwargs = super(GoalUpdate, self).get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
 class GoalDelete(LoginRequiredMixin,DeleteView):
     model = Goal
     success_url = reverse_lazy('goal_list')
@@ -1395,6 +1406,68 @@ class GoalAutocomplete(autocomplete.Select2QuerySetView):
             return Task.objects.none()
 
         qs = self.request.user.goal_set.filter(status=Goal.OPEN)
+
+        if self.q:
+            qs = qs.filter(name__icontains=self.q)
+
+        return qs
+
+
+class MassiveTransformativeObjectiveCreate(LoginRequiredMixin, CreateView):
+    model = MassiveTransformativeObjective
+    form_class = MassiveTransformativeObjectiveForm
+    template_name = 'tasks/mto_form.html'
+
+    success_url = reverse_lazy('mto_list')
+
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        return super().form_valid(form)
+
+
+class MassiveTransformativeObjectiveDetail(LoginRequiredMixin, DetailView):
+    model = MassiveTransformativeObjective
+    template_name = 'tasks/mto_detail.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(MassiveTransformativeObjectiveDetail, self).get_context_data(**kwargs)
+        context['next'] = self.object.get_absolute_url()
+        context['goal_list'] = self.object.goals.all()
+        return context
+
+    def get_queryset(self):
+        if self.request.user.is_authenticated:
+            return MassiveTransformativeObjective.objects.filter(user=self.request.user)
+        else:
+            return MassiveTransformativeObjective.objects.none()
+
+
+class MassiveTransformativeObjectiveList(LoginRequiredMixin, ListView):
+    model = MassiveTransformativeObjective
+    template_name = 'tasks/mto_list.html'
+
+    def get_queryset(self):
+        return MassiveTransformativeObjective.objects.filter(user=self.request.user)
+
+
+class MassiveTransformativeObjectiveUpdate(LoginRequiredMixin, UpdateView):
+    model = MassiveTransformativeObjective
+    form_class = MassiveTransformativeObjectiveForm
+    template_name = 'tasks/mto_form.html'
+
+class MassiveTransformativeObjectiveDelete(LoginRequiredMixin, DeleteView):
+    model = MassiveTransformativeObjective
+    template_name = 'tasks/mto_confirm_delete.html'
+    success_url = reverse_lazy('mto_list')
+
+
+class MassiveTransformativeObjectiveAutocomplete(autocomplete.Select2QuerySetView):
+
+    def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            return Task.objects.none()
+
+        qs = self.request.user.massivetransformativeobjective_set.all()
 
         if self.q:
             qs = qs.filter(name__icontains=self.q)

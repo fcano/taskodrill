@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>{{ massivetransformativeobjective.name }}</h1>
+    <p>
+        Description: {{ massivetransformativeobjective.description|default:"—" }}
+    </p>
+    <p><a href="{% url 'mto_update' massivetransformativeobjective.pk %}">Edit</a><br />
+    <a href="{% url 'mto_delete' massivetransformativeobjective.pk %}">Delete</a>
+    </p>
+
+    <h2>Goals in this MTO</h2>
+    {% if goal_list %}
+    <table class="table table-sm">
+      <tr>
+        <th>Name</th>
+        <th>Status</th>
+        <th>Due date</th>
+      </tr>
+      {% for goal in goal_list %}
+      <tr>
+        <td><a href="{{ goal.get_absolute_url }}">{{ goal.name }}</a></td>
+        <td>{{ goal.get_status_display }}</td>
+        <td>{{ goal.due_date }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+      <p>This MTO does not have goals.</p>
+    {% endif %}
+{% endblock %}

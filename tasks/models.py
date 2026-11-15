@@ -1062,6 +1062,14 @@ class Goal(models.Model):
         help_text='Name/description of the deliverable produced by this goal, if any. '
                    'Leave blank if this goal has no deliverable.',
     )
+    mto = models.ForeignKey(
+        'MassiveTransformativeObjective',
+        related_name='goals',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        help_text='Massive Transformative Objective this goal contributes to, if any.',
+    )
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -1289,6 +1297,22 @@ class Goal(models.Model):
     class Meta:
         ordering = ["name"]
         unique_together = (("name", "user"),)
+
+
+class MassiveTransformativeObjective(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
+
+    def get_absolute_url(self):
+        return reverse('mto_detail', kwargs={'pk': self.pk})
+
+    class Meta:
+        ordering = ['name']
+        unique_together = (('name', 'user'),)
 
 
 class Assignee(models.Model):

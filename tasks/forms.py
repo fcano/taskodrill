@@ -1,7 +1,7 @@
 from django import forms
 from dal import autocomplete
 
-from .models import Task, Context, Project, Goal, HolidayPeriod, Folder
+from .models import Task, Context, Project, Goal, HolidayPeriod, Folder, MassiveTransformativeObjective
 
 class DateInput(forms.DateInput):
     input_type = 'date'
@@ -67,12 +67,29 @@ class ProjectForm(forms.ModelForm):
 
 
 class GoalForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super(GoalForm, self).__init__(*args, **kwargs)
+        if self.user:
+            self.fields['mto'].queryset = MassiveTransformativeObjective.objects.filter(user=self.user)
+
     class Meta:
         model = Goal
-        fields = ['name', 'references', 'due_date', 'status', 'roadmap', 'deliverable_name']
+        fields = ['name', 'references', 'due_date', 'status', 'roadmap', 'deliverable_name', 'mto']
         widgets = {
             'due_date': DateInput(),
-            'name': forms.Textarea(attrs={'rows': 1, 'cols': 100})
+            'name': forms.Textarea(attrs={'rows': 1, 'cols': 100}),
+            'mto': autocomplete.ModelSelect2(url='mto-autocomplete'),
+        }
+
+
+class MassiveTransformativeObjectiveForm(forms.ModelForm):
+    class Meta:
+        model = MassiveTransformativeObjective
+        fields = ['name', 'description']
+        widgets = {
+            'name': forms.Textarea(attrs={'rows': 1, 'cols': 100}),
+            'description': forms.Textarea(attrs={'rows': 3, 'cols': 100}),
         }
 
 

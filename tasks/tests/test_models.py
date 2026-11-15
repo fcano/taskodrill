@@ -4,7 +4,7 @@ from django.urls import reverse
 #from datetime import datetime, date, timedelta
 
 from django.test import TestCase
-from tasks.models import Task, Project, Context, Goal
+from tasks.models import Task, Project, Context, Goal, MassiveTransformativeObjective
 from myauth.models import MyUser
 from django.utils import timezone
 
@@ -536,3 +536,47 @@ class GoalModelTests(TestCase):
         task1.refresh_from_db()
         self.assertIsNone(task1.blocked_by)
         self.assertEqual(task1.status, Task.PENDING)
+
+
+class MassiveTransformativeObjectiveModelTests(TestCase):
+    def setUp(self):
+        self.user = MyUser.objects.create_user(username='testuser', password='testpassword')
+
+    def test_str(self):
+        mto = MassiveTransformativeObjective.objects.create(
+            name='End aging', user=self.user,
+        )
+        self.assertEqual(str(mto), 'End aging')
+
+    def test_get_absolute_url(self):
+        mto = MassiveTransformativeObjective.objects.create(
+            name='End aging', user=self.user,
+        )
+        self.assertEqual(
+            mto.get_absolute_url(), reverse('mto_detail', kwargs={'pk': mto.pk})
+        )
+
+    def test_goal_mto_not_mandatory(self):
+        goal = Goal.objects.create(name='Goal without MTO', user=self.user)
+        self.assertIsNone(goal.mto)
+
+    def test_goal_belongs_to_one_mto_and_mto_has_many_goals(self):
+        mto = MassiveTransformativeObjective.objects.create(
+            name='End aging', user=self.user,
+        )
+        goal1 = Goal.objects.create(name='Goal 1', user=self.user, mto=mto)
+        goal2 = Goal.objects.create(name='Goal 2', user=self.user, mto=mto)
+
+        self.assertEqual(goal1.mto, mto)
+        self.assertEqual(goal2.mto, mto)
+        self.assertEqual(set(mto.goals.all()), {goal1, goal2})
+
+    def test_deleting_mto_keeps_goals(self):
+        mto = MassiveTransformativeObjective.objects.create(
+            name='End aging', user=self.user,
+        )
+        goal = Goal.objects.create(name='Goal 1', user=self.user, mto=mto)
+
+        mto.delete()
+        goal.refresh_from_db()
+        self.assertIsNone(goal.mto)
