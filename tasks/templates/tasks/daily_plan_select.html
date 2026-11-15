@@ -22,11 +22,12 @@
         <th scope="col">Length</th>
         <th scope="col">Project</th>
         <th scope="col">Goal</th>
+        <th scope="col">Actions</th>
       </tr>
     </thead>
-    <tbody>
+    <tbody id="tasks_body">
       {% for row in rows %}
-      <tr id="daily_plan_select_row_{{ row.task.id }}"{% if row.selected %} class="table-info"{% endif %}>
+      <tr id="tasks_row_{{ row.task.id }}"{% if row.selected %} class="table-info"{% endif %}>
         <td class="text-nowrap">
           <input class="align-middle plan-select-checkbox" type="checkbox" data-task-id="{{ row.task.id }}"
                  autocomplete="off"
@@ -40,6 +41,28 @@
         <td>{{ row.task.length|default_if_none:"none" }}</td>
         <td>{% if row.task.project %}{{ row.task.project.name }}{% else %}-{% endif %}</td>
         <td>{% if row.task.goal %}{{ row.task.goal.name }}{% else %}-{% endif %}</td>
+        <td>
+          <div class="action-icons">
+            <a href="{% url 'task_remove_deadline' row.task.pk %}" class="remove-deadline"><img src="/static/tasks/empty.svg" width="18" /></a>
+            <a href="{% url 'task_remove_deadline_prio' row.task.pk %}" class="remove-deadline-prio"><img src="/static/tasks/down-arrow.svg" width="18" /></a>
+            <a href="{{ row.task.get_absolute_url }}"><img src="/static/tasks/eye.svg" width="18" /></a>
+            <a href="{% url 'task_update' row.task.pk %}"><img src="/static/tasks/edit.svg" width="18" /></a>
+            <a href="{% url 'task_delete' row.task.pk %}" class="confirm-delete"><img src="/static/tasks/trash-2.svg" width="18" /></a>
+            <a href="{% url 'task_postpone' pk=row.task.pk ndays=1 %}" class="postpone"><img src="/static/tasks/skip-forward.svg" data-toggle='tooltip' title='Postpone to NBD.' width="18" /></a>
+            <a href="{% url 'task_postpone' pk=row.task.pk ndays=2 %}" class="postpone2"><img src="/static/tasks/fast-forward.svg" data-toggle='tooltip' title='Postpone to 48h+NBD.' width="18" /></a>
+            <a href="{% url 'task_postpone' pk=row.task.pk ndays=7 %}" class="postpone7" data-toggle='tooltip' title='Postpone 7 days' style="text-decoration: none; font-size: 12px; vertical-align: middle; margin-right: 5px;">+7</a>
+            <a href="{% url 'task_mark_flexible' row.task.pk %}" class="mark-flexible"><img src="/static/tasks/toggle-flexible.svg" data-toggle='tooltip' title='Mark due date as flexible.' width="18" /></a>
+            <a href="{% url 'task_move_to_end_of_day' row.task.pk %}" class="move-to-end-of-day"><img src="/static/tasks/chevrons-down.svg" data-toggle='tooltip' title='Move to end of list for this day.' width="18" /></a>
+            <div class="btn-group dropleft">
+              <img class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-reference="parent" src="/static/tasks/chevron-down.svg" width="18" />
+              <div class="dropdown-menu move-to-tasklist" aria-labelledby="dropdownMenuReference">
+                <button class="dropdown-item" type="button" value="notthisweek_{{ row.task.id }}">Not This Week</button>
+                <button class="dropdown-item" type="button" value="nextaction_{{ row.task.id }}">Next Action</button>
+                <button class="dropdown-item" type="button" value="someday_{{ row.task.id }}">Someday/Maybe</button>
+              </div>
+            </div>
+          </div>
+        </td>
       </tr>
       {% endfor %}
     </tbody>
