@@ -2922,6 +2922,23 @@ class DailyPlanViewTests(TestCase):
             [False, True, True],
         )
 
+    def test_select_page_includes_future_start_date_tasks(self):
+        user = mylogin(self)
+        Task.objects.create(
+            name="Started task", user=user, tasklist=Task.NEXT_ACTION,
+        )
+        Task.objects.create(
+            name="Future task",
+            user=user,
+            tasklist=Task.NEXT_ACTION,
+            start_date=datetime.date.today() + datetime.timedelta(days=10),
+        )
+        response = self.client.get(reverse("daily_plan_select"))
+        self.assertEqual(response.status_code, 200)
+        names = [row["task"].name for row in response.context["rows"]]
+        self.assertIn("Future task", names)
+        self.assertIn("Started task", names)
+
     def test_select_page_appends_plan_tasks_missing_from_nextactions(self):
         user = mylogin(self)
         moved = Task.objects.create(

@@ -1637,6 +1637,9 @@ class DailyPlanSelect(LoginRequiredMixin, View):
     End-of-day ritual: pick up to DailyPlan.MAX_TASKS tasks for the next
     business day. If a plan already exists for that date, it is loaded as
     the current selection and can still be edited.
+
+    Candidates include next actions that have not started yet (future
+    start dates), since the plan is for a future day.
     """
 
     def get(self, request, *args, **kwargs):
@@ -1655,11 +1658,12 @@ class DailyPlanSelect(LoginRequiredMixin, View):
                 plan_tasks_by_id[task.id] = task
 
         # Candidates keep the exact same order as the nextactions list,
-        # with the current selection marked on each row.
+        # with the current selection marked on each row. 'ignore' also
+        # shows next actions whose start date is still in the future.
         rows = []
         seen_ids = set()
         candidates = Task.get_task_plan(
-            'nextactions', None, None, None, request.user
+            'nextactions', None, None, 'ignore', request.user
         )
         for task in candidates:
             rows.append({'task': task, 'selected': task.id in selected_ids})
