@@ -4,9 +4,14 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from tasks.models import Task, Goal, Context, Folder
-from tasks.api.serializers import TaskSerializer, GoalSerializer, ContextSerializer, FolderSerializer
-from tasks.api.filters import TaskFilter, GoalFilter, ContextFilter, FolderFilter
+from tasks.models import Task, Goal, Context, Folder, DailyPlan, DailyPlanTask
+from tasks.api.serializers import (
+    TaskSerializer, GoalSerializer, ContextSerializer, FolderSerializer,
+    DailyPlanSerializer,
+)
+from tasks.api.filters import (
+    TaskFilter, GoalFilter, ContextFilter, FolderFilter, DailyPlanFilter,
+)
 from tasks.api.permissions import IsOwner
 
 
@@ -64,3 +69,50 @@ class FolderViewSet(OwnerViewSetMixin, viewsets.ModelViewSet):
     filterset_class = FolderFilter
     ordering_fields = ['name']
     search_fields = ['name']
+
+
+class DailyPlanViewSet(OwnerViewSetMixin, viewsets.ModelViewSet):
+    queryset = DailyPlan.objects.all()
+    serializer_class = DailyPlanSerializer
+    filterset_class = DailyPlanFilter
+    ordering_fields = ['date', 'creation_datetime', 'modification_datetime']
+
+    def destroy(self, request, *args, **kwargs):
+        plan = self.get_object()
+        if plan.is_locked:
+            return Response(
+                {'detail': 'This daily plan is locked: its date has already arrived.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return super().destroy(request, *args, **kwargs)
+
+    @action(detail=True, methods=['post'])
+    def toggle_task(self, request, pk=None):
+        """Add/remove a task to/from the plan (same semantics as the web UI)."""
+        plan = self.get_object()
+        task = Task.objects.filter(
+            pk=request.data.get('task_id'), user=request.user
+        ).first()
+        if task is None:
+            return Response(
+                {'detail': 'task not found'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if DailyPlanTask.objects.filter(daily_plan=plan, task=task).exists():
+            selected = False
+            ok, error = plan.remove_task(task)
+        else:
+            selected = True
+            if task.status == Task.DONE:
+                return Response(
+                    {'detail': 'This task is already done and cannot be planned.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            ok, error = plan.add_task(task)
+        if not ok:
+            return Response({'detail': error}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({
+            'selected': selected,
+            'task_count': plan.plan_tasks.count(),
+            'max_tasks': DailyPlan.MAX_TASKS,
+        })

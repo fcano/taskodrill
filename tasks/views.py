@@ -11,7 +11,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q, Count
 from django.db import transaction, models
 from django.urls import reverse, reverse_lazy
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from django.template.loader import render_to_string
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
@@ -30,6 +30,8 @@ from .models import (
     TaskTimeEntry,
     TaskTimerSession,
     MassiveTransformativeObjective,
+    DailyPlan,
+    DailyPlanTask,
 )
 from .forms import TaskForm, ProjectForm, OrderingForm, GoalForm, GoalMassEditForm, HolidayPeriodForm, TaskMassEditForm, MassiveTransformativeObjectiveForm
 
@@ -1570,3 +1572,158 @@ class HolidayPeriodUpdate(LoginRequiredMixin, UpdateView):
 class HolidayPeriodDelete(LoginRequiredMixin, DeleteView):
     model = HolidayPeriod
     success_url = reverse_lazy('holidayperiod_list')
+
+
+def _daily_plan_response(request, plan, plan_date, is_today):
+    """Shared rendering for the today view and the by-date detail view."""
+    pending_task_list = []
+    done_task_list = []
+    if plan:
+        pending_task_list = list(
+            plan.pending_tasks.select_related(
+                'project', 'goal', 'folder', 'assignee', 'blocked_by',
+                'timer_session',
+            ).prefetch_related('contexts')
+        )
+        done_task_list = list(
+            plan.done_tasks.select_related('project', 'goal')
+            .prefetch_related('contexts')
+        )
+
+    context = {
+        'plan': plan,
+        'plan_date': plan_date,
+        'is_today': is_today,
+        'task_list': pending_task_list,
+        'done_task_list': done_task_list,
+        'done_count': len(done_task_list),
+        'total_count': len(pending_task_list) + len(done_task_list),
+        'show_task_timer': is_today,
+        'next_plan_date': Task.next_business_day(timezone.localdate()),
+    }
+    return TemplateResponse(request, 'tasks/daily_plan_detail.html', context)
+
+
+class DailyPlanToday(LoginRequiredMixin, View):
+    """Today's committed plan, presented like the nextactions list."""
+
+    def get(self, request, *args, **kwargs):
+        today = timezone.localdate()
+        plan = DailyPlan.objects.filter(user=request.user, date=today).first()
+        return _daily_plan_response(request, plan, today, is_today=True)
+
+
+class DailyPlanDetail(LoginRequiredMixin, View):
+    """The plan committed to an arbitrary date (past or future)."""
+
+    def get(self, request, *args, **kwargs):
+        try:
+            plan_date = datetime.datetime.strptime(
+                kwargs['plan_date'], '%Y-%m-%d'
+            ).date()
+        except ValueError:
+            raise Http404('Invalid date')
+        plan = DailyPlan.objects.filter(
+            user=request.user, date=plan_date
+        ).first()
+        return _daily_plan_response(
+            request, plan, plan_date,
+            is_today=(plan_date == timezone.localdate()),
+        )
+
+
+class DailyPlanSelect(LoginRequiredMixin, View):
+    """
+    End-of-day ritual: pick up to DailyPlan.MAX_TASKS tasks for the next
+    business day. If a plan already exists for that date, it is loaded as
+    the current selection and can still be edited.
+    """
+
+    def get(self, request, *args, **kwargs):
+        target_date = Task.next_business_day(timezone.localdate())
+        plan = DailyPlan.objects.filter(
+            user=request.user, date=target_date
+        ).first()
+
+        selected_ids = set()
+        plan_tasks_by_id = {}
+        if plan:
+            for task in plan.tasks.select_related(
+                'project', 'goal', 'folder'
+            ).prefetch_related('contexts'):
+                selected_ids.add(task.id)
+                plan_tasks_by_id[task.id] = task
+
+        # Candidates keep the exact same order as the nextactions list,
+        # with the current selection marked on each row.
+        rows = []
+        seen_ids = set()
+        candidates = Task.get_task_plan(
+            'nextactions', None, None, None, request.user
+        )
+        for task in candidates:
+            rows.append({'task': task, 'selected': task.id in selected_ids})
+            seen_ids.add(task.id)
+
+        # Tasks already in the draft but no longer visible as next
+        # actions (moved to another list, future start date, done, ...)
+        # stay at the end so they can still be reviewed and unchecked.
+        for task_id, task in plan_tasks_by_id.items():
+            if task_id not in seen_ids:
+                rows.append({'task': task, 'selected': True})
+
+        context = {
+            'target_date': target_date,
+            'rows': rows,
+            'selected_count': sum(1 for row in rows if row['selected']),
+            'max_tasks': DailyPlan.MAX_TASKS,
+        }
+        return TemplateResponse(
+            request, 'tasks/daily_plan_select.html', context
+        )
+
+
+class DailyPlanToggleTask(LoginRequiredMixin, View):
+    """
+    Add/remove a task to/from the plan for the next business day
+    (JSON POST). The plan is created on the first add.
+    """
+
+    def post(self, request, *args, **kwargs):
+        task_id = request.POST.get('task_id')
+        task = Task.objects.filter(user=request.user, pk=task_id).first()
+        if task is None:
+            return JsonResponse({'error': 'task not found'}, status=404)
+
+        target_date = Task.next_business_day(timezone.localdate())
+        with transaction.atomic():
+            plan, _created = DailyPlan.objects.get_or_create(
+                user=request.user, date=target_date
+            )
+            if DailyPlanTask.objects.filter(
+                daily_plan=plan, task=task
+            ).exists():
+                selected = False
+                ok, error = plan.remove_task(task)
+            else:
+                selected = True
+                if task.status == Task.DONE:
+                    return JsonResponse(
+                        {
+                            'error': (
+                                'This task is already done and cannot be '
+                                'planned.'
+                            )
+                        },
+                        status=400,
+                    )
+                ok, error = plan.add_task(task)
+            if not ok:
+                return JsonResponse({'error': error}, status=400)
+
+        return JsonResponse({
+            'ok': True,
+            'selected': selected,
+            'count': plan.plan_tasks.count(),
+            'max_tasks': DailyPlan.MAX_TASKS,
+        })

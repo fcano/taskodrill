@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
-from tasks.api.views import TaskViewSet, GoalViewSet, ContextViewSet, FolderViewSet
+from tasks.api.views import TaskViewSet, GoalViewSet, ContextViewSet, FolderViewSet, DailyPlanViewSet
 from tasks.api.auth import ObtainTokenView, RevokeTokenView
 
 router = DefaultRouter()
@@ -10,6 +10,7 @@ router.register(r'tasks', TaskViewSet, basename='task')
 router.register(r'goals', GoalViewSet, basename='goal')
 router.register(r'contexts', ContextViewSet, basename='context')
 router.register(r'folders', FolderViewSet, basename='folder')
+router.register(r'daily-plans', DailyPlanViewSet, basename='dailyplan')
 
 urlpatterns = [
     path('auth/token/', ObtainTokenView.as_view(), name='api_token_obtain'),

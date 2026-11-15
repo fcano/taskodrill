@@ -172,6 +172,12 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'REST API for managing tasks, goals, and contexts in Taskodrill.',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    'ENUM_NAME_OVERRIDES': {
+        # Task.STATUS is rendered by both TaskSerializer.status and
+        # DailyPlanTaskSerializer.task_status; pin its enum name so the
+        # schema generator does not warn about the collision.
+        'TaskStatusEnum': 'tasks.models.Task.STATUS',
+    },
 }
 
 SENDGRID_API_KEY = os.environ['SENDGRID_API_KEY']

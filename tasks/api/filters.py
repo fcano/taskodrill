@@ -1,6 +1,6 @@
 import django_filters
 
-from tasks.models import Task, Goal, Context, Folder
+from tasks.models import Task, Goal, Context, Folder, DailyPlan
 
 
 class TaskFilter(django_filters.FilterSet):
@@ -50,3 +50,12 @@ class FolderFilter(django_filters.FilterSet):
     class Meta:
         model = Folder
         fields = ['name']
+
+
+class DailyPlanFilter(django_filters.FilterSet):
+    date_before = django_filters.DateFilter(field_name='date', lookup_expr='lte')
+    date_after = django_filters.DateFilter(field_name='date', lookup_expr='gte')
+
+    class Meta:
+        model = DailyPlan
+        fields = ['date', 'date_before', 'date_after']

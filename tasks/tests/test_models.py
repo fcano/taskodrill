@@ -4,7 +4,10 @@ from django.urls import reverse
 #from datetime import datetime, date, timedelta
 
 from django.test import TestCase
-from tasks.models import Task, Project, Context, Goal, MassiveTransformativeObjective
+from tasks.models import (
+    Task, Project, Context, Goal, MassiveTransformativeObjective,
+    DailyPlan, DailyPlanTask,
+)
 from myauth.models import MyUser
 from django.utils import timezone
 
@@ -580,3 +583,136 @@ class MassiveTransformativeObjectiveModelTests(TestCase):
         mto.delete()
         goal.refresh_from_db()
         self.assertIsNone(goal.mto)
+
+
+class DailyPlanModelTests(TestCase):
+    def setUp(self):
+        self.user = MyUser.objects.create_user(
+            username='testuser', password='testpassword',
+        )
+
+    def _task(self, name='Planned task', **kwargs):
+        return Task.objects.create(name=name, user=self.user, **kwargs)
+
+    def _plan(self, date=None):
+        if date is None:
+            date = timezone.localdate() + datetime.timedelta(days=1)
+        return DailyPlan.objects.create(user=self.user, date=date)
+
+    def test_str(self):
+        plan = DailyPlan.objects.create(
+            user=self.user, date=datetime.date(2026, 11, 16),
+        )
+        self.assertEqual(str(plan), 'Daily plan 2026-11-16')
+
+    def test_get_absolute_url(self):
+        plan = DailyPlan.objects.create(
+            user=self.user, date=datetime.date(2026, 11, 16),
+        )
+        self.assertEqual(
+            plan.get_absolute_url(),
+            reverse('daily_plan_detail', kwargs={'plan_date': plan.date}),
+        )
+
+    def test_unique_user_and_date(self):
+        date = timezone.localdate() + datetime.timedelta(days=1)
+        DailyPlan.objects.create(user=self.user, date=date)
+        with self.assertRaises(Exception):
+            DailyPlan.objects.create(user=self.user, date=date)
+
+    def test_add_task_assigns_sequential_positions(self):
+        plan = self._plan()
+        task1 = self._task('One')
+        task2 = self._task('Two')
+        task3 = self._task('Three')
+        plan.add_task(task1)
+        plan.add_task(task2)
+        plan.add_task(task3)
+        self.assertEqual(list(plan.tasks), [task1, task2, task3])
+
+    def test_add_task_is_idempotent(self):
+        plan = self._plan()
+        task = self._task('One')
+        plan.add_task(task)
+        ok, error = plan.add_task(task)
+        self.assertTrue(ok)
+        self.assertIsNone(error)
+        self.assertEqual(plan.plan_tasks.count(), 1)
+
+    def test_add_task_rejects_ninth_task(self):
+        plan = self._plan()
+        tasks = [self._task(f'Task {i}') for i in range(9)]
+        for task in tasks[:DailyPlan.MAX_TASKS]:
+            ok, error = plan.add_task(task)
+            self.assertTrue(ok)
+        ok, error = plan.add_task(tasks[DailyPlan.MAX_TASKS])
+        self.assertFalse(ok)
+        self.assertIn(str(DailyPlan.MAX_TASKS), error)
+        self.assertEqual(plan.plan_tasks.count(), DailyPlan.MAX_TASKS)
+
+    def test_remove_task(self):
+        plan = self._plan()
+        task1 = self._task('One')
+        task2 = self._task('Two')
+        plan.add_task(task1)
+        plan.add_task(task2)
+        plan.remove_task(task1)
+        self.assertEqual(list(plan.tasks), [task2])
+
+    def test_pending_and_done_tasks(self):
+        plan = self._plan()
+        pending = self._task('Pending')
+        done = self._task('Done')
+        done.status = Task.DONE
+        done.done_datetime = timezone.now()
+        done.save()
+        plan.add_task(pending)
+        plan.add_task(done)
+        self.assertEqual(list(plan.pending_tasks), [pending])
+        self.assertEqual(list(plan.done_tasks), [done])
+
+    def test_is_locked_when_date_arrives(self):
+        tomorrow = timezone.localdate() + datetime.timedelta(days=1)
+        future_plan = DailyPlan.objects.create(user=self.user, date=tomorrow)
+        self.assertFalse(future_plan.is_locked)
+        today_plan = DailyPlan.objects.create(
+            user=self.user, date=timezone.localdate()
+        )
+        self.assertTrue(today_plan.is_locked)
+
+    def test_locked_plan_rejects_membership_changes(self):
+        plan = DailyPlan.objects.create(
+            user=self.user, date=timezone.localdate()
+        )
+        task = self._task()
+        ok, error = plan.add_task(task)
+        self.assertFalse(ok)
+        self.assertEqual(plan.plan_tasks.count(), 0)
+
+        # Set up membership directly, then check removal is blocked too.
+        DailyPlanTask.objects.create(daily_plan=plan, task=task, position=1)
+        ok, error = plan.remove_task(task)
+        self.assertFalse(ok)
+        self.assertEqual(plan.plan_tasks.count(), 1)
+
+        ok, error = plan.set_tasks([])
+        self.assertFalse(ok)
+        self.assertEqual(plan.plan_tasks.count(), 1)
+
+    def test_set_tasks_replaces_membership_in_order(self):
+        plan = self._plan()
+        task1 = self._task('One')
+        task2 = self._task('Two')
+        task3 = self._task('Three')
+        plan.add_task(task1)
+        plan.add_task(task2)
+        ok, error = plan.set_tasks([task3, task1])
+        self.assertTrue(ok)
+        self.assertEqual(list(plan.tasks), [task3, task1])
+
+    def test_set_tasks_rejects_more_than_max(self):
+        plan = self._plan()
+        tasks = [self._task(f'Task {i}') for i in range(9)]
+        ok, error = plan.set_tasks(tasks)
+        self.assertFalse(ok)
+        self.assertEqual(plan.plan_tasks.count(), 0)

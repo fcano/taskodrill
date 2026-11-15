@@ -1,7 +1,10 @@
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
+from django.utils import timezone
 
-from tasks.models import Task, Goal, Context, Project, Folder, Assignee
+from tasks.models import (
+    Task, Goal, Context, Project, Folder, Assignee, DailyPlan, DailyPlanTask,
+)
 
 
 class ChoiceField(serializers.ChoiceField):
@@ -151,3 +154,94 @@ class TaskSerializer(serializers.ModelSerializer):
             ('blocked_by', Task),
         ]:
             self._scope_fk_queryset(field_name, model_cls)
+
+
+class DailyPlanTaskSerializer(serializers.ModelSerializer):
+    task_name = serializers.CharField(source='task.name', read_only=True)
+    task_status = ChoiceField(choices=Task.STATUS, source='task.status', read_only=True)
+
+    class Meta:
+        model = DailyPlanTask
+        fields = ['id', 'task', 'task_name', 'task_status', 'position']
+
+
+class DailyPlanSerializer(serializers.ModelSerializer):
+    tasks = DailyPlanTaskSerializer(source='plan_tasks', many=True, read_only=True)
+    task_ids = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Task.objects.all(), required=False, write_only=True,
+    )
+    is_locked = serializers.SerializerMethodField()
+    task_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DailyPlan
+        fields = [
+            'id', 'date', 'creation_datetime', 'modification_datetime',
+            'is_locked', 'task_count', 'tasks', 'task_ids',
+        ]
+        read_only_fields = ['id', 'creation_datetime', 'modification_datetime']
+
+    @extend_schema_field(serializers.BooleanField)
+    def get_is_locked(self, obj) -> bool:
+        return obj.is_locked
+
+    @extend_schema_field(serializers.IntegerField)
+    def get_task_count(self, obj) -> int:
+        return obj.plan_tasks.count()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Restrict plan tasks to objects owned by the requesting user.
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            user_qs = Task.objects.filter(user=request.user)
+            field = self.fields['task_ids']
+            if hasattr(field, 'child_relation'):
+                field.child_relation.queryset = user_qs
+            else:
+                field.queryset = user_qs
+
+    def validate_date(self, value):
+        if value <= timezone.localdate():
+            raise serializers.ValidationError(
+                'A daily plan can only be set on a future date.'
+            )
+        user = self.context['request'].user
+        qs = DailyPlan.objects.filter(user=user, date=value)
+        if self.instance is not None:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError(
+                'A daily plan already exists for this date.'
+            )
+        return value
+
+    def validate_task_ids(self, value):
+        if len(value) > DailyPlan.MAX_TASKS:
+            raise serializers.ValidationError(
+                f'A daily plan can hold at most {DailyPlan.MAX_TASKS} tasks.'
+            )
+        for task in value:
+            if task.status == Task.DONE:
+                raise serializers.ValidationError(
+                    f'Task "{task.name}" is already done and cannot be planned.'
+                )
+        return value
+
+    def create(self, validated_data):
+        tasks = validated_data.pop('task_ids', [])
+        plan = DailyPlan.objects.create(**validated_data)
+        if tasks:
+            plan.set_tasks(tasks)
+        return plan
+
+    def update(self, instance, validated_data):
+        if instance.is_locked:
+            raise serializers.ValidationError(
+                {'detail': 'This daily plan is locked: its date has already arrived.'}
+            )
+        tasks = validated_data.pop('task_ids', None)
+        instance = super().update(instance, validated_data)
+        if tasks is not None:
+            instance.set_tasks(tasks)
+        return instance

@@ -3,6 +3,10 @@ from tasks import views as tasks_views
 
 urlpatterns = [
     path('tasks/', tasks_views.TaskList.as_view(), name='task_list'),
+    path('daily-plan/', tasks_views.DailyPlanToday.as_view(), name='daily_plan_today'),
+    path('daily-plan/select/', tasks_views.DailyPlanSelect.as_view(), name='daily_plan_select'),
+    path('daily-plan/toggle-task/', tasks_views.DailyPlanToggleTask.as_view(), name='daily_plan_toggle_task'),
+    path('daily-plan/<str:plan_date>/', tasks_views.DailyPlanDetail.as_view(), name='daily_plan_detail'),
     path('tasks/done/', tasks_views.TaskListDone.as_view(), name='task_list_done'),
     path('tasks/<int:pk>/', tasks_views.TaskDetail.as_view(), name='task_detail'),
     path('tasks/add/', tasks_views.TaskCreate.as_view(), name='task_add'),

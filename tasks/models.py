@@ -1363,3 +1363,114 @@ class HolidayPeriod(models.Model):
             holiday_ranges = list(HolidayPeriod.objects.values_list('start_date', 'end_date'))
             cache.set('holiday_ranges', holiday_ranges, timeout=3600) # 1 hour
         return holiday_ranges
+
+
+class DailyPlan(models.Model):
+    """
+    The fixed set of tasks (up to MAX_TASKS) committed to one specific date.
+
+    A plan is normally built at the end of a working day, from the daily
+    plan selection page, for the next business day. Task membership is
+    frozen once the planned date arrives (see is_locked); until then the
+    draft can still be edited by re-opening the selection page.
+    """
+
+    MAX_TASKS = 8
+
+    date = models.DateField(db_index=True)
+    creation_datetime = models.DateTimeField(auto_now_add=True)
+    modification_datetime = models.DateTimeField(auto_now=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    class Meta:
+        ordering = ['-date']
+        unique_together = (('user', 'date'),)
+
+    def __str__(self):
+        return f'Daily plan {self.date}'
+
+    def get_absolute_url(self):
+        return reverse('daily_plan_detail', kwargs={'plan_date': self.date})
+
+    @property
+    def is_locked(self):
+        """A plan becomes immutable once its date has arrived."""
+        return self.date <= timezone.localdate()
+
+    @property
+    def tasks(self):
+        """All plan tasks, in committed order (by position)."""
+        return Task.objects.filter(
+            dailyplan_tasks__daily_plan=self,
+        ).order_by('dailyplan_tasks__position')
+
+    @property
+    def pending_tasks(self):
+        return self.tasks.filter(status=Task.PENDING)
+
+    @property
+    def done_tasks(self):
+        return self.tasks.filter(status=Task.DONE)
+
+    def add_task(self, task):
+        """
+        Append a task at the end of the plan.
+
+        Returns (ok, error_message); error_message is None on success.
+        """
+        if self.is_locked:
+            return False, 'This daily plan is locked: its date has already arrived.'
+        if DailyPlanTask.objects.filter(daily_plan=self, task=task).exists():
+            return True, None
+        if self.plan_tasks.count() >= self.MAX_TASKS:
+            return False, f'A daily plan can hold at most {self.MAX_TASKS} tasks.'
+        max_position = self.plan_tasks.aggregate(
+            models.Max('position')
+        )['position__max'] or 0
+        DailyPlanTask.objects.create(
+            daily_plan=self, task=task, position=max_position + 1
+        )
+        return True, None
+
+    def remove_task(self, task):
+        """Remove a task from the plan. Returns (ok, error_message)."""
+        if self.is_locked:
+            return False, 'This daily plan is locked: its date has already arrived.'
+        DailyPlanTask.objects.filter(daily_plan=self, task=task).delete()
+        return True, None
+
+    def set_tasks(self, tasks):
+        """
+        Replace plan membership with `tasks`, in the given order.
+
+        Returns (ok, error_message).
+        """
+        if self.is_locked:
+            return False, 'This daily plan is locked: its date has already arrived.'
+        if len(tasks) > self.MAX_TASKS:
+            return False, f'A daily plan can hold at most {self.MAX_TASKS} tasks.'
+        DailyPlanTask.objects.filter(daily_plan=self).delete()
+        DailyPlanTask.objects.bulk_create([
+            DailyPlanTask(daily_plan=self, task=task, position=position)
+            for position, task in enumerate(tasks, start=1)
+        ])
+        return True, None
+
+
+class DailyPlanTask(models.Model):
+    """Ordered membership row: a task and its position within a daily plan."""
+
+    daily_plan = models.ForeignKey(
+        DailyPlan, on_delete=models.CASCADE, related_name='plan_tasks'
+    )
+    task = models.ForeignKey(
+        Task, on_delete=models.CASCADE, related_name='dailyplan_tasks'
+    )
+    position = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['position']
+        unique_together = (('daily_plan', 'task'),)
+
+    def __str__(self):
+        return f'#{self.position} {self.task} ({self.daily_plan})'

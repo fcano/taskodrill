@@ -2,12 +2,15 @@ import datetime
 
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 
 from myauth.models import MyUser
-from tasks.models import Task, Project, Context, Goal, Folder, Assignee
+from tasks.models import (
+    Task, Project, Context, Goal, Folder, Assignee, DailyPlan,
+)
 
 
 THROTTLE_OVERRIDE = {
@@ -792,3 +795,211 @@ class SerializerEdgeCaseTests(AuthenticatedAPITestCase):
         self.assertIsNone(resp.data['folder_name'])
         self.assertIsNone(resp.data['assignee_name'])
         self.assertIsNone(resp.data['blocked_by_name'])
+
+
+# ── Daily plan CRUD ──────────────────────────────────────────────────────
+
+@override_settings(REST_FRAMEWORK=API_SETTINGS)
+class DailyPlanAPITests(AuthenticatedAPITestCase):
+
+    def _tomorrow(self):
+        return timezone.localdate() + datetime.timedelta(days=1)
+
+    def _task(self, **kwargs):
+        defaults = {'name': 'Planned task', 'user': self.user}
+        defaults.update(kwargs)
+        return Task.objects.create(**defaults)
+
+    def test_create_plan_with_tasks(self):
+        task1 = self._task()
+        task2 = self._task()
+        resp = self.client.post(reverse('dailyplan-list'), {
+            'date': str(self._tomorrow()),
+            'task_ids': [task1.pk, task2.pk],
+        }, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        plan = DailyPlan.objects.get(pk=resp.data['id'])
+        self.assertEqual(list(plan.tasks), [task1, task2])
+        self.assertEqual(resp.data['task_count'], 2)
+
+    def test_create_plan_without_tasks(self):
+        resp = self.client.post(reverse('dailyplan-list'), {
+            'date': str(self._tomorrow()),
+        }, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(resp.data['task_count'], 0)
+
+    def test_create_plan_rejects_past_date(self):
+        resp = self.client.post(reverse('dailyplan-list'), {
+            'date': str(timezone.localdate()),
+        }, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_plan_rejects_duplicate_date(self):
+        DailyPlan.objects.create(user=self.user, date=self._tomorrow())
+        resp = self.client.post(reverse('dailyplan-list'), {
+            'date': str(self._tomorrow()),
+        }, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_plan_rejects_more_than_eight_tasks(self):
+        tasks = [self._task() for _ in range(DailyPlan.MAX_TASKS + 1)]
+        resp = self.client.post(reverse('dailyplan-list'), {
+            'date': str(self._tomorrow()),
+            'task_ids': [t.pk for t in tasks],
+        }, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_plan_rejects_done_task(self):
+        done = self._task(status=Task.DONE)
+        resp = self.client.post(reverse('dailyplan-list'), {
+            'date': str(self._tomorrow()),
+            'task_ids': [done.pk],
+        }, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_plan_rejects_cross_user_tasks(self):
+        other_task = Task.objects.create(name='Theirs', user=self.other_user)
+        resp = self.client.post(reverse('dailyplan-list'), {
+            'date': str(self._tomorrow()),
+            'task_ids': [other_task.pk],
+        }, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_list_plans(self):
+        DailyPlan.objects.create(user=self.user, date=self._tomorrow())
+        DailyPlan.objects.create(user=self.other_user, date=self._tomorrow())
+        resp = self.client.get(reverse('dailyplan-list'))
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data['count'], 1)
+
+    def test_retrieve_plan_with_ordered_tasks(self):
+        plan = DailyPlan.objects.create(user=self.user, date=self._tomorrow())
+        task1 = self._task(name='First')
+        task2 = self._task(name='Second')
+        plan.set_tasks([task1, task2])
+        resp = self.client.get(reverse('dailyplan-detail', args=[plan.pk]))
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [row['task'] for row in resp.data['tasks']], [task1.pk, task2.pk]
+        )
+        self.assertEqual(
+            [row['position'] for row in resp.data['tasks']], [1, 2]
+        )
+        self.assertFalse(resp.data['is_locked'])
+
+    def test_update_plan_replaces_tasks(self):
+        plan = DailyPlan.objects.create(user=self.user, date=self._tomorrow())
+        task1 = self._task(name='First')
+        task2 = self._task(name='Second')
+        task3 = self._task(name='Third')
+        plan.set_tasks([task1, task2])
+        resp = self.client.patch(reverse('dailyplan-detail', args=[plan.pk]), {
+            'task_ids': [task3.pk, task1.pk],
+        }, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        plan.refresh_from_db()
+        self.assertEqual(list(plan.tasks), [task3, task1])
+
+    def test_update_locked_plan_rejected(self):
+        plan = DailyPlan.objects.create(
+            user=self.user, date=timezone.localdate() - datetime.timedelta(days=1),
+        )
+        resp = self.client.patch(reverse('dailyplan-detail', args=[plan.pk]), {
+            'date': str(self._tomorrow()),
+        }, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_delete_unlocked_plan(self):
+        plan = DailyPlan.objects.create(user=self.user, date=self._tomorrow())
+        resp = self.client.delete(reverse('dailyplan-detail', args=[plan.pk]))
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(DailyPlan.objects.filter(pk=plan.pk).exists())
+
+    def test_delete_locked_plan_rejected(self):
+        plan = DailyPlan.objects.create(
+            user=self.user, date=timezone.localdate() - datetime.timedelta(days=1),
+        )
+        resp = self.client.delete(reverse('dailyplan-detail', args=[plan.pk]))
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(DailyPlan.objects.filter(pk=plan.pk).exists())
+
+    def test_toggle_task_action_adds_and_removes(self):
+        plan = DailyPlan.objects.create(user=self.user, date=self._tomorrow())
+        task = self._task()
+        resp = self.client.post(
+            reverse('dailyplan-toggle-task', args=[plan.pk]),
+            {'task_id': task.pk},
+        )
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertTrue(resp.data['selected'])
+        self.assertEqual(resp.data['task_count'], 1)
+
+        resp = self.client.post(
+            reverse('dailyplan-toggle-task', args=[plan.pk]),
+            {'task_id': task.pk},
+        )
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertFalse(resp.data['selected'])
+        self.assertEqual(resp.data['task_count'], 0)
+
+    def test_toggle_task_enforces_max_tasks(self):
+        plan = DailyPlan.objects.create(user=self.user, date=self._tomorrow())
+        tasks = [self._task() for _ in range(DailyPlan.MAX_TASKS + 1)]
+        for task in tasks[:DailyPlan.MAX_TASKS]:
+            resp = self.client.post(
+                reverse('dailyplan-toggle-task', args=[plan.pk]),
+                {'task_id': task.pk},
+            )
+            self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        resp = self.client.post(
+            reverse('dailyplan-toggle-task', args=[plan.pk]),
+            {'task_id': tasks[DailyPlan.MAX_TASKS].pk},
+        )
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_toggle_task_on_locked_plan_rejected(self):
+        plan = DailyPlan.objects.create(
+            user=self.user, date=timezone.localdate() - datetime.timedelta(days=1),
+        )
+        task = self._task()
+        resp = self.client.post(
+            reverse('dailyplan-toggle-task', args=[plan.pk]),
+            {'task_id': task.pk},
+        )
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_toggle_task_unknown_task(self):
+        plan = DailyPlan.objects.create(user=self.user, date=self._tomorrow())
+        resp = self.client.post(
+            reverse('dailyplan-toggle-task', args=[plan.pk]),
+            {'task_id': 999999},
+        )
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_toggle_task_cross_user_task(self):
+        plan = DailyPlan.objects.create(user=self.user, date=self._tomorrow())
+        other_task = Task.objects.create(name='Theirs', user=self.other_user)
+        resp = self.client.post(
+            reverse('dailyplan-toggle-task', args=[plan.pk]),
+            {'task_id': other_task.pk},
+        )
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_filter_by_date(self):
+        plan = DailyPlan.objects.create(user=self.user, date=self._tomorrow())
+        DailyPlan.objects.create(
+            user=self.user, date=self._tomorrow() + datetime.timedelta(days=1),
+        )
+        resp = self.client.get(
+            reverse('dailyplan-list'), {'date': str(plan.date)},
+        )
+        self.assertEqual(resp.data['count'], 1)
+        self.assertEqual(resp.data['results'][0]['id'], plan.pk)
+
+    def test_plan_isolation(self):
+        other_plan = DailyPlan.objects.create(
+            user=self.other_user, date=self._tomorrow(),
+        )
+        resp = self.client.get(reverse('dailyplan-detail', args=[other_plan.pk]))
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)

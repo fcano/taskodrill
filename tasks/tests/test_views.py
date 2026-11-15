@@ -28,7 +28,10 @@ from tasks.models import (
     TaskTimeEntry,
     TaskTimerSession,
     MassiveTransformativeObjective,
+    DailyPlan,
+    DailyPlanTask,
 )
+from django.utils import timezone
 
 
 def mylogin(the_test):
@@ -2649,3 +2652,294 @@ class MassiveTransformativeObjectiveFormPagesTest(TestCase):
     def test_delete_page_renders(self):
         response = self.client.get(reverse('mto_delete', args=[self.mto.id]))
         self.assertEqual(response.status_code, 200)
+
+
+class DailyPlanViewTests(TestCase):
+    def setUp(self):
+        MyUser.objects.create_user(
+            username="testuser",
+            password="testpassword",
+        )
+
+    def test_today_view_requires_login(self):
+        response = self.client.get(reverse("daily_plan_today"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_select_view_requires_login(self):
+        response = self.client.get(reverse("daily_plan_select"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_toggle_task_requires_login(self):
+        response = self.client.post(reverse("daily_plan_toggle_task"), {"task_id": 1})
+        self.assertEqual(response.status_code, 302)
+
+    def test_today_view_without_plan(self):
+        mylogin(self)
+        response = self.client.get(reverse("daily_plan_today"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "There is no daily plan for this day.")
+
+    def test_today_view_shows_pending_and_done_tasks(self):
+        user = mylogin(self)
+        today = timezone.localdate()
+        plan = DailyPlan.objects.create(user=user, date=today)
+        pending = Task.objects.create(
+            name="Pending planned task",
+            user=user,
+            tasklist=Task.NEXT_ACTION,
+        )
+        done = Task.objects.create(
+            name="Done planned task",
+            user=user,
+            tasklist=Task.NEXT_ACTION,
+            status=Task.DONE,
+            done_datetime=timezone.now(),
+        )
+        DailyPlanTask.objects.create(daily_plan=plan, task=pending, position=1)
+        DailyPlanTask.objects.create(daily_plan=plan, task=done, position=2)
+
+        response = self.client.get(reverse("daily_plan_today"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Pending planned task")
+        self.assertContains(response, "Done planned task")
+        self.assertContains(response, "Completed:")
+        self.assertContains(response, "1")
+
+    def test_detail_view_for_past_date(self):
+        user = mylogin(self)
+        past_date = timezone.localdate() - datetime.timedelta(days=1)
+        plan = DailyPlan.objects.create(user=user, date=past_date)
+        task = Task.objects.create(
+            name="Past planned task",
+            user=user,
+            tasklist=Task.NEXT_ACTION,
+            status=Task.DONE,
+            done_datetime=timezone.now(),
+        )
+        DailyPlanTask.objects.create(daily_plan=plan, task=task, position=1)
+
+        response = self.client.get(
+            reverse("daily_plan_detail", kwargs={"plan_date": past_date})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Past planned task")
+
+    def test_detail_view_isolated_per_user(self):
+        other_user = MyUser.objects.create_user(
+            username="otheruser", password="otherpassword",
+        )
+        DailyPlan.objects.create(
+            user=other_user, date=timezone.localdate(),
+        )
+        mylogin(self)
+        response = self.client.get(
+            reverse("daily_plan_detail", kwargs={"plan_date": timezone.localdate()})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "There is no daily plan for this day.")
+
+    @time_machine.travel(datetime.date(2021, 4, 8))
+    def test_select_page_targets_next_business_day(self):
+        mylogin(self)
+        response = self.client.get(reverse("daily_plan_select"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["target_date"], datetime.date(2021, 4, 9))
+
+    @time_machine.travel(datetime.date(2021, 4, 9))
+    def test_select_page_targets_monday_when_friday(self):
+        mylogin(self)
+        response = self.client.get(reverse("daily_plan_select"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["target_date"], datetime.date(2021, 4, 12))
+
+    @time_machine.travel(datetime.date(2021, 4, 9))
+    def test_toggle_creates_plan_for_next_business_day(self):
+        user = mylogin(self)
+        task = Task.objects.create(
+            name="Planned task", user=user, tasklist=Task.NEXT_ACTION,
+        )
+        response = self.client.post(
+            reverse("daily_plan_toggle_task"),
+            {"task_id": task.id},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 200)
+        plan = DailyPlan.objects.get(user=user, date=datetime.date(2021, 4, 12))
+        self.assertEqual(list(plan.tasks), [task])
+
+    def test_toggle_adds_and_removes_task(self):
+        user = mylogin(self)
+        task = Task.objects.create(
+            name="Planned task", user=user, tasklist=Task.NEXT_ACTION,
+        )
+
+        response = self.client.post(
+            reverse("daily_plan_toggle_task"),
+            {"task_id": task.id},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["selected"])
+        self.assertEqual(response.json()["count"], 1)
+
+        response = self.client.post(
+            reverse("daily_plan_toggle_task"),
+            {"task_id": task.id},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.json()["selected"])
+        self.assertEqual(response.json()["count"], 0)
+
+    def test_toggle_edits_existing_draft(self):
+        user = mylogin(self)
+        target_date = Task.next_business_day(timezone.localdate())
+        plan = DailyPlan.objects.create(user=user, date=target_date)
+        selected_task = Task.objects.create(
+            name="Selected task", user=user, tasklist=Task.NEXT_ACTION,
+        )
+        plan.add_task(selected_task)
+
+        # The select page loads the existing draft as the current selection.
+        response = self.client.get(reverse("daily_plan_select"))
+        selected_rows = [
+            row for row in response.context["rows"] if row["selected"]
+        ]
+        self.assertEqual(len(selected_rows), 1)
+        self.assertEqual(selected_rows[0]["task"].pk, selected_task.pk)
+
+        # Toggling removes it from the existing draft.
+        response = self.client.post(
+            reverse("daily_plan_toggle_task"),
+            {"task_id": selected_task.id},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 200)
+        plan.refresh_from_db()
+        self.assertEqual(plan.plan_tasks.count(), 0)
+
+    def test_toggle_rejects_more_than_eight_tasks(self):
+        user = mylogin(self)
+        tasks = [
+            Task.objects.create(
+                name=f"Planned task {i}", user=user, tasklist=Task.NEXT_ACTION,
+            )
+            for i in range(DailyPlan.MAX_TASKS + 1)
+        ]
+        for task in tasks[:DailyPlan.MAX_TASKS]:
+            response = self.client.post(
+                reverse("daily_plan_toggle_task"),
+                {"task_id": task.id},
+                HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+            )
+            self.assertEqual(response.status_code, 200)
+        response = self.client.post(
+            reverse("daily_plan_toggle_task"),
+            {"task_id": tasks[DailyPlan.MAX_TASKS].id},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(str(DailyPlan.MAX_TASKS), response.json()["error"])
+
+    def test_toggle_rejects_done_task(self):
+        user = mylogin(self)
+        task = Task.objects.create(
+            name="Done task",
+            user=user,
+            tasklist=Task.NEXT_ACTION,
+            status=Task.DONE,
+            done_datetime=timezone.now(),
+        )
+        response = self.client.post(
+            reverse("daily_plan_toggle_task"),
+            {"task_id": task.id},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("already done", response.json()["error"])
+
+    def test_toggle_rejects_other_users_task(self):
+        other_user = MyUser.objects.create_user(
+            username="otheruser", password="otherpassword",
+        )
+        task = Task.objects.create(
+            name="Foreign task", user=other_user, tasklist=Task.NEXT_ACTION,
+        )
+        mylogin(self)
+        response = self.client.post(
+            reverse("daily_plan_toggle_task"),
+            {"task_id": task.id},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(DailyPlan.objects.filter(user__username="testuser").exists())
+
+    def test_select_page_lists_candidates(self):
+        user = mylogin(self)
+        Task.objects.create(
+            name="Candidate next action", user=user, tasklist=Task.NEXT_ACTION,
+        )
+        Task.objects.create(
+            name="Someday candidate", user=user, tasklist=Task.SOMEDAY_MAYBE,
+        )
+        response = self.client.get(reverse("daily_plan_select"))
+        self.assertEqual(response.status_code, 200)
+        names = [row["task"].name for row in response.context["rows"]]
+        self.assertIn("Candidate next action", names)
+        self.assertNotIn("Someday candidate", names)
+
+    def test_select_page_keeps_nextactions_order_with_selection(self):
+        user = mylogin(self)
+        # Distinct due dates make the nextactions order deterministic.
+        task_late = Task.objects.create(
+            name="Due in 5 days", user=user, tasklist=Task.NEXT_ACTION,
+            due_date=datetime.date.today() + datetime.timedelta(days=5),
+        )
+        task_soon = Task.objects.create(
+            name="Due in 1 day", user=user, tasklist=Task.NEXT_ACTION,
+            due_date=datetime.date.today() + datetime.timedelta(days=1),
+        )
+        task_mid = Task.objects.create(
+            name="Due in 3 days", user=user, tasklist=Task.NEXT_ACTION,
+            due_date=datetime.date.today() + datetime.timedelta(days=3),
+        )
+
+        target_date = Task.next_business_day(timezone.localdate())
+        plan = DailyPlan.objects.create(user=user, date=target_date)
+        plan.add_task(task_late)
+        plan.add_task(task_mid)
+
+        response = self.client.get(reverse("daily_plan_select"))
+        self.assertEqual(response.status_code, 200)
+        rows = response.context["rows"]
+        # Selected rows are marked in place, not hoisted to the top.
+        self.assertEqual(
+            [row["task"].pk for row in rows],
+            [task_soon.pk, task_mid.pk, task_late.pk],
+        )
+        self.assertEqual(
+            [row["selected"] for row in rows],
+            [False, True, True],
+        )
+
+    def test_select_page_appends_plan_tasks_missing_from_nextactions(self):
+        user = mylogin(self)
+        moved = Task.objects.create(
+            name="Moved to someday", user=user, tasklist=Task.SOMEDAY_MAYBE,
+        )
+        candidate = Task.objects.create(
+            name="Candidate", user=user, tasklist=Task.NEXT_ACTION,
+        )
+        target_date = Task.next_business_day(timezone.localdate())
+        plan = DailyPlan.objects.create(user=user, date=target_date)
+        plan.add_task(moved)
+
+        response = self.client.get(reverse("daily_plan_select"))
+        self.assertEqual(response.status_code, 200)
+        rows = response.context["rows"]
+        # The drafted task no longer shows as a next action, but it stays
+        # visible at the end so it can still be unchecked.
+        self.assertEqual(
+            [row["task"].pk for row in rows], [candidate.pk, moved.pk]
+        )
+        self.assertEqual([row["selected"] for row in rows], [False, True])

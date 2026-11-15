@@ -1,4 +1,5 @@
 {% url 'task_list' as tasklist %}
+{% url 'daily_plan_today' as dailyplantoday %}
 {% url 'task_list_tasklist' 'nextactions' as nextactions %}
 {% url 'task_list_tasklist' 'somedaymaybe' as somedaymaybe %}
 {% url 'task_list_tasklist' 'notthisweek' as notthisweek %}
@@ -54,6 +55,9 @@
     <div class="row">
       <div class="col-2 bg-sidebar-blue border-right pl-0 pr-0">
         <ul class="nav flex-column">
+          <li class="nav-item {% if request.path == dailyplantoday %}active{% endif %}">
+            <a class="nav-link" href="{% url 'daily_plan_today' %}">Daily Plan</a>
+          </li>
           <li class="nav-item {% if request.path == nextactions %}active{% endif %}">
             <a class="nav-link" href="{% url 'task_list_tasklist' 'nextactions' %}">Next Actions</a>
           </li>

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h2>Daily plan selection &mdash; {{ target_date|date:"l, d F Y" }}</h2>
+  <p>
+    Selected: <span id="daily-plan-selected-count" class="badge badge-secondary">{{ selected_count }}</span>
+    of up to {{ max_tasks }} tasks.
+    <span id="daily-plan-saved-indicator" class="badge badge-success" style="display:none;">Saved</span>
+    <span class="text-muted small">Each check or uncheck is saved immediately &mdash; there is no save button. The plan can be edited here until {{ target_date|date:"d/m/Y" }} arrives; after that it is fixed.</span>
+    <a class="btn btn-secondary btn-sm ml-2" href="{% url 'daily_plan_today' %}">Today's plan</a>
+    <a class="btn btn-primary btn-sm" href="{% url 'daily_plan_detail' plan_date=target_date %}">View plan for {{ target_date|date:"d/m/Y" }}</a>
+  </p>
+
+  {% if rows %}
+  <table class="table table-sm" id="daily_plan_select_table">
+    <thead class="thead-light">
+      <tr>
+        <th scope="col"></th>
+        <th scope="col">Task</th>
+        <th scope="col">Due date</th>
+        <th scope="col">Priority</th>
+        <th scope="col">Length</th>
+        <th scope="col">Project</th>
+        <th scope="col">Goal</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr id="daily_plan_select_row_{{ row.task.id }}"{% if row.selected %} class="table-info"{% endif %}>
+        <td class="text-nowrap">
+          <input class="align-middle plan-select-checkbox" type="checkbox" data-task-id="{{ row.task.id }}"
+                 autocomplete="off"
+                 title="{% if row.task.status == 1 %}Already done (uncheck to remove it from the plan){% else %}Add to / remove from the daily plan{% endif %}"
+                 {% if row.selected %}checked{% endif %}
+                 {% if not row.selected and selected_count >= max_tasks %}disabled{% endif %}>
+        </td>
+        <td>{{ row.task.name|urlizetrunc:50 }}</td>
+        <td>{{ row.task.due_date|default_if_none:"no date" }}{% if row.task.flexible_due_date %} ~{% endif %}</td>
+        <td>{{ row.task.get_priority_display|default_if_none:"none" }}</td>
+        <td>{{ row.task.length|default_if_none:"none" }}</td>
+        <td>{% if row.task.project %}{{ row.task.project.name }}{% else %}-{% endif %}</td>
+        <td>{% if row.task.goal %}{{ row.task.goal.name }}{% else %}-{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>There are no candidate next actions to plan.</p>
+  {% endif %}
+{% endblock %}

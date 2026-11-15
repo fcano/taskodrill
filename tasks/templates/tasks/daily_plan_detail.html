@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h2>Daily plan &mdash; {{ plan_date|date:"l, d F Y" }}</h2>
+  <p>
+    {% if is_today %}
+      <a id="daily_plan_select_button" class="btn btn-primary btn-sm" href="{% url 'daily_plan_select' %}">Plan next business day ({{ next_plan_date|date:"d/m/Y" }})</a>
+      &nbsp;|&nbsp;
+    {% endif %}
+    {% if plan %}
+      Planned tasks: <span id="daily_plan_total_count">{{ total_count }}</span> |
+      Completed: <strong>{{ done_count }}</strong> of {{ total_count }}
+    {% endif %}
+  </p>
+
+  {% if task_list %}
+    {% include 'tasks/tasks_table.html' with task_list=task_list show_task_timer=show_task_timer %}
+  {% elif plan %}
+    {% if done_task_list %}
+      <p>All planned tasks are completed.</p>
+    {% else %}
+      <p>The plan for this day is empty.</p>
+    {% endif %}
+  {% else %}
+    <p>There is no daily plan for this day.</p>
+  {% endif %}
+
+  {% if done_task_list %}
+    <h4 class="mt-4">Completed ({{ done_task_list|length }})</h4>
+    <table class="table table-sm">
+      <thead class="thead-light">
+        <tr>
+          <th scope="col">Task</th>
+          <th scope="col">Completed</th>
+          <th scope="col">Project</th>
+          <th scope="col">Goal</th>
+          <th scope="col">Priority</th>
+          <th scope="col">Length</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for task in done_task_list %}
+        <tr>
+          <td><a href="{{ task.get_absolute_url }}">{{ task.name }}</a></td>
+          <td>{{ task.done_datetime|date:"Y-m-d H:i" }}</td>
+          <td>{% if task.project %}<a href="{{ task.project.get_absolute_url }}">{{ task.project.name }}</a>{% else %}-{% endif %}</td>
+          <td>{% if task.goal %}<a href="{{ task.goal.get_absolute_url }}">{{ task.goal.name }}</a>{% else %}-{% endif %}</td>
+          <td>{{ task.get_priority_display }}</td>
+          <td>{{ task.length|default_if_none:"-" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+{% endblock %}
+
+{% block page_scripts %}
+{% if show_task_timer %}
+{% include 'tasks/includes/task_folder_picker_modal.html' %}
+{% include 'tasks/includes/task_timer_scripts.html' %}
+{% endif %}
+{% endblock %}

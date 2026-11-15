@@ -585,3 +585,44 @@ $('.js-autocomplete-filter').each(function() {
         }
     });
 });
+
+// ─── Daily plan selection (daily-plan/select page) ────────────────────────
+
+function updateDailyPlanCheckboxes(count, maxTasks) {
+    // Once the plan is full, disable the remaining unchecked boxes so no
+    // more tasks can be added; re-enable them as soon as one is removed.
+    var full = count >= maxTasks;
+    $('.plan-select-checkbox').each(function () {
+        if (!$(this).is(':checked')) {
+            $(this).prop('disabled', full);
+        }
+    });
+}
+
+$(document).on('change', '.plan-select-checkbox', function () {
+    var $box = $(this);
+    $.ajax({
+        type: 'POST',
+        url: '/daily-plan/toggle-task/',
+        data: { task_id: $box.data('task-id') },
+        success: function (response) {
+            $('#daily-plan-selected-count').text(response.count);
+            updateDailyPlanCheckboxes(response.count, response.max_tasks);
+            // Flash a brief confirmation that the change was persisted.
+            $('#daily-plan-saved-indicator')
+                .finish()
+                .show()
+                .delay(1500)
+                .fadeOut(500);
+        },
+        error: function (xhr) {
+            // Revert the checkbox and show the server's reason.
+            $box.prop('checked', !$box.prop('checked'));
+            var msg = 'Could not update the daily plan.';
+            try {
+                msg = JSON.parse(xhr.responseText).error || msg;
+            } catch (e) {}
+            alert(msg);
+        }
+    });
+});
